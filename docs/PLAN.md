@@ -110,6 +110,8 @@ Allow macro editing. Reject negative macro grams and protein above the 35% cap. 
 
 - The target-method screen requires the checkbox “I am 18 or older” before either target path. The calculator also rejects ages under 18 with an error and no results. This is self-reported, not age verification.
 
+- Goal labels include short descriptions. Maintain mentions that it is also a common choice for slowly losing fat and building muscle. This copy is a placeholder pending reviewer approval.
+
 - Calculator sex field label: “Sex (used in the calorie formula): Male / Female”. Sex is required for the calculator.
 
 - Manual targets skip sex and ask for current weight. Validate the entered target against the configured floor and database bounds; do not recalculate it using the calorie formula.

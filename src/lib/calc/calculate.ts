@@ -55,7 +55,7 @@ function hasOwnKey<T extends object>(record: T, key: PropertyKey): key is keyof 
   return Object.prototype.hasOwnProperty.call(record, key);
 }
 
-function convertWeightToKg(weight: WeightInput): Result<number> {
+export function convertWeightToKg(weight: WeightInput): Result<number> {
   if (!isFiniteNumber(weight.value)) {
     return failure("Weight must be a finite number.");
   }
