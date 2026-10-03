@@ -1,10 +1,18 @@
 /** Placeholder values pending qualified review. */
+const weightKgRange = { min: 30, max: 300 };
+
 export const calculationConfig = {
   config_version: "v1-placeholders-2026-10-04",
   input_ranges: {
     age_years: { min: 18, max: 100 },
     height_cm: { min: 120, max: 230 },
-    weight_kg: { min: 30, max: 300 },
+    weight_kg: weightKgRange,
+  },
+  weigh_in_ranges: {
+    weight_kg: weightKgRange,
+    waist_cm: { min: 20, max: 300 },
+    chest_cm: { min: 20, max: 300 },
+    hips_cm: { min: 20, max: 300 },
   },
   unit_conversions: {
     pounds_to_kilograms: 0.45359237,

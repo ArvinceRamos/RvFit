@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { saveGuestDraftAction } from "@/app/account/actions";
 import { GUEST_DRAFT_EVENT, GUEST_DRAFT_STORAGE_KEY } from "@/lib/guest-draft";
 
 type Message = { text: string; error?: boolean };
 
 export function AccountDraftSave({ hasSavedTarget }: { hasSavedTarget: boolean }) {
+  const router = useRouter();
   const sent = useRef(false);
   const [checked, setChecked] = useState(false);
   const [message, setMessage] = useState<Message>();
@@ -52,11 +54,12 @@ export function AccountDraftSave({ hasSavedTarget }: { hasSavedTarget: boolean }
         setMessage({ text: "Saved." });
       }
       setChecked(true);
+      router.refresh();
     }).catch(() => {
       setMessage({ text: "Your draft could not be saved. It has not been removed.", error: true });
       setChecked(true);
     });
-  }, [hasSavedTarget]);
+  }, [hasSavedTarget, router]);
 
   if (!checked || !message) return null;
   return <p className={`mt-5 text-sm ${message.error ? "text-red-800" : "text-zinc-700"}`}>{message.text}</p>;
