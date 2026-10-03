@@ -2,7 +2,7 @@
 Phase 1 jobs. Mark [x] only when the job is done and checked.
 - [x] Job 1: Set up Next.js, Tailwind, Vitest
 - [x] Job 2: Calculation module and tests
-- [ ] Job 3: Supabase local setup and migrations (tables, RLS, cascade, save function)
+- [x] Job 3: Supabase local setup and migrations (tables, RLS, cascade, save function)
 - [ ] Job 4: Calculator screens, target-method screen, results, guest draft in localStorage
 - [ ] Job 5: Sign-up, email confirmation, log in, log out, password reset
 - [ ] Job 6: Server action that validates with the calculation module and calls the save function
