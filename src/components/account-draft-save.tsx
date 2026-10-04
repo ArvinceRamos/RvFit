@@ -45,8 +45,6 @@ export function AccountDraftSave({ hasSavedTarget }: { hasSavedTarget: boolean }
       if (!result.ok) {
         setMessage({ text: result.error, error: true });
       } else if (result.status === "saved_target_exists") {
-        window.localStorage.removeItem(GUEST_DRAFT_STORAGE_KEY);
-        window.dispatchEvent(new Event(GUEST_DRAFT_EVENT));
         setMessage({ text: "Your account already has a saved target, so these answers were not saved." });
       } else {
         window.localStorage.removeItem(GUEST_DRAFT_STORAGE_KEY);
