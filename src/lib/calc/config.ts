@@ -43,6 +43,30 @@ export const calculationConfig = {
   meal_limits: { max_item_grams: 2000 },
   // Placeholder: how many foods to suggest for each of protein, carb, and fat.
   suggestions: { foods_per_role: 5 },
+  // Placeholder workout limits and schemes. Keep limits in step with the workout_log_sets_*_placeholder_check constraints.
+  workouts: {
+    max_sets_per_exercise: 10,
+    max_reps: 100,
+    max_seconds: 600,
+    max_weight_kg: 500,
+    weight_step_kg: { upper: 2.5, lower: 5 },
+    extra_reps_unloaded: 2,
+    extra_seconds_hold: 5,
+    schemes: {
+      beginner: {
+        sets: { min: 2, max: 3 },
+        reps: { min: 8, max: 12 },
+        rest_seconds: { min: 60, max: 90 },
+        hold_seconds: { min: 20, max: 40 },
+      },
+      intermediate: {
+        sets: { min: 3, max: 4 },
+        reps: { min: 6, max: 12 },
+        rest_seconds: { min: 60, max: 120 },
+        hold_seconds: { min: 30, max: 60 },
+      },
+    },
+  },
   macros: {
     protein_grams_per_kg: 1.6,
     protein_calorie_cap_fraction: 0.35,

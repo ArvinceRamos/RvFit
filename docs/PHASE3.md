@@ -39,7 +39,7 @@ Keep templates and exercises in project TypeScript files under `src/lib/workouts
 | 5 | `ppl-upper-lower` | `push`, `pull`, `legs`, `upper`, `lower` |
 | 6 | `ppl-twice` | `push-a`, `pull-a`, `legs-a`, `push-b`, `pull-b`, `legs-b` |
 
-Beginner and intermediate support 2–4 days. Only intermediate supports 5–6 days. This matches the database constraint on `user_preferences`. That gives 9 beginner templates and 15 intermediate templates, 24 in total.
+Beginner and intermediate both support 2–6 days (changed from the original plan, which limited 5–6 days to intermediate). This matches the database constraint on `user_preferences`, updated by the migration `20261006070000_phase3_beginner_training_days.sql`. That gives 15 beginner templates and 15 intermediate templates, 30 in total. Beginner 5–6 day days have 4–5 exercises, like other beginner days.
 
 ### Template keys
 
@@ -53,8 +53,8 @@ Beginner and intermediate support 2–4 days. Only intermediate supports 5–6 d
 - **Intermediate:** more exercises per day (about 5–7), 3–4 sets, a mix of rep ranges.
 - **Equipment tiers include the tiers below them.** Gym users can use dumbbell and bodyweight exercises. Dumbbell-only users can use bodyweight exercises.
 - **Equipment assumptions (strict minimum):**
-  - Bodyweight: floor, wall, sturdy chair or table. No pull-up bar.
-  - Dumbbell-only: dumbbells and floor. No bench.
+  - Bodyweight: floor, wall, sturdy chair or table, and a pull-up bar (also used for inverted rows and hanging work). No parallel bars or rings.
+  - Dumbbell-only: dumbbells on top of the bodyweight kit. No bench.
   - Gym: full gym equipment.
 - Rest time is shown as text only.
 
@@ -123,6 +123,6 @@ Dashboard, weekly plan view, progress charts, weight trend, profile editing, del
 
 A hands-on walkthrough with a test user selects a valid template for level, schedule, and equipment; swaps an exercise and sees it persist and reset; logs a workout and edits it; and sees an optional progression prompt after logging every planned set at the top of the rep range. In addition:
 
-- All 24 valid combinations resolve, and invalid combinations do not.
+- All 30 valid combinations resolve, and invalid combinations do not.
 - Another user cannot read or change a user's workout logs or swaps, and signed-out visitors are denied.
 - `npx tsc --noEmit`, `npm run lint`, and `npm test` pass. Run `npm run build` only when the dev server is stopped.

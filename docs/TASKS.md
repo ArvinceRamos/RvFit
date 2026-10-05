@@ -23,11 +23,11 @@ Suggested model per job: Job 3 Terra high. Jobs 4–7 Terra medium. Job 8 Luna m
 - [x] P2-7: Run Phase 2 local walkthrough and relevant checks; update this list only for jobs whose checks pass 
 
 # Phase 3 jobs. Mark [x] only when the job is done and checked.
-- [x] P3-1: Document Phase 3 flow, data rules, content format, swap and progression rules, and review gate in docs/PHASE3.md; add these jobs (Luna medium)
-- [ ] P3-2: Build typed workout content, shared splits, and the resolver with matrix tests; write a sample plan for each split and a coverage report; stop and wait for review before P3-3 (Terra high)
-- [ ] P3-3: Add workout log, set, and swap tables, RLS, limits, and the atomic save_workout_log function; test in rolled-back SQL (Terra high)
-- [ ] P3-4: Build the Workouts plan page and nav item, choosing the template from saved Preferences, with a no-preferences state (Terra medium)
-- [ ] P3-5: Build exercise swaps: valid options, saved swaps, Swap and Reset to default (Terra medium)
-- [ ] P3-6: Build workout logging with validation and units, new and edit forms, and the recent workouts list (Terra high)
-- [ ] P3-7: Build optional progression prompts from the last logged session and show them on the new-workout screen (Terra medium)
-- [ ] P3-8: Run the Phase 3 local walkthrough, security checks, and relevant checks; update this list only for jobs whose checks pass (Luna medium)
+- [x] P3-1: Document Phase 3 flow, data rules, content format, swap and progression rules, and review gate in docs/PHASE3.md; add these jobs (Sonnet 5.5 medium)
+- [x] P3-2: Build typed workout content, shared splits, and the resolver with matrix tests; write a sample plan for each split and a coverage report; stop and wait for review before P3-3 (Opus 5.5 high)
+- [x] P3-3: Add workout log, set, and swap tables, RLS, limits, and the atomic save_workout_log function; test in rolled-back SQL (Opus 5.5 high)
+- [x] P3-4: Build the Workouts plan page and nav item, choosing the template from saved Preferences, with a no-preferences state (Sonnet 5.5 medium)
+- [x] P3-5: Build exercise swaps: valid options, saved swaps, Swap and Reset to default (Sonnet 5.5 medium)
+- [x] P3-6: Build workout logging with validation and units, new and edit forms, and the recent workouts list (Opus 5.5 high)
+- [x] P3-7: Build optional progression prompts from the last logged session and show them on the new-workout screen (Sonnet 5.5 medium)
+- [x] P3-8: Run the Phase 3 local walkthrough, security checks, and relevant checks; update this list only for jobs whose checks pass (Sonnet 5.5 medium)

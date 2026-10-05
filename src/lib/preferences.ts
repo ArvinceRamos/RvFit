@@ -47,7 +47,7 @@ export const equipmentLabels: Record<Equipment, string> = {
 };
 
 const trainingDayRanges: Record<Experience, { min: number; max: number }> = {
-  beginner: { min: 2, max: 4 },
+  beginner: { min: 2, max: 6 },
   intermediate: { min: 2, max: 6 },
 };
 
