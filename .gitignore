@@ -41,6 +41,9 @@ supabase/.branches/
 supabase/.temp/
 supabase/snippets/
 
+# Local USDA source archives used for catalog review and import preparation
+data/usda/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

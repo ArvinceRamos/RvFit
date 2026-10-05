@@ -128,39 +128,30 @@ Allow macro editing. Reject negative macro grams and protein above the 35% cap. 
 
 
 
-Complete before Phase 2 and Phase 3. Phase 1 may start without it:
+Complete the Phase 2 preparation before Phase 2. Complete workout-content preparation before Phase 3. Phase 1 may start without either:
 
 
 
 - Finalize the screen flow, concise product copy, data outline, and phase acceptance checks.
 
-- Prepare workout content for every required split, level, and equipment option: exercises for each day, sets, reps, rest, and swaps. Use shared split structures to avoid unnecessary duplication. Save the content as TypeScript or JSON files that Phase 3 will use.
+- For Phase 2, document the screen flow, concise product copy, data outline, and acceptance checks in `docs/PHASE2.md`.
 
-- Workout split coverage:
-
- - 2 days: full body A/B
-
- - 3 days: full body A/B/C
-
- - 4 days: upper/lower
-
- - 5 days: push/pull/legs plus upper/lower
-
- - 6 days: push/pull/legs twice
-
-- Support beginner and intermediate levels. Offer 5–6 training days only for intermediate users. Support bodyweight, dumbbell-only, and gym equipment.
-
-- Prepare a seed list of about 150–300 food entries. Include food role, diet tags, and raw or cooked state; keep raw and cooked entries distinguishable. Add common measures when the USDA record provides them.
+- Prepare 150–300 common food-name candidates grouped by RvFit role. During Phase 2, match candidates against downloaded USDA Foundation and SR Legacy files, add reviewed diet tags and raw/cooked state, and request the user's review before importing. Keep raw and cooked records distinguishable. Add common measures when the USDA record provides them.
 
 - Write plain-language rules for meal suggestions that choose protein, carb, and fat foods to help fit remaining macro targets and exclude allergies and preferences.
 
-- Select a reviewer, such as a registered dietitian for calorie, macro, fiber, food, and disclaimer content. Arrange qualified review of workout content as appropriate.
+- Keep qualified review of calorie, macro, fiber, food, disclaimer, and workout content pending until before public launch. Do not present placeholder values as reviewed.
 
 - Keep all clinical/configuration values marked as placeholders until reviewed.
 
 
 
-**Done when:** the product flow, content checklist, food seed list, workout files, suggestion rules, placeholder values, and reviewer plan are documented. All required workout combinations have content coverage.
+**Phase 2 preparation is done when:** the product flow, data outline, food-name candidates, allergen keywords, suggestion rules, placeholder values, and launch-review gate are documented in `docs/PHASE2.md`.
+
+**Phase 3 preparation is done when:** the workout files cover all required combinations. Prepare these files immediately before Phase 3: every required split and level, exercises for each day, sets, reps, rest, and swaps. Use shared split structures to avoid unnecessary duplication. Save the content as TypeScript or JSON files that Phase 3 will use.
+
+- Workout split coverage: 2 days full body A/B; 3 days full body A/B/C; 4 days upper/lower; 5 days push/pull/legs plus upper/lower; 6 days push/pull/legs twice.
+- Support beginner and intermediate levels. Offer 5–6 training days only for intermediate users. Support bodyweight, dumbbell-only, and gym equipment.
 
 
 
@@ -262,6 +253,8 @@ On the server, recalculate calculator targets and default macros, then preserve 
 
 
 ## Phase 2 — Food library, preferences, and meals
+
+See `docs/PHASE2.md` for the detailed Phase 2 screen flow, food-candidate list, data behavior, nutrition handling, and suggestion rules.
 
 
 
