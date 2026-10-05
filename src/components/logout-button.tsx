@@ -3,7 +3,9 @@
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export function LogoutButton() {
+const defaultClassName = "mt-6 rounded-lg border border-zinc-300 bg-white px-4 py-3 font-semibold hover:bg-zinc-100";
+
+export function LogoutButton({ className = defaultClassName }: { className?: string }) {
   const router = useRouter();
 
   async function logOut() {
@@ -13,5 +15,5 @@ export function LogoutButton() {
     router.refresh();
   }
 
-  return <button className="mt-6 rounded-lg border border-zinc-300 bg-white px-4 py-3 font-semibold hover:bg-zinc-100" onClick={logOut} type="button">Log out</button>;
+  return <button className={className} onClick={logOut} type="button">Log out</button>;
 }

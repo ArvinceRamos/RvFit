@@ -39,6 +39,10 @@ export const calculationConfig = {
   },
   formula_branch_floors_kcal: { male: 1500, female: 1200 },
   database_target_bounds_kcal: { min: 800, max: 6000 },
+  // Placeholder per-item limit. Keep in step with meal_items_grams_max_placeholder_check in the database.
+  meal_limits: { max_item_grams: 2000 },
+  // Placeholder: how many foods to suggest for each of protein, carb, and fat.
+  suggestions: { foods_per_role: 5 },
   macros: {
     protein_grams_per_kg: 1.6,
     protein_calorie_cap_fraction: 0.35,
