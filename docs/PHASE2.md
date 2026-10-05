@@ -126,8 +126,8 @@ These are common-name search candidates, grouped by the RvFit role to assign aft
 8. Quinoa, cooked
 9. Pasta, enriched, dry
 10. Pasta, enriched, cooked
-11. Spaghetti, whole-wheat, dry
-12. Spaghetti, whole-wheat, cooked
+11. Pasta, whole-wheat, dry
+12. Pasta, whole-wheat, cooked
 13. Couscous, dry
 14. Couscous, cooked
 15. Bulgur, dry

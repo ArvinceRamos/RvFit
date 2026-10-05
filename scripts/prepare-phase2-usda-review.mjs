@@ -179,6 +179,22 @@ function proposedPreparationState(candidate) {
   return 'other';
 }
 
+const riskFlagRules = [
+  { flag: 'with skin', pattern: /\b(and|with|in) skin\b/ },
+  { flag: 'blade', pattern: /\bblade\b/ },
+  { flag: 'wild', pattern: /\bwild\b/ },
+  { flag: 'farmed', pattern: /\b(farmed|farm raised)\b/ },
+  { flag: 'bone-in', pattern: /\bbone in\b/ },
+  { flag: 'cap', pattern: /\bcap\b/ },
+  { flag: 'lean and fat', pattern: /\blean and fat\b/ },
+  { flag: 'added solution', pattern: /\badded solution\b/ },
+];
+
+function riskFlags(description) {
+  const text = normalize(description);
+  return riskFlagRules.filter(({ pattern }) => pattern.test(text)).map(({ flag }) => flag);
+}
+
 function proposedTags(candidate, description) {
   const reviewedText = `${normalize(candidate)} ${normalize(description)}`;
   return tagRules
@@ -186,15 +202,45 @@ function proposedTags(candidate, description) {
     .map((rule) => rule.tag);
 }
 
+// USDA words these differently from the common names used in the candidate list.
+const searchSynonyms = [
+  [/\bkiwi\b/g, 'kiwifruit'],
+  [/\bunsalted\b/g, 'without salt'],
+  [/\bunsweetened\b/g, 'not sweetened'],
+];
+
+function applySynonyms(candidate) {
+  return searchSynonyms.reduce((text, [pattern, replacement]) => text.replace(pattern, replacement), candidate.toLowerCase());
+}
+
+// Words that make a record a different cut or source than the plain common name.
+// A candidate that does not ask for them ranks records without them first.
+const unrequestedWordPenalties = [
+  { words: ['blade'], penalty: 1 },
+  { words: ['cap'], penalty: 1 },
+  { words: ['solution'], penalty: 1 },
+  { words: ['light'], penalty: 0.5 },
+  { words: ['remaining'], penalty: 1 },
+  { words: ['choice', 'select'], penalty: 0.5 },
+];
+const dryHeatWords = ['broiled', 'roasted', 'baked', 'grilled'];
+
 function scoreCandidate(candidate, food) {
-  const candidateText = normalize(candidate);
+  const original = candidate.toLowerCase();
+  const synonym = applySynonyms(candidate);
+  const variants = synonym === original ? [original] : [original, synonym];
+  return Math.max(...variants.map((searchText) => scoreSearchText(searchText, food)));
+}
+
+function scoreSearchText(searchText, food) {
+  const candidateText = normalize(searchText);
   const descriptionText = normalize(food.description);
   const descriptionWords = normalizedWords(food.description);
   const modifiers = new Set([
     'raw', 'cooked', 'dry', 'plain', 'prepared', 'regular', 'roasted', 'grilled', 'baked',
     'boiled', 'hard', 'light', 'canned', 'in', 'water', 'with', 'skin', 'boneless', 'fresh',
   ]);
-  const tokens = [...normalizedWords(candidate)].filter((token) => !modifiers.has(token));
+  const tokens = [...normalizedWords(searchText)].filter((token) => !modifiers.has(token));
   const matched = tokens.filter((token) => descriptionWords.has(token));
   if (tokens.length === 0 || matched.length !== tokens.length) return 0;
   const descriptionWordList = normalize(food.description)
@@ -204,7 +250,7 @@ function scoreCandidate(candidate, food) {
   const descriptionLead = descriptionWordList[0];
   const categoryLeads = new Set(['fish', 'crustacean', 'cereal', 'bean', 'nut', 'seed', 'spice', 'beverage', 'melon', 'squash', 'coriander']);
   if (!tokens.includes(descriptionLead) && !categoryLeads.has(descriptionLead)) return 0;
-  if (!tokens.every((token) => descriptionWordList.slice(0, 5).includes(token))) return 0;
+  if (!tokens.every((token) => descriptionWordList.slice(0, 7).includes(token))) return 0;
   if (candidateText.includes('raw') && !descriptionWords.has('raw')) return 0;
   if (candidateText.includes('roasted') && !descriptionWords.has('roasted')) return 0;
   if (candidateText.includes('grilled') && !descriptionWords.has('grilled')) return 0;
@@ -212,7 +258,7 @@ function scoreCandidate(candidate, food) {
   if (candidateText.includes('boiled') && !descriptionWords.has('boiled')) return 0;
   if (candidateText.includes('cooked') && !descriptionWords.has('cooked')) return 0;
   if (candidateText.includes('dry') && !descriptionWords.has('dry')) return 0;
-  const disallowedProductWords = ['juice', 'nectar', 'rind', 'peel', 'babyfood', 'cookie', 'candy', 'wedge', 'imitation', 'breaded', 'pudding'];
+  const disallowedProductWords = ['juice', 'nectar', 'rind', 'peel', 'babyfood', 'cookie', 'candy', 'wedge', 'imitation', 'breaded', 'pudding', 'coffee', 'tea'];
   if (disallowedProductWords.some((word) => descriptionWords.has(word) && !tokens.includes(word))) return 0;
   let score = matched.length;
 
@@ -227,6 +273,21 @@ function scoreCandidate(candidate, food) {
   if (candidateText.includes('cooked')) score += 0.5;
   if (candidateText.includes('dry')) score += 2;
   if (food.sourceType === 'foundation') score += 0.01;
+
+  const candidateWords = normalizedWords(searchText);
+  for (const { words, penalty } of unrequestedWordPenalties) {
+    const present = words.some((word) => descriptionWords.has(word));
+    const requested = words.some((word) => candidateWords.has(word));
+    if (present && !requested) score -= penalty;
+  }
+  // "with skin" and wild-versus-farmed records differ from the plain common name.
+  if (/\b(and|with) skin\b/.test(descriptionText) && !candidateWords.has('skin')) score -= 1;
+  if (descriptionWords.has('wild') && !descriptionText.includes('wild caught') && !candidateWords.has('wild')) score -= 1;
+  // A plain "cooked" candidate prefers a dry-heat method over braised or fried.
+  if (candidateText.includes('cooked') && dryHeatWords.some((word) => descriptionWords.has(word))) score += 0.5;
+  // "Pork loin chop" is a center-loin chop, not a blade chop.
+  if (candidateWords.has('chop') && descriptionText.includes('center loin')) score += 1;
+  if (candidateWords.has('chop') && descriptionText.includes('separable lean and fat')) score += 0.5;
   return score;
 }
 
@@ -285,7 +346,10 @@ async function loadSource(basePath, sourceType, foundationIds = null) {
   const measuresByFood = new Map();
   for (const portion of portions) {
     if (!usableIds.has(portion.fdc_id) || !Number.isFinite(Number(portion.gram_weight)) || Number(portion.gram_weight) <= 0) continue;
-    const label = [portion.amount, unitNames.get(portion.measure_unit_id), portion.modifier, portion.portion_description]
+    // Drop zero-quantity rows and recipe-yield rows; they are not usable serving measures.
+    if (!(Number(portion.amount) > 0) || /yield/i.test(`${portion.modifier} ${portion.portion_description}`)) continue;
+    const unitName = unitNames.get(portion.measure_unit_id);
+    const label = [portion.amount, unitName === 'undetermined' ? '' : unitName, portion.modifier, portion.portion_description]
       .filter(Boolean)
       .join(' ')
       .trim();
@@ -344,6 +408,7 @@ const mappings = candidates.map(({ candidate, role }) => {
     description: selected.food.description,
     preparationState: proposedPreparationState(candidate),
     tags: proposedTags(candidate, selected.food.description),
+    riskFlags: riskFlags(selected.food.description),
     nutrition,
     measures: [...new Set(source.measuresByFood.get(selected.food.fdc_id) ?? [])].slice(0, 5),
     score: selected.score,
@@ -354,7 +419,7 @@ const mappings = candidates.map(({ candidate, role }) => {
 const header = [
   'candidate', 'role', 'status', 'source_type', 'fdc_id', 'usda_description', 'preparation_state',
   'proposed_diet_tags', 'kcal_per_100g', 'protein_g_per_100g', 'carbs_g_per_100g',
-  'fat_g_per_100g', 'fiber_g_per_100g', 'usable_measures', 'match_score', 'review_note',
+  'fat_g_per_100g', 'fiber_g_per_100g', 'usable_measures', 'match_score', 'risk_flag', 'review_note',
 ];
 const csvRows = mappings.map((mapping) => [
   mapping.candidate,
@@ -372,6 +437,7 @@ const csvRows = mappings.map((mapping) => [
   round(mapping.nutrition?.fiber),
   mapping.measures?.join('; ') ?? '',
   mapping.score?.toFixed(2) ?? '',
+  mapping.riskFlags?.join('|') ?? '',
   mapping.status === 'proposed'
     ? `${mapping.curated ? 'Manually selected from the downloaded description. ' : ''}Pending user review; tags are curation proposals, not an allergen classifier.`
     : mapping.reason,
