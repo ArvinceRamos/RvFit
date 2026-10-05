@@ -2,6 +2,7 @@
 export const signedInNavItems = [
   { href: "/account", label: "Account" },
   { href: "/meals", label: "Meals" },
+  { href: "/workouts", label: "Workouts" },
   { href: "/foods", label: "Food library" },
   { href: "/preferences", label: "Preferences" },
 ] as const;

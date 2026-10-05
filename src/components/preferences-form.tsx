@@ -132,12 +132,18 @@ export function PreferencesForm({ initial, offeredTags, foods }: {
           <select className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base font-normal" onChange={(event) => setValues((current) => ({ ...current, equipment: event.target.value as Equipment }))} value={values.equipment}>
             {equipmentOptions.map((equipment) => <option key={equipment} value={equipment}>{equipmentLabels[equipment]}</option>)}
           </select>
+          {values.equipment === "bodyweight" && (
+            <span className="text-sm font-normal text-zinc-600">Needs a pull-up bar and a sturdy chair or table.</span>
+          )}
         </label>
         <label className="grid gap-1 text-sm font-semibold">
           Training days per week
           <select className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base font-normal" onChange={(event) => setValues((current) => ({ ...current, trainingDays: Number(event.target.value) }))} value={values.trainingDays}>
             {dayOptions.map((days) => <option key={days} value={days}>{days}</option>)}
           </select>
+          {values.experience === "beginner" && values.trainingDays >= 5 && (
+            <span className="text-sm font-normal text-red-800">Risk: a beginner on 5–6 days a week has little recovery time.</span>
+          )}
         </label>
       </section>
 

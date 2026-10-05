@@ -42,8 +42,8 @@ describe("availableAllergyTags", () => {
 });
 
 describe("trainingDayOptions", () => {
-  it("allows 2 to 4 days for a beginner", () => {
-    expect(trainingDayOptions("beginner")).toEqual([2, 3, 4]);
+  it("allows 2 to 6 days for a beginner", () => {
+    expect(trainingDayOptions("beginner")).toEqual([2, 3, 4, 5, 6]);
   });
 
   it("allows 2 to 6 days for an intermediate user", () => {
@@ -81,8 +81,10 @@ describe("validatePreferences", () => {
     expect(validatePreferences({ ...valid, avoidedFoodIds: ["chicken"] }, offered)).toMatchObject({ ok: false });
   });
 
-  it("rejects 5 training days for a beginner", () => {
-    expect(validatePreferences({ ...valid, trainingDays: 5 }, offered)).toMatchObject({ ok: false });
+  it("accepts 5 and 6 training days for a beginner", () => {
+    expect(validatePreferences({ ...valid, trainingDays: 5 }, offered)).toMatchObject({ ok: true });
+    expect(validatePreferences({ ...valid, trainingDays: 6 }, offered)).toMatchObject({ ok: true });
+    expect(validatePreferences({ ...valid, trainingDays: 7 }, offered)).toMatchObject({ ok: false });
   });
 
   it("accepts 6 training days for an intermediate user", () => {
