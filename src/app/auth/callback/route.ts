@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const destination = request.nextUrl.searchParams.get("next") === "reset-password"
     ? "/reset-password"
-    : "/account";
+    : "/dashboard";
   const response = NextResponse.redirect(new URL(destination, request.url));
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -31,3 +31,16 @@ Suggested model per job: Job 3 Terra high. Jobs 4–7 Terra medium. Job 8 Luna m
 - [x] P3-6: Build workout logging with validation and units, new and edit forms, and the recent workouts list (Opus 5.5 high)
 - [x] P3-7: Build optional progression prompts from the last logged session and show them on the new-workout screen (Sonnet 5.5 medium)
 - [x] P3-8: Run the Phase 3 local walkthrough, security checks, and relevant checks; update this list only for jobs whose checks pass (Sonnet 5.5 medium)
+
+# Phase 4 jobs. Mark [x] only when the job is done and checked.
+- [x] P4-1: Document Phase 4 flow, data rules, decisions, and acceptance checks in docs/PHASE4.md; add these jobs (Sonnet 5.5 medium)
+- [x] P4-2: Meal data and logic: labels Meal 1-6 with the one-per-day database rule and friendly duplicate error, slot mapping logic, delete action, labels used on a date; tests and rolled-back SQL (Sonnet 5.5 medium)
+- [x] P4-3: Rebuild the meal builder: Protein, Carbs, Fat, and Fiber slots plus Add another food, label dropdown, form clears after a new save, two-column layout on the meal pages (Opus 5.5 high)
+- [x] P4-4: Meals page: today's calories and macros summary at the top and Delete with a Yes or No confirmation (Sonnet 5.5 medium)
+- [x] P4-5: Build tested shared logic: local date and Monday-to-Sunday week, day totals and fiber rule, weight trend (7 days, 3 minimum), workouts per week, and the `progress` placeholders; add the server actions that load them (Sonnet 5.5 medium)
+- [x] P4-6: Build the Dashboard, move login and save redirects to it, update the nav, retire /account into redirects (Sonnet 5.5 medium)
+- [x] P4-7: Build the read-only Weekly plan page (Sonnet 5.5 medium)
+- [x] P4-8: Build the Progress page: weigh-in form moved from Account, trend, history, weight chart, workouts per week (Sonnet 5.5 medium)
+- [x] P4-9: Add the atomic save_profile_and_target function and build Profile and targets: edit details, recalculate, edit macros with the 5% warning, "Age last entered", new target row; test in rolled-back SQL (Opus 5.5 high)
+- [x] P4-10: Build Delete my account and data: confirmation step, server-only admin deletion of the verified caller, tests with throwaway users only (Opus 5.5 high)
+- [x] P4-11: Run the Phase 4 local walkthrough, security checks, and relevant checks; update this list only for jobs whose checks pass (Sonnet 5.5 medium)

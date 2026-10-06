@@ -1,6 +1,7 @@
 import type { Result } from "@/lib/calc/calculate";
 import { calculationConfig } from "@/lib/calc/config";
 import { formatFiber } from "@/lib/food-catalog";
+import { isMealLabel } from "@/lib/meal-slots";
 
 // Placeholder limit pending qualified review. Amounts above it are rejected, never clamped.
 export const maxMealItemGrams = calculationConfig.meal_limits.max_item_grams;
@@ -143,8 +144,10 @@ export function validateMeal(raw: unknown): Result<ValidMeal> {
 
   if (typeof input.label !== "string") return failure("Meal details are invalid.");
   const label = input.label.trim();
-  if (label === "") return failure("Give the meal a label.");
+  if (label === "") return failure("Choose a meal label.");
   if (label.length > maxMealLabelLength) return failure(`The label can be at most ${maxMealLabelLength} characters.`);
+  // New meals use Meal 1 to Meal 6. Editing keeps older free-text labels working.
+  if (mealId === null && !isMealLabel(label)) return failure("Choose a meal label from Meal 1 to Meal 6.");
 
   if (!Array.isArray(input.items)) return failure("Meal details are invalid.");
   if (input.items.length === 0) return failure("Add at least one food.");

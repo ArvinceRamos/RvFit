@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { formatCalendarDate } from "./format";
-import { formatWeight, logSlots, planForLog, validateWorkoutLog, weightUnit, type LogRules } from "./log";
+import { convertWeightText, formatWeight, logSlots, planForLog, resolveUnits, validateWorkoutLog, weightUnit, type LogRules } from "./log";
 import { swapOptions } from "./templates";
 
 const templateKey = "full-body-abc.beginner.gym";
@@ -167,5 +167,34 @@ describe("weights and dates", () => {
 
   it("formats a calendar date without shifting the day", () => {
     expect(formatCalendarDate("2026-10-06")).toBe("Oct 6, 2026");
+  });
+});
+
+describe("kg/lb switch", () => {
+  it("converts typed weights to the other unit", () => {
+    expect(convertWeightText("135", "imperial", "metric")).toBe("61.23");
+    expect(convertWeightText("61.23", "metric", "imperial")).toBe("135");
+    expect(convertWeightText("100", "metric", "imperial")).toBe("220.5");
+  });
+
+  it("does not drift when switching back and forth", () => {
+    const kg = convertWeightText("135", "imperial", "metric");
+    expect(convertWeightText(kg, "metric", "imperial")).toBe("135");
+  });
+
+  it("leaves blank, unreadable, and unchanged-unit text alone", () => {
+    expect(convertWeightText("", "metric", "imperial")).toBe("");
+    expect(convertWeightText("  ", "metric", "imperial")).toBe("  ");
+    expect(convertWeightText("abc", "metric", "imperial")).toBe("abc");
+    expect(convertWeightText("50", "metric", "metric")).toBe("50");
+  });
+
+  it("uses the chosen units, falls back to the saved ones, and rejects anything else", () => {
+    expect(resolveUnits("imperial", "metric")).toEqual({ ok: true, data: "imperial" });
+    expect(resolveUnits("metric", "imperial")).toEqual({ ok: true, data: "metric" });
+    expect(resolveUnits(undefined, "imperial")).toEqual({ ok: true, data: "imperial" });
+    expect(resolveUnits(null, "metric")).toEqual({ ok: true, data: "metric" });
+    expect(resolveUnits("kg", "metric")).toMatchObject({ ok: false });
+    expect(resolveUnits(5, "metric")).toMatchObject({ ok: false });
   });
 });

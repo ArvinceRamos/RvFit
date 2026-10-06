@@ -23,7 +23,7 @@ export default async function EditMealPage({ params }: PageProps<"/meals/[id]">)
   const { foods, suggestionContext } = await loadMealContext(supabase);
 
   return (
-    <AuthFrame showNav>
+    <AuthFrame showNav wide>
       <h1 className="text-3xl font-bold tracking-tight">Edit meal</h1>
       <MealBuilder
         foods={foods}

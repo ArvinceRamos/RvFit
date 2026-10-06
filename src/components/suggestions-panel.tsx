@@ -3,6 +3,7 @@ import { formatMeasures, stateLabels } from "@/lib/food-catalog";
 import { describeNutrition, itemNutrition } from "@/lib/meal";
 import type { BuilderFood } from "@/lib/meal-foods";
 import { allergenNotice } from "@/lib/preferences";
+import { describeRemaining } from "@/lib/remaining-format";
 import type { Remaining, RoleSuggestions, SuggestionRole } from "@/lib/suggestions";
 
 export type SuggestionsView =
@@ -17,14 +18,6 @@ const roleHeadings: Record<SuggestionRole, { title: string; macro: string }> = {
   carb: { title: "Carb foods", macro: "carbs" },
   fat: { title: "Fat foods", macro: "fat" },
 };
-
-// Negative remainders stay visible as over target.
-function describeRemaining(value: number, unit: string): string {
-  const shown = Math.abs(value).toFixed(unit === "kcal" ? 0 : 1);
-  if (value > 0) return `${shown} ${unit} left`;
-  if (value === 0) return "Target reached";
-  return `${shown} ${unit} over target`;
-}
 
 export function SuggestionsPanel({ view, date }: { view: SuggestionsView; date: string }) {
   return (
@@ -43,7 +36,7 @@ export function SuggestionsPanel({ view, date }: { view: SuggestionsView; date: 
 
       {view.state === "ready" && (
         <>
-          <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-5">
+          <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-5 lg:grid-cols-3">
             <div><dt className="text-zinc-600">Calories</dt><dd className="font-bold">{describeRemaining(view.remaining.kcal, "kcal")}</dd></div>
             <div><dt className="text-zinc-600">Protein</dt><dd className="font-bold">{describeRemaining(view.remaining.protein_g, "g")}</dd></div>
             <div><dt className="text-zinc-600">Carbs</dt><dd className="font-bold">{describeRemaining(view.remaining.carbs_g, "g")}</dd></div>

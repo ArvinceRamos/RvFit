@@ -108,3 +108,15 @@ export function validateWeighIn(fields: WeighInFields, units: PreferredUnits): R
     },
   };
 }
+
+// Weights are stored in kg. Show them in the user's units, to one decimal.
+export function formatWeightKg(weightKg: number, units: PreferredUnits): string {
+  if (units === "metric") return `${weightKg.toFixed(1)} kg`;
+  return `${(weightKg / calculationConfig.unit_conversions.pounds_to_kilograms).toFixed(1)} lb`;
+}
+
+// Body measurements are stored in cm. Show them in the user's units, to one decimal.
+export function formatLengthCm(lengthCm: number, units: PreferredUnits): string {
+  if (units === "metric") return `${lengthCm.toFixed(1)} cm`;
+  return `${(lengthCm / calculationConfig.unit_conversions.inches_to_centimeters).toFixed(1)} in`;
+}

@@ -24,7 +24,7 @@ export default function ResetPasswordPage() {
       setError(authErrorMessage(updateError.message));
       return;
     }
-    router.replace("/account");
+    router.replace("/dashboard");
     router.refresh();
   }
 

@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { AppFooter } from "@/components/app-footer";
 
-export default function Home() {
+export default async function Home({ searchParams }: PageProps<"/">) {
+  const { account } = await searchParams;
   return (
     <div className="flex min-h-screen flex-col bg-stone-50 text-zinc-900">
       <main className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center px-5 py-16">
+        {account === "deleted" && (
+          <p aria-live="polite" className="mb-8 rounded-lg border border-zinc-200 bg-white p-4 text-sm font-semibold text-zinc-800">Your account and data were deleted.</p>
+        )}
         <p className="text-sm font-semibold uppercase tracking-wide text-lime-700">RvFit</p>
         <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">Start with a number you can use.</h1>
         <p className="mt-5 max-w-lg text-lg leading-8 text-zinc-700">Choose a calorie estimate or enter your own target. We’ll help you set simple starting macros.</p>

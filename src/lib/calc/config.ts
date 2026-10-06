@@ -43,6 +43,8 @@ export const calculationConfig = {
   meal_limits: { max_item_grams: 2000 },
   // Placeholder: how many foods to suggest for each of protein, carb, and fat.
   suggestions: { foods_per_role: 5 },
+  // Placeholder progress rules pending qualified review. The trend is a plain average, not medical advice.
+  progress: { trend_window_days: 7, trend_min_weigh_ins: 3, history_weigh_ins: 20, workout_weeks: 8 },
   // Placeholder workout limits and schemes. Keep limits in step with the workout_log_sets_*_placeholder_check constraints.
   workouts: {
     max_sets_per_exercise: 10,

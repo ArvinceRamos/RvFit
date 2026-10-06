@@ -7,7 +7,7 @@ import type { PreferredUnits, WeighInFields } from "@/lib/weigh-in";
 
 const emptyFields: WeighInFields = { weight: "", waist: "", chest: "", hips: "" };
 
-export function WeighInForm({ preferredUnits }: { preferredUnits: PreferredUnits }) {
+export function WeighInForm({ preferredUnits, onSaved }: { preferredUnits: PreferredUnits; onSaved?: () => void }) {
   const router = useRouter();
   const [fields, setFields] = useState<WeighInFields>(emptyFields);
   const [message, setMessage] = useState<string>();
@@ -32,10 +32,11 @@ export function WeighInForm({ preferredUnits }: { preferredUnits: PreferredUnits
     setFields(emptyFields);
     setMessage("Weigh-in saved.");
     router.refresh();
+    onSaved?.();
   }
 
   return (
-    <section className="mt-8">
+    <section className="rounded-xl border border-zinc-200 bg-white p-5">
       <h2 className="text-xl font-bold">Add a weigh-in</h2>
       <form className="mt-4 grid gap-4" onSubmit={submit}>
         <Field label={`Weight (${weightUnit})`} name="weight" required value={fields.weight} onChange={updateField} />
@@ -60,5 +61,5 @@ function Field({ label, name, value, onChange, required = false }: {
   onChange: (name: keyof WeighInFields, value: string) => void;
   required?: boolean;
 }) {
-  return <label className="grid gap-1 text-sm font-semibold">{label}<input className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base font-normal" inputMode="decimal" name={name} onChange={(event) => onChange(name, event.target.value)} required={required} type="text" value={value} /></label>;
+  return <label className="grid min-w-0 gap-1 text-sm font-semibold">{label}<input className="w-full min-w-0 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base font-normal" inputMode="decimal" name={name} onChange={(event) => onChange(name, event.target.value)} required={required} type="text" value={value} /></label>;
 }

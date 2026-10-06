@@ -22,7 +22,7 @@ export default function LoginPage() {
       setError(authErrorMessage(signInError.message));
       return;
     }
-    router.replace("/account");
+    router.replace("/dashboard");
     router.refresh();
   }
 

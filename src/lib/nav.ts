@@ -1,10 +1,13 @@
 // The signed-in navigation. To add a page to the menu, add one line here.
 export const signedInNavItems = [
-  { href: "/account", label: "Account" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/meals", label: "Meals" },
   { href: "/workouts", label: "Workouts" },
+  { href: "/week", label: "Week" },
+  { href: "/progress", label: "Progress" },
   { href: "/foods", label: "Food library" },
   { href: "/preferences", label: "Preferences" },
+  { href: "/profile", label: "Profile" },
 ] as const;
 
 // A page is active on its own path and on any path below it, such as /meals/new under /meals.

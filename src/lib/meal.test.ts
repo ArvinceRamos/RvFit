@@ -32,7 +32,7 @@ const noFiber: NutritionPer100g = { ...chicken, fiber_g_per_100g: null };
 
 const foodId = "0b8b8f3e-6f0a-4a43-9d3e-2f6f3c1f9a11";
 const mealId = "7c1d2a90-3a4b-4c55-8e66-1a2b3c4d5e6f";
-const validMeal = { mealId: null, date: "2026-10-06", label: "Lunch", items: [{ foodId, grams: 150 }] };
+const validMeal = { mealId: null, date: "2026-10-06", label: "Meal 2", items: [{ foodId, grams: 150 }] };
 
 describe("itemNutrition", () => {
   it("scales per-100 g values by the grams", () => {
@@ -141,7 +141,7 @@ describe("validateMeal", () => {
   it("accepts a valid new meal", () => {
     expect(validateMeal(validMeal)).toEqual({
       ok: true,
-      data: { meal_id: null, meal_date: "2026-10-06", label: "Lunch", items: [{ food_id: foodId, grams: 150 }] },
+      data: { meal_id: null, meal_date: "2026-10-06", label: "Meal 2", items: [{ food_id: foodId, grams: 150 }] },
     });
   });
 
@@ -175,8 +175,21 @@ describe("validateMeal", () => {
     expect(validateMeal({ ...validMeal, label: "a".repeat(101) })).toMatchObject({ ok: false });
   });
 
-  it("accepts a 100 character label", () => {
-    expect(validateMeal({ ...validMeal, label: "a".repeat(100) }).ok).toBe(true);
+  it("accepts a 100 character label when editing an existing meal", () => {
+    expect(validateMeal({ ...validMeal, mealId, label: "a".repeat(100) }).ok).toBe(true);
+  });
+
+  it("requires Meal 1 to Meal 6 for a new meal", () => {
+    for (const label of ["Lunch", "meal 1", "Meal 7", "Meal 0", "Meal 12"]) {
+      expect(validateMeal({ ...validMeal, label })).toMatchObject({ ok: false });
+    }
+    for (const n of [1, 2, 3, 4, 5, 6]) {
+      expect(validateMeal({ ...validMeal, label: `Meal ${n}` }).ok).toBe(true);
+    }
+  });
+
+  it("lets an existing meal keep an older label", () => {
+    expect(validateMeal({ ...validMeal, mealId, label: "breakfast" })).toMatchObject({ ok: true });
   });
 
   it("rejects dates that are not real calendar dates", () => {

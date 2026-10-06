@@ -3,7 +3,7 @@
 import { isCalendarDate, isUuid } from "@/lib/meal";
 import { createClient } from "@/lib/supabase/server";
 import { getExercise } from "@/lib/workouts/exercises";
-import { validateWorkoutLog } from "@/lib/workouts/log";
+import { resolveUnits, validateWorkoutLog } from "@/lib/workouts/log";
 import { loadLogRules, loadSavedLog, savedExercisesBySlot } from "@/lib/workouts/log-context";
 import { pickLastSessions, type EarlierLog, type LastSession } from "@/lib/workouts/progression";
 import { orderSwaps, validateResetRequest, validateSwapRequest } from "@/lib/workouts/swaps";
@@ -107,7 +107,11 @@ export async function saveWorkoutLogAction(rawLog: unknown): Promise<SaveWorkout
   const rules = await loadLogRules(supabase, input.templateKey);
   if (!rules) return { ok: false, error: saveError };
 
-  const validated = validateWorkoutLog(rawLog, { ...rules, savedExercises });
+  // The form has a kg/lb switch. Without a choice, the saved profile units are used.
+  const units = resolveUnits((rawLog as { units?: unknown }).units, rules.units);
+  if (!units.ok) return units;
+
+  const validated = validateWorkoutLog(rawLog, { ...rules, units: units.data, savedExercises });
   if (!validated.ok) return validated;
   const log = validated.data;
 
