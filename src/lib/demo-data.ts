@@ -1,3 +1,5 @@
+import { checkMacroMismatch } from "@/lib/calc/calculate";
+
 // Fake demo data for the landing page App preview panels. Not real user data. See docs/PHASE5.md.
 // Every number on the landing page previews comes from this file.
 
@@ -15,6 +17,7 @@ export const DEMO_RESULT = {
 } as const;
 
 // Stage 2 panel: meal builder slots and the day's calories bar.
+// The meal starts ticked as eaten. Unticking it takes its calories off the day: eatenBefore + mealCalories = dayCalories.
 export const DEMO_MEAL = {
   label: "Meal 1",
   slots: [
@@ -24,10 +27,14 @@ export const DEMO_MEAL = {
     { slot: "Fiber", food: "Broccoli", grams: 100 },
   ],
   mealCalories: 620,
+  eatenBefore: 760,
   dayCalories: 1380,
 } as const;
 
-// Stage 3 panel: one workout day.
+// Stage 3 panel: one workout day. The first exercise has a Swap button that cycles through these exercise keys.
+// The names come from the real exercise library, so they cannot drift from the Workouts page.
+export const DEMO_SWAP_KEYS = ["goblet-squat", "dumbbell-front-squat", "bodyweight-squat"] as const;
+
 export const DEMO_WORKOUT = {
   day: "Day 1",
   name: "Full body",
@@ -57,8 +64,15 @@ export const DEMO_TODAY = {
   ],
 } as const;
 
-// Stage 4 panels: 14 days of fake weigh-ins in kg, and workouts finished in each of the last 6 weeks.
-export const DEMO_WEIGHTS_KG = [78.4, 78.1, 78.3, 77.9, 78.0, 77.7, 77.8, 77.5, 77.6, 77.2, 77.4, 77.1, 77.0, 76.9] as const;
+// Stage 4 panels: 90 days of fake weigh-ins in kg (oldest first), and workouts finished in each of the last 6 weeks.
+// A slow fixed drift with day-to-day wobble, rounded to 0.1 kg. Same numbers on every load.
+export const DEMO_WEIGHTS_KG: readonly number[] = Array.from({ length: 90 }, (_, i) => {
+  const kg = 80.2 - i * 0.035 + 0.35 * Math.sin(i * 1.7) + 0.2 * Math.sin(i * 0.45);
+  return Math.round(kg * 10) / 10;
+});
+
+// The range buttons on the stage 4 weight preview, as on the Progress page (without "All").
+export const DEMO_WEIGHT_RANGES = [7, 30, 90] as const;
 export const DEMO_WORKOUT_WEEKS = { counts: [3, 4, 3, 2, 4, 3], planned: 4 } as const;
 
 // Average of each day and the 6 days before it. The first 6 days have no average yet, so the list starts at day 7.
@@ -71,15 +85,38 @@ export function sevenDayAverages(values: readonly number[]): number[] {
   return out;
 }
 
-// Stage 5 panel: macros after an edit. Carbs were raised to 260 g, so the 5% warning shows.
+// The last `days` fake weigh-ins and their 7-day averages. Averages use the days before the window too,
+// so even the 7-day view has a full average line. offset is how many weigh-ins come before the first average.
+export function demoWeightWindow(days: number) {
+  const start = Math.max(DEMO_WEIGHTS_KG.length - days, 0);
+  const weights = DEMO_WEIGHTS_KG.slice(start);
+  const averages = sevenDayAverages(DEMO_WEIGHTS_KG).slice(Math.max(start - 6, 0));
+  return { weights, averages, offset: weights.length - averages.length };
+}
+
+// Stage 5 panel: macros after an edit. Carbs were raised to 280 g, so the 5% warning shows
+// (checkMacroMismatch decides, as on the Profile screen). The −/+ buttons move carbs by carbStep.
 // The warning text is the same as on the Profile and targets screen.
 export const DEMO_PROFILE_EDIT = {
   macros: [
     { label: "Protein", grams: 150, edited: false },
-    { label: "Carbs", grams: 260, edited: true },
+    { label: "Carbs", grams: 280, edited: true },
     { label: "Fat", grams: 70, edited: false },
     { label: "Fiber", grams: 30, edited: false },
   ],
+  carbStep: 10,
+  carbMin: 200,
+  carbMax: 320,
   warning:
     "Your macro calories differ from the target by more than 5%. This is a warning only; your calorie target has not changed.",
 } as const;
+
+// Whether the stage 5 preview shows the warning for a carbs value. Same check as the Profile screen.
+export function demoMacroWarning(carbsG: number): boolean {
+  const gramsOf = (label: string) => DEMO_PROFILE_EDIT.macros.find((m) => m.label === label)?.grams ?? 0;
+  const result = checkMacroMismatch(
+    { protein_g: gramsOf("Protein"), carbs_g: carbsG, fat_g: gramsOf("Fat"), fiber_g: gramsOf("Fiber") },
+    DEMO_TARGETS.calories,
+  );
+  return result.ok && result.data.warning;
+}

@@ -1,25 +1,24 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { DRAW_IN_RATIO, nextDrawState, type DrawState } from "@/lib/draw-state";
 
-// Lets the lines and bars inside draw in once, the first time they scroll into view (styles in globals.css).
-// Without scripts, with reduced motion, or when already in view on load, everything is simply shown.
+// Lets the lines and bars inside draw in each time they scroll into view (styles in globals.css).
+// Leaving the screen re-arms them out of sight, so they draw in again on the way back.
+// Without scripts or with reduced motion, everything is simply shown. Already in view on load: shown, not animated.
 export function DrawIn({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = ref.current;
     if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) return;
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight && rect.bottom > 0) return;
-    el.dataset.draw = "armed";
     const observer = new IntersectionObserver(
       (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return;
-        el.dataset.draw = "done";
-        observer.disconnect();
+        const entry = entries[entries.length - 1];
+        const next = nextDrawState(el.dataset.draw as DrawState, entry.isIntersecting, entry.intersectionRatio);
+        if (next && next !== el.dataset.draw) el.dataset.draw = next;
       },
-      { threshold: 0.3 },
+      { threshold: [0, DRAW_IN_RATIO] },
     );
     observer.observe(el);
     return () => observer.disconnect();

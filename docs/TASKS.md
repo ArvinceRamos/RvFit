@@ -82,3 +82,6 @@ Suggested model per job: Job 3 Terra high. Jobs 4–7 Terra medium. Job 8 Luna m
 - [x] P5-7: 3D ribbon / macro-dial with three, dynamic import, static fallback; not in signed-in bundles; cut first if the phase grows (Opus 5.5 high)
 - [x] P5-7b: Landing preview bars fill in: hero calorie and macro bars on load on desktop, stage 2 calories bar and phone hero bars on scroll; off with reduced motion (Opus 5.5 high)
 - [x] P5-8: Phase 5 walkthrough, no third-party requests, contrast, tsc, lint, tests, build with the dev server stopped (Sonnet 5.5 medium)
+- [x] P5-9: Interactive App previews: eaten tick (stage 2), Swap (stage 3), 7/30/90-day range (stage 4), carbs -/+ with the real 5% check (stage 5); glass cards with hover lift; fake data only, nothing saved (Opus 5.5 medium)
+- [x] P5-10: Sticky landing nav (RvFit, See the roadmap, Log in, Get my starting estimate) and roadmap line that fills with scroll, active stage dot glows; off with reduced motion (Sonnet 5.5 medium)
+- [x] P5-11: Landing charts replay each time they scroll into view (DrawIn re-arms off screen, hero bars included); instant reset, off with reduced motion (Opus 5.5 medium)

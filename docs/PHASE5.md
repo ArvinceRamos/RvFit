@@ -84,7 +84,7 @@ Hero and final call-to-action links:
 ## Charts and previews
 
 - **Decision (confirmed): the preview panels are built from fake demo data, not photographed screens.** For Phase 5 this replaces the plan's "screenshots from a seeded demo account". Panels are small static components with fake data and inline SVG (same approach as the Phase 4 weight chart, no chart library), each labelled **App preview**. All fake data lives in one module. A code comment on each panel names the screen it mirrors; update the panel when that screen changes.
-- Charts animate in once when scrolled into view (draw the line, fill the bars). With reduced motion they simply appear.
+- Charts animate in each time they scroll into view (draw the line, fill the bars). Leaving the screen resets them out of sight. With reduced motion they simply appear.
 - No real user data and no fake counts anywhere on the page.
 
 ## Palette and type
@@ -152,7 +152,7 @@ Source: `C:\Users\arvince\Downloads\ezgif-6002b943bc52dfaa-jpg.zip`, 73 frames o
 - **Look:** near-black page, one lime accent, glass cards with thin borders and soft rounded corners, mono micro-labels, big sans headline with one italic serif word.
 - **3D:** one glowing ribbon-of-light scene behind the page. It is sharp in the hero and soft and blurred behind content sections. Scroll moves it. This is the "3D roadmap" feel; the roadmap text and cards stay plain HTML on top.
 - **Charts to build (inline SVG, fake demo data, labelled App preview):** calorie bar for the day, macro bars (one lime, rest grey), weight line with 7-day average, workouts-per-week bars with the current week highlighted, a lime progress ring for "target hit today" style display (no outcome promises), a smooth wave line only if it adds meaning.
-- **Motion:** charts draw in once on scroll, lime block as a chapter break before the final call to action. All of it off with reduced motion. **No loader screen:** it would hide the hero actions, which must show right away.
+- **Motion:** charts draw in each time they scroll into view, lime block as a chapter break before the final call to action. All of it off with reduced motion. **No loader screen:** it would hide the hero actions, which must show right away.
 - **Skip:** status pill, app-tile row, pricing, testimonials, stat counters, "free for 14 days" copy.
 
 ## Jobs
@@ -166,3 +166,6 @@ One small job each. Mark a job done in `docs/TASKS.md` only after its checks pas
 - **P5-6: Honest-estimates card, lime block, final call to action.** Exact plan line, black text on lime, the four actions again. (Sonnet 5.5 low)
 - **P5-7: 3D ribbon / macro-dial.** Add `three`. One client component, loaded with a dynamic import after first paint, `aria-hidden`. Scroll moves the camera between stages. Static fallback on small screens, reduced motion, no WebGL and data-saver. Confirm `three` is not in signed-in page bundles. Cut this job first if the phase grows. (Opus 5.5 high)
 - **P5-8: Phase 5 walkthrough and checks.** Run the acceptance checks above: five stages and their links (signed out, and signed in with a throwaway user), phone width, reduced motion, 3D off, no third-party requests in the network tab, and contrast. Run tsc, lint and tests, then `npm run build` with the dev server stopped. (Sonnet 5.5 medium)
+- **P5-9: Interactive App previews.** One small fake-data interaction per card, copying a real feature: eaten tick (stage 2), Swap through library exercises (stage 3), 7 / 30 / 90-day range (stage 4), carbs -/+ using checkMacroMismatch for the 5% warning (stage 5). Stage 1 and the hero stay static. Glass cards with a small hover lift, none with reduced motion. Nothing is saved. (Opus 5.5 medium)
+- **P5-10: Sticky nav and timeline progress.** Sticky see-through nav with RvFit, See the roadmap, Log in and Get my starting estimate (phones: RvFit, Log in, primary). The roadmap line fills with lime as you scroll and the active stage dot glows; plain grey line without scripts, no transition with reduced motion. Keep data-preview-slot for the ribbon. (Sonnet 5.5 medium)
+- **P5-11: Charts replay.** DrawIn re-arms a chart when it leaves the screen, so lines and bars draw in each time they scroll into view, including the hero bars on desktop. Hiding is instant; only the draw-in animates. Still off with reduced motion. (Opus 5.5 medium)
