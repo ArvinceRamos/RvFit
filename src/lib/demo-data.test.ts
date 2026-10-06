@@ -6,13 +6,18 @@ import {
   DEMO_MEAL,
   DEMO_PROFILE_EDIT,
   DEMO_RESULT,
+  DEMO_SWAP_KEYS,
   DEMO_TARGETS,
   DEMO_TODAY,
   DEMO_WEIGHTS_KG,
   DEMO_WORKOUT,
+  DEMO_WEIGHT_RANGES,
   DEMO_WORKOUT_WEEKS,
+  demoMacroWarning,
+  demoWeightWindow,
   sevenDayAverages,
 } from "./demo-data";
+import { getExercise } from "./workouts/exercises";
 
 describe("barPercent", () => {
   it("rounds and stays between 0 and 100", () => {
@@ -64,5 +69,33 @@ describe("chart demo data", () => {
   it("uses the same macro-warning wording as the Profile screen", () => {
     const profile = readFileSync(join(process.cwd(), "src", "components", "profile-form.tsx"), "utf8");
     expect(profile).toContain(DEMO_PROFILE_EDIT.warning);
+  });
+});
+
+describe("interactive preview data", () => {
+  it("unticking the meal takes exactly its calories off the day", () => {
+    expect(DEMO_MEAL.eatenBefore + DEMO_MEAL.mealCalories).toBe(DEMO_MEAL.dayCalories);
+  });
+
+  it("swaps only to real exercises from the library, starting with the shown one", () => {
+    expect(getExercise(DEMO_SWAP_KEYS[0])?.name).toBe(DEMO_WORKOUT.exercises[0].name);
+    for (const key of DEMO_SWAP_KEYS) expect(getExercise(key)).toBeDefined();
+  });
+
+  it("has 90 days of weigh-ins and a full average line for every range", () => {
+    expect(DEMO_WEIGHTS_KG).toHaveLength(90);
+    for (const days of DEMO_WEIGHT_RANGES) {
+      const { weights, averages, offset } = demoWeightWindow(days);
+      expect(weights).toHaveLength(days);
+      expect(offset).toBe(days === 90 ? 6 : 0);
+      expect(averages).toHaveLength(days - offset);
+    }
+  });
+
+  it("shows the macro warning for the edited carbs and not for the plain targets", () => {
+    const edited = DEMO_PROFILE_EDIT.macros.find((m) => m.label === "Carbs")!.grams;
+    expect(demoMacroWarning(edited)).toBe(true);
+    expect(demoMacroWarning(DEMO_TARGETS.carbs)).toBe(false);
+    expect(edited % DEMO_PROFILE_EDIT.carbStep).toBe(0);
   });
 });

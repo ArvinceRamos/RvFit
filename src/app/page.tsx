@@ -3,6 +3,7 @@ import { AppFooter } from "@/components/app-footer";
 import { HeroPanel } from "@/components/app-preview";
 import { LandingActions } from "@/components/landing-actions";
 import { LandingClosing } from "@/components/landing-closing";
+import { LandingNav } from "@/components/landing-nav";
 import { RibbonBackground } from "@/components/ribbon-background";
 import { RoadmapTimeline } from "@/components/roadmap-timeline";
 import {
@@ -21,6 +22,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   return (
     <div className="landing relative isolate flex min-h-screen flex-col">
       <RibbonBackground />
+      <LandingNav />
       <main className="flex-1">
         <section className="mx-auto grid min-h-[85vh] w-full max-w-6xl items-center gap-12 px-5 py-16 lg:grid-cols-2">
           <div>
