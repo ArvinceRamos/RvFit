@@ -33,7 +33,7 @@ export default async function NewWorkoutLogPage({ searchParams }: PageProps<"/wo
       <Link className="text-sm font-semibold underline" href="/workouts">Back to Workouts</Link>
       <h1 className="mt-3 text-3xl font-bold tracking-tight">Log {templateDay?.name ?? "workout"}</h1>
       {!rules || !templateDay || !slots ? (
-        <p className="mt-6 text-sm text-red-800">This workout could not be loaded. Please try again.</p>
+        <p className="mt-6 text-sm text-danger">This workout could not be loaded. Please try again.</p>
       ) : (
         <WorkoutLogForm
           initial={{ logId: null, templateKey: key, dayKey, date: "", entries: {} }}

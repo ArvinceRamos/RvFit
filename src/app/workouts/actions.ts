@@ -10,6 +10,21 @@ import { orderSwaps, validateResetRequest, validateSwapRequest } from "@/lib/wor
 import { templateKey } from "@/lib/workouts/templates";
 
 export type SwapActionResult = { ok: true } | { ok: false; error: string };
+export type DeleteWorkoutResult = { ok: true } | { ok: false; error: string };
+
+// Deletes one of the caller's workout logs. Row-level security limits it to their own rows,
+// and the sets are removed by the cascade.
+export async function deleteWorkoutLogAction(logId: unknown): Promise<DeleteWorkoutResult> {
+  const supabase = await createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) return { ok: false, error: "You must be signed in to delete a workout." };
+  if (!isUuid(logId)) return { ok: false, error: "Workout details are invalid." };
+
+  const { data, error } = await supabase.from("workout_logs").delete().eq("id", logId).select("id");
+  if (error) return { ok: false, error: "The workout could not be deleted. Please try again." };
+  if (!data || data.length === 0) return { ok: false, error: "Workout not found." };
+  return { ok: true };
+}
 
 const signInError = "You must be signed in to change your workout.";
 

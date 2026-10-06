@@ -21,21 +21,42 @@ export function sumMealTotals(totals: readonly MealTotals[]): MealTotals {
   return totals.reduce(addTotals, mealTotals([]));
 }
 
-export type DayMeal ={ id: string; label: string; meal_date: string; totals: MealTotals };
+// from_plan: saved by the meal planner. eaten: counts toward the day's totals (planner meals start unticked).
+export type DayMeal = { id: string; label: string; meal_date: string; from_plan: boolean; eaten: boolean; totals: MealTotals };
+
+// Day totals count only meals ticked as eaten. Planned meals not yet eaten are kept apart.
+export function eatenAndPlanned(meals: readonly Pick<DayMeal, "eaten" | "totals">[]): {
+  totals: MealTotals;
+  planned: MealTotals;
+  eaten_count: number;
+  meal_count: number;
+} {
+  const eaten = meals.filter((meal) => meal.eaten);
+  return {
+    totals: sumMealTotals(eaten.map((meal) => meal.totals)),
+    planned: sumMealTotals(meals.filter((meal) => !meal.eaten).map((meal) => meal.totals)),
+    eaten_count: eaten.length,
+    meal_count: meals.length,
+  };
+}
 
 export async function loadMeals(supabase: Client, from: string, to: string): Promise<DayMeal[] | null> {
   const { data, error } = await supabase
     .from("meals")
-    .select(`id, label, meal_date, created_at, meal_items(grams, foods(${nutritionColumns}))`)
+    .select(`id, label, meal_date, from_plan, eaten, created_at, meal_items(grams, foods(${nutritionColumns}))`)
     .gte("meal_date", from)
     .lte("meal_date", to)
     .order("meal_date")
+    // Meals saved together by the planner share a created_at, so the label keeps Meal 1 to Meal 6 in order.
+    .order("label")
     .order("created_at");
   if (error || !data) return null;
   return data.map((meal) => ({
     id: meal.id as string,
     label: meal.label as string,
     meal_date: meal.meal_date as string,
+    from_plan: meal.from_plan as boolean,
+    eaten: meal.eaten as boolean,
     totals: itemRowsTotals(meal.meal_items as unknown as ItemRow[]),
   }));
 }

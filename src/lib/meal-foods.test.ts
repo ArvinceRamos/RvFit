@@ -13,6 +13,8 @@ const row: BuilderFoodRow = {
   fat_g_per_100g: 1.93,
   fiber_g_per_100g: null,
   food_measures: [{ label: "1 cup", grams: "140.00" }],
+  portion_class: "meat_fish_raw",
+  portion_unit_g: null,
 };
 
 describe("toBuilderFood", () => {
@@ -33,5 +35,10 @@ describe("toBuilderFood", () => {
 
   it("keeps a real zero fiber as 0", () => {
     expect(toBuilderFood({ ...row, fiber_g_per_100g: "0.00" }).nutrition.fiber_g_per_100g).toBe(0);
+  });
+
+  it("keeps the portion class and turns the unit into a number", () => {
+    expect(toBuilderFood(row)).toMatchObject({ portion_class: "meat_fish_raw", portion_unit_g: null });
+    expect(toBuilderFood({ ...row, portion_class: "powder", portion_unit_g: "32.00" })).toMatchObject({ portion_class: "powder", portion_unit_g: 32 });
   });
 });

@@ -43,6 +43,33 @@ export const calculationConfig = {
   meal_limits: { max_item_grams: 2000 },
   // Placeholder: how many foods to suggest for each of protein, carb, and fat.
   suggestions: { foods_per_role: 5 },
+  // Placeholder meal planner limits and portion ranges (docs/MEAL-PLANNER.md "Realistic portions").
+  meal_planner: {
+    max_days: 7,
+    meals_per_day: { min: 2, max: 6, default: 3 },
+    max_foods_per_group: 5,
+    max_foods_per_group_per_meal: 2,
+    note_tolerance_fraction: 0.1,
+    // Per meal. Unit classes count whole units of the food's portion_unit_g; powder units are per day, shake only.
+    // Keep the class list in step with foods_portion_class_check and scripts/import-phase2-catalog.mjs.
+    portions: {
+      meat_fish_cooked: { min_g: 60, max_g: 225, step_g: 5 },
+      meat_fish_raw: { min_g: 80, max_g: 300, step_g: 5 },
+      egg: { min_units: 1, max_units: 4 },
+      egg_white: { min_units: 1, max_units: 6 },
+      dairy_protein: { min_g: 100, max_g: 300, step_g: 5 },
+      plant_protein: { min_g: 80, max_g: 250, step_g: 5 },
+      powder: { min_units: 1, max_units: 2 },
+      grain_cooked: { min_g: 75, max_g: 320, step_g: 5 },
+      grain_dry: { min_g: 25, max_g: 110, step_g: 5 },
+      bread: { min_units: 1, max_units: 4 },
+      starchy_veg: { min_g: 75, max_g: 350, step_g: 5 },
+      oil: { min_g: 2, max_g: 14, step_g: 1 },
+      nut_seed: { min_g: 10, max_g: 40, step_g: 5 },
+      avocado_olive: { min_g: 30, max_g: 150, step_g: 5 },
+      dairy_fat: { min_g: 15, max_g: 60, step_g: 5 },
+    },
+  },
   // Placeholder progress rules pending qualified review. The trend is a plain average, not medical advice.
   progress: { trend_window_days: 7, trend_min_weigh_ins: 3, history_weigh_ins: 20, workout_weeks: 8 },
   // Placeholder workout limits and schemes. Keep limits in step with the workout_log_sets_*_placeholder_check constraints.
@@ -85,3 +112,4 @@ export const calculationConfig = {
 export type CalculationConfig = typeof calculationConfig;
 export type ActivityLevel = keyof typeof calculationConfig.activity_multipliers;
 export type FormulaBranch = keyof typeof calculationConfig.formula_branch_floors_kcal;
+export type PortionClass = keyof typeof calculationConfig.meal_planner.portions;

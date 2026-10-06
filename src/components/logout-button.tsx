@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-const defaultClassName = "mt-6 rounded-lg border border-zinc-300 bg-white px-4 py-3 font-semibold hover:bg-zinc-100";
+const defaultClassName = "mt-6 rounded-lg border border-edge bg-field px-4 py-3 font-semibold hover:bg-line";
 
 export function LogoutButton({ className = defaultClassName }: { className?: string }) {
   const router = useRouter();

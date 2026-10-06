@@ -28,14 +28,13 @@ export type CurrentTarget = {
 
 type MacroText = Record<keyof DefaultMacros, string>;
 
-const cardClass = "rounded-xl border border-zinc-200 bg-white p-5";
-const fieldClass = "w-full min-w-0 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base font-normal";
+const fieldClass = "field w-full min-w-0";
 const macroFields: [keyof DefaultMacros, string][] = [["protein_g", "Protein"], ["carbs_g", "Carbohydrates"], ["fat_g", "Fat"], ["fiber_g", "Fiber"]];
 const savedMessage = "New target saved.";
 const { pounds_to_kilograms: lbToKg, inches_to_centimeters: inToCm, inches_per_foot: inPerFoot } = calculationConfig.unit_conversions;
 
 function choiceClass(selected: boolean): string {
-  return `rounded-lg border px-3 py-2 text-left font-semibold ${selected ? "border-lime-600 bg-lime-100" : "border-zinc-300 bg-white"}`;
+  return `rounded-xl border px-3 py-2 text-left font-semibold ${selected ? "border-selected-edge bg-selected" : "border-edge bg-field"}`;
 }
 
 function toText(macros: DefaultMacros): MacroText {
@@ -71,7 +70,7 @@ function Field({ label, value, onChange, hint }: { label: string; value: string;
     <label className="grid min-w-0 content-start gap-1 text-sm font-semibold">
       {label}
       <input className={fieldClass} inputMode="decimal" onChange={(event) => onChange(event.target.value)} type="text" value={value} />
-      {hint && <span className="text-xs font-normal text-zinc-600">{hint}</span>}
+      {hint && <span className="text-xs font-normal text-muted">{hint}</span>}
     </label>
   );
 }
@@ -153,35 +152,35 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
   }
 
   return (
-    <div className="mt-6 grid gap-6">
-      <section className={cardClass}>
-        <h2 className="text-xl font-bold">Current target</h2>
+    <div className="mt-8 grid items-start gap-[30px] lg:grid-cols-2 lg:grid-rows-[auto_1fr]">
+      <section className="card lg:col-start-1">
+        <h2 className="text-xl font-medium">Current target</h2>
         {current ? (
           <>
-            <p className="mt-3 text-3xl font-bold tracking-tight">{current.kcal.toLocaleString("en-US")} kcal</p>
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-3 text-3xl font-medium tracking-tight">{current.kcal.toLocaleString("en-US")} kcal</p>
+            <p className="mt-1 text-sm text-muted">
               {current.source === "calculated" ? "Calculated from your details" : "Entered by you"} · saved{" "}
               {new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(current.created_at))}
             </p>
             <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {macroFields.map(([name, label]) => (
-                <div className="rounded-lg bg-zinc-50 p-3" key={name}>
-                  <dt className="text-sm text-zinc-600">{label}</dt>
+                <div className="rounded-xl border border-line bg-page p-3" key={name}>
+                  <dt className="text-sm text-muted">{label}</dt>
                   <dd className="mt-1 text-lg font-bold">{current.macros[name]} g</dd>
                 </div>
               ))}
             </dl>
-            <p className="mt-3 text-sm text-zinc-600">This is a starting estimate, not an exact number. Fiber is included in carbohydrates.</p>
+            <p className="mt-3 text-sm text-muted">This is a starting estimate, not an exact number. Fiber is included in carbohydrates.</p>
           </>
         ) : (
-          <p className="mt-3 text-sm text-zinc-700">No target saved yet.</p>
+          <p className="mt-3 text-sm text-muted">No target saved yet.</p>
         )}
-        {message && <p aria-live="polite" className="mt-3 text-sm font-semibold text-lime-800">{message}</p>}
+        {message && <p aria-live="polite" className="mt-3 text-sm font-semibold text-accent-text">{message}</p>}
       </section>
 
-      <section className={cardClass}>
-        <h2 className="text-xl font-bold">Update your target</h2>
-        <p className="mt-1 text-sm text-zinc-600">Change your details, then recalculate. Nothing is saved until you press Save.</p>
+      <section className="card lg:col-start-2 lg:row-span-2 lg:row-start-1">
+        <h2 className="text-xl font-medium">Update your target</h2>
+        <p className="mt-1 text-sm text-muted">Change your details, then recalculate. Nothing is saved until you press Save.</p>
 
         <div className="mt-5 grid gap-5">
           <fieldset>
@@ -194,11 +193,11 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
 
           <fieldset>
             <legend className="text-sm font-semibold">Units</legend>
-            <div className="mt-2 inline-flex rounded-lg border border-zinc-300 bg-white p-1">
+            <div className="mt-2 inline-flex rounded-xl border border-edge bg-field p-1">
               {(["metric", "imperial"] as const).map((option) => (
                 <button
                   aria-pressed={details.units === option}
-                  className={`rounded-md px-4 py-1.5 text-sm font-semibold ${details.units === option ? "bg-lime-400 text-zinc-950" : "text-zinc-700 hover:bg-zinc-100"}`}
+                  className={`rounded-md px-4 py-1.5 text-sm font-semibold ${details.units === option ? "bg-accent text-on-accent" : "text-muted hover:bg-line"}`}
                   key={option}
                   onClick={() => switchUnits(option)}
                   type="button"
@@ -253,9 +252,9 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
                 <legend className="text-sm font-semibold">Activity level</legend>
                 <div className="mt-2 grid gap-2">
                   {activityOptions.map((option) => (
-                    <label className="flex cursor-pointer gap-3 rounded-lg border border-zinc-300 bg-white p-3" key={option.value}>
+                    <label className="flex cursor-pointer gap-3 rounded-xl border border-edge bg-field p-3" key={option.value}>
                       <input checked={details.activity === option.value} name="activity" onChange={() => update({ activity: option.value })} type="radio" value={option.value} />
-                      <span><span className="block font-semibold">{option.title}</span><span className="block text-sm text-zinc-600">{option.detail}</span></span>
+                      <span><span className="block font-semibold">{option.title}</span><span className="block text-sm text-muted">{option.detail}</span></span>
                     </label>
                   ))}
                 </div>
@@ -267,7 +266,7 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
                   {goalOptions.map((option) => (
                     <button aria-pressed={details.goal === option.value} className={`${choiceClass(details.goal === option.value)} w-full`} key={option.value} onClick={() => update({ goal: option.value })} type="button">
                       <span className="block">{option.title}</span>
-                      <span className="mt-1 block text-sm font-normal text-zinc-600">{option.detail}</span>
+                      <span className="mt-1 block text-sm font-normal text-muted">{option.detail}</span>
                     </button>
                   ))}
                 </div>
@@ -286,33 +285,33 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
             </>
           )}
 
-          {error && <p aria-live="polite" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-          {preview && preview.key !== detailsKey && <p className="text-sm text-zinc-700">Your details changed. Recalculate to see the new target.</p>}
-          <button className="w-fit rounded-lg bg-lime-400 px-4 py-3 font-bold" onClick={recalculate} type="button">Recalculate</button>
+          {error && <p aria-live="polite" className="rounded-lg bg-danger-bg p-3 text-sm text-danger">{error}</p>}
+          {preview && preview.key !== detailsKey && <p className="text-sm text-muted">Your details changed. Recalculate to see the new target.</p>}
+          <button className="btn-primary w-fit" onClick={recalculate} type="button">Recalculate</button>
         </div>
       </section>
 
       {showPreview && (
-        <section className={cardClass} aria-live="polite">
-          <h2 className="text-xl font-bold">New target</h2>
-          <p className="mt-3 text-3xl font-bold tracking-tight">{targetKcal.toLocaleString("en-US")} kcal</p>
-          <p className="mt-1 text-sm text-zinc-600">Not saved yet. This is a starting estimate, not an exact number.</p>
-          {preview.computed.floor_explanation && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{preview.computed.floor_explanation}</p>}
-          {preview.computed.body_log && <p className="mt-3 text-sm text-zinc-700">Your new weight will be saved as a weigh-in.</p>}
+        <section aria-live="polite" className="card lg:col-start-1">
+          <h2 className="text-xl font-medium">New target</h2>
+          <p className="mt-3 text-3xl font-medium tracking-tight">{targetKcal.toLocaleString("en-US")} kcal</p>
+          <p className="mt-1 text-sm text-muted">Not saved yet. This is a starting estimate, not an exact number.</p>
+          {preview.computed.floor_explanation && <p className="mt-3 rounded-lg bg-warn-bg p-3 text-sm text-warn">{preview.computed.floor_explanation}</p>}
+          {preview.computed.body_log && <p className="mt-3 text-sm text-muted">Your new weight will be saved as a weigh-in.</p>}
 
           <h3 className="mt-5 font-bold">Daily macros</h3>
-          <p className="mt-1 text-sm text-zinc-600">Edit grams if needed. Your calorie target stays at {targetKcal.toLocaleString("en-US")} kcal.</p>
+          <p className="mt-1 text-sm text-muted">Edit grams if needed. Your calorie target stays at {targetKcal.toLocaleString("en-US")} kcal.</p>
           <div className="mt-3 grid grid-cols-2 items-end gap-3 sm:grid-cols-4">
             {macroFields.map(([name, label]) => (
               <Field key={name} label={`${label} (g)`} onChange={(value) => setMacros((text) => (text ? { ...text, [name]: value } : text))} value={macros[name]} />
             ))}
           </div>
-          {macroError && <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">{macroError}</p>}
+          {macroError && <p className="mt-3 rounded-lg bg-danger-bg p-3 text-sm text-danger">{macroError}</p>}
           {mismatch?.ok && mismatch.data.warning && (
-            <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Your macro calories differ from the target by more than 5%. This is a warning only; your calorie target has not changed.</p>
+            <p className="mt-3 rounded-lg bg-warn-bg p-3 text-sm text-warn">Your macro calories differ from the target by more than 5%. This is a warning only; your calorie target has not changed.</p>
           )}
-          <p className="mt-3 text-sm text-zinc-600">Fiber is included in carbohydrates.</p>
-          <button className="mt-4 w-fit rounded-lg bg-lime-400 px-4 py-3 font-bold disabled:cursor-not-allowed disabled:opacity-60" disabled={saving || Boolean(macroError)} onClick={save} type="button">
+          <p className="mt-3 text-sm text-muted">Fiber is included in carbohydrates.</p>
+          <button className="mt-4 btn-primary w-fit disabled:cursor-not-allowed disabled:opacity-60" disabled={saving || Boolean(macroError)} onClick={save} type="button">
             {saving ? "Saving…" : "Save new target"}
           </button>
         </section>

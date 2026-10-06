@@ -3,12 +3,12 @@
 import { calculationConfig } from "@/lib/calc/config";
 import { isCalendarDate, type MealTotals } from "@/lib/meal";
 import {
+  eatenAndPlanned,
   loadMeals,
   loadSavedTarget,
   loadUnits,
   loadWeighInsSince,
   loadWorkouts,
-  sumMealTotals,
   type DayMeal,
   type LoggedWorkout,
   type SavedTarget,
@@ -22,6 +22,8 @@ export type DashboardResult =
       ok: true;
       target: SavedTarget | null;
       totals: MealTotals;
+      // Planner meals saved for today but not ticked as eaten yet.
+      planned_kcal: number;
       meals: DayMeal[];
       workouts: LoggedWorkout[];
       trend: WeightTrend;
@@ -52,7 +54,9 @@ export async function loadDashboardAction(today: unknown): Promise<DashboardResu
   return {
     ok: true,
     target,
-    totals: sumMealTotals(meals.map((meal) => meal.totals)),
+    // Only meals ticked as eaten count. Every meal of the day is still listed.
+    totals: eatenAndPlanned(meals).totals,
+    planned_kcal: eatenAndPlanned(meals).planned.kcal,
     meals,
     workouts,
     trend: weightTrend(weighIns, now),

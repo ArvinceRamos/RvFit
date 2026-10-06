@@ -19,17 +19,18 @@ const number = (value: number) => Math.round(value).toLocaleString("en-US");
 // A thin bar. It is decoration only: the numbers beside it say the same thing.
 export function Bar({ percent, over }: { percent: number; over: boolean }) {
   return (
-    <div aria-hidden className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-200">
-      <div className={`h-full rounded-full ${over ? "bg-amber-500" : "bg-lime-500"}`} style={{ width: `${percent}%` }} />
+    <div aria-hidden className="mt-2 h-2 overflow-hidden rounded-full bg-track">
+      <div className={`h-full rounded-full ${over ? "bg-warn" : "bg-accent"}`} style={{ width: `${percent}%` }} />
     </div>
   );
 }
 
 // Eaten, target, and left for one day. With no saved target it links to set one.
-export function DayTotals({ target, totals }: { target: DailyTargets | null; totals: MealTotals }) {
+// plannedKcal: planner meals saved for the day but not ticked as eaten yet. They are not in the totals.
+export function DayTotals({ target, totals, plannedKcal = 0 }: { target: DailyTargets | null; totals: MealTotals; plannedKcal?: number }) {
   if (!target) {
     return (
-      <p className="mt-3 text-sm text-zinc-700">
+      <p className="mt-3 text-sm text-muted">
         Totals need a saved calorie target. <Link className="font-semibold underline" href="/start">Set up a target</Link>, then save it to your account.
       </p>
     );
@@ -50,27 +51,28 @@ export function DayTotals({ target, totals }: { target: DailyTargets | null; tot
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <p>
             <span className="text-3xl font-bold tracking-tight">{number(totals.kcal)}</span>
-            <span className="ml-2 text-base text-zinc-600">of {number(target.kcal)} kcal</span>
+            <span className="ml-2 text-base text-muted">of {number(target.kcal)} kcal</span>
           </p>
-          <p className={`text-base font-semibold ${caloriesOver ? "text-amber-700" : "text-zinc-900"}`}>
+          <p className={`text-base font-semibold ${caloriesOver ? "text-warn" : "text-ink"}`}>
             {describeRemaining(left.kcal, "kcal")}
           </p>
         </div>
         <Bar over={caloriesOver} percent={progressPercent(totals.kcal, target.kcal)} />
+        {plannedKcal > 0 && <p className="mt-2 text-sm text-muted">+{number(plannedKcal)} kcal planned, not ticked as eaten yet.</p>}
       </div>
 
       <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {tiles.map((tile) => {
           const over = tile.left !== null && tile.left < 0;
           return (
-            <div className="rounded-lg bg-zinc-50 p-3" key={tile.name}>
-              <dt className="text-sm text-zinc-600">{tile.name}</dt>
+            <div className="rounded-lg border border-line bg-page p-3" key={tile.name}>
+              <dt className="text-sm text-muted">{tile.name}</dt>
               <dd className={`mt-1 font-bold ${tile.eaten === null ? "text-base" : "text-lg"}`}>{tile.eaten === null ? "Incomplete" : `${tile.eaten.toFixed(1)} g`}</dd>
-              <dd className="text-sm text-zinc-600">of {tile.goal} g</dd>
+              <dd className="text-sm text-muted">of {tile.goal} g</dd>
               {tile.eaten !== null && (
                 <>
                   <dd><Bar over={over} percent={progressPercent(tile.eaten, tile.goal)} /></dd>
-                  <dd className={`mt-2 text-sm font-semibold ${over ? "text-amber-700" : "text-zinc-800"}`}>
+                  <dd className={`mt-2 text-sm font-semibold ${over ? "text-warn" : "text-ink"}`}>
                     {describeRemaining(tile.left ?? 0, "g")}
                   </dd>
                 </>
@@ -79,7 +81,7 @@ export function DayTotals({ target, totals }: { target: DailyTargets | null; tot
           );
         })}
       </dl>
-      {totals.fiber_incomplete && <p className="mt-3 text-sm text-zinc-700">Some foods have no fiber listed, so fiber is not totalled.</p>}
+      {totals.fiber_incomplete && <p className="mt-3 text-sm text-muted">Some foods have no fiber listed, so fiber is not totalled.</p>}
     </>
   );
 }
@@ -101,12 +103,12 @@ export function TodaySummary({ target, refreshKey }: { target: DailyTargets | nu
   }, [target, refreshKey]);
 
   return (
-    <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-5">
-      <h2 className="text-xl font-bold">Today</h2>
+    <section className="card mt-6">
+      <h2 className="text-xl font-medium">Today</h2>
       {!target && <DayTotals target={null} totals={emptyTotals} />}
-      {target && !state && <p className="mt-3 text-sm text-zinc-700">Loading today&apos;s totals…</p>}
-      {target && state && !state.result.ok && <p className="mt-3 text-sm text-red-800">Today&apos;s totals are not available right now. Please try again.</p>}
-      {target && state?.result.ok && <DayTotals target={target} totals={state.result.totals} />}
+      {target && !state && <p className="mt-3 text-sm text-muted">Loading today&apos;s totals…</p>}
+      {target && state && !state.result.ok && <p className="mt-3 text-sm text-danger">Today&apos;s totals are not available right now. Please try again.</p>}
+      {target && state?.result.ok && <DayTotals plannedKcal={state.result.planned.kcal} target={target} totals={state.result.totals} />}
     </section>
   );
 }

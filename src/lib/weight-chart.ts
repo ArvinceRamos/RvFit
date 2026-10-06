@@ -40,3 +40,30 @@ export function chartLayout(points: readonly ChartPoint[], box: Box): ChartLayou
     })),
   };
 }
+
+export const chartRanges = [
+  { key: "7", label: "7 days", days: 7 },
+  { key: "30", label: "30 days", days: 30 },
+  { key: "90", label: "90 days", days: 90 },
+  { key: "all", label: "All", days: null },
+] as const;
+
+export type ChartRangeKey = (typeof chartRanges)[number]["key"];
+
+// Keeps the points from the last `days` days. null keeps every point. There is no upper limit, so a weigh-in
+// saved after the page opened still shows.
+export function filterByRange(points: readonly ChartPoint[], days: number | null, now: number): ChartPoint[] {
+  if (days === null) return [...points];
+  const since = now - days * 24 * 60 * 60 * 1000;
+  return points.filter((point) => point.time >= since);
+}
+
+// Latest weight minus the earliest weight in the last `days` days, by time. null with fewer than two points.
+// Plain arithmetic only: it says what changed, not whether the change is good.
+export function weightChange(points: readonly ChartPoint[], days: number, now: number): number | null {
+  const inWindow = filterByRange(points, days, now)
+    .filter((point) => Number.isFinite(point.time) && Number.isFinite(point.value))
+    .sort((a, b) => a.time - b.time);
+  if (inWindow.length < 2) return null;
+  return inWindow[inWindow.length - 1].value - inWindow[0].value;
+}

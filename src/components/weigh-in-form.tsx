@@ -36,17 +36,17 @@ export function WeighInForm({ preferredUnits, onSaved }: { preferredUnits: Prefe
   }
 
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-5">
-      <h2 className="text-xl font-bold">Add a weigh-in</h2>
+    <section className="card h-full">
+      <h2 className="text-xl font-medium">Add a weigh-in</h2>
       <form className="mt-4 grid gap-4" onSubmit={submit}>
         <Field label={`Weight (${weightUnit})`} name="weight" required value={fields.weight} onChange={updateField} />
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-3">
           <Field label={`Waist (${measurementUnit})`} name="waist" value={fields.waist} onChange={updateField} />
           <Field label={`Chest (${measurementUnit})`} name="chest" value={fields.chest} onChange={updateField} />
           <Field label={`Hips (${measurementUnit})`} name="hips" value={fields.hips} onChange={updateField} />
         </div>
-        {message && <p aria-live="polite" className={message === "Weigh-in saved." ? "text-sm text-zinc-700" : "text-sm text-red-800"}>{message}</p>}
-        <button className="w-fit rounded-lg bg-lime-400 px-4 py-3 font-bold disabled:cursor-not-allowed disabled:opacity-60" disabled={saving} type="submit">
+        {message && <p aria-live="polite" className={message === "Weigh-in saved." ? "text-sm text-muted" : "text-sm text-danger"}>{message}</p>}
+        <button className="btn-primary w-fit disabled:cursor-not-allowed disabled:opacity-60" disabled={saving} type="submit">
           {saving ? "Saving…" : "Save weigh-in"}
         </button>
       </form>
@@ -61,5 +61,5 @@ function Field({ label, name, value, onChange, required = false }: {
   onChange: (name: keyof WeighInFields, value: string) => void;
   required?: boolean;
 }) {
-  return <label className="grid min-w-0 gap-1 text-sm font-semibold">{label}<input className="w-full min-w-0 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base font-normal" inputMode="decimal" name={name} onChange={(event) => onChange(name, event.target.value)} required={required} type="text" value={value} /></label>;
+  return <label className="grid min-w-0 gap-1 text-sm font-semibold">{label}<input className="field w-full min-w-0" inputMode="decimal" name={name} onChange={(event) => onChange(name, event.target.value)} required={required} type="text" value={value} /></label>;
 }

@@ -65,7 +65,7 @@ export function SwapControl({ templateKey, slotKey, choices, isSwapped }: {
           </button>
         )}
       </div>
-      {error && <p aria-live="polite" className="text-red-800">{error}</p>}
+      {error && <p aria-live="polite" className="text-danger">{error}</p>}
     </div>
   );
 }

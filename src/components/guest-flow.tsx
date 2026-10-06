@@ -57,8 +57,8 @@ function useGuestDraft() {
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-stone-50 text-zinc-900">
-      <header className="border-b border-zinc-200 bg-white px-5 py-4">
+    <div className="min-h-screen text-ink">
+      <header className="border-b border-line bg-card px-5 py-4">
         <Link className="mx-auto block max-w-xl text-lg font-bold tracking-tight" href="/">
           RvFit
         </Link>
@@ -71,7 +71,7 @@ function Frame({ children }: { children: React.ReactNode }) {
 
 function ErrorMessage({ message }: { message?: string }) {
   if (!message) return null;
-  return <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{message}</p>;
+  return <p className="mt-4 rounded-lg bg-danger-bg p-3 text-sm text-danger">{message}</p>;
 }
 
 function NumberField({
@@ -89,7 +89,7 @@ function NumberField({
     <label className="block text-sm font-semibold">
       {label}
       <input
-        className="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base outline-none ring-lime-500 focus:ring-2"
+        className="mt-2 w-full rounded-lg border border-edge bg-field px-3 py-2 text-base outline-none ring-accent focus:ring-2"
         inputMode="decimal"
         min="0"
         onChange={(event) => onChange(event.target.value)}
@@ -114,15 +114,15 @@ function AdultGate() {
 
   return (
     <Frame>
-      <p className="text-sm font-semibold uppercase tracking-wide text-lime-700">Start setup</p>
+      <p className="text-sm font-semibold uppercase tracking-wide text-accent-text">Start setup</p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight">Choose how to set your target</h1>
-      <p className="mt-3 leading-7 text-zinc-700">
+      <p className="mt-3 leading-7 text-muted">
         You can start with an estimate or enter a calorie target you already use.
       </p>
-      <label className="mt-8 flex gap-3 rounded-xl border border-zinc-300 bg-white p-4 text-sm font-semibold">
+      <label className="mt-8 flex gap-3 rounded-xl border border-edge bg-field p-4 text-sm font-semibold">
         <input
           checked={confirmed}
-          className="mt-0.5 size-5 accent-lime-600"
+          className="mt-0.5 size-5 accent-accent"
           onChange={(event) => setAdultConfirmed(event.target.checked)}
           type="checkbox"
         />
@@ -131,27 +131,27 @@ function AdultGate() {
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <Link
           aria-disabled={!confirmed}
-          className={`rounded-lg px-4 py-3 text-center font-semibold ${confirmed ? "bg-lime-400 text-zinc-950 hover:bg-lime-300" : "pointer-events-none bg-zinc-200 text-zinc-500"}`}
+          className={`rounded-lg px-4 py-3 text-center font-semibold ${confirmed ? "bg-accent text-on-accent hover:bg-accent-soft" : "pointer-events-none bg-track text-muted"}`}
           href="/calculate"
         >
           Calculate my estimate
         </Link>
         <Link
           aria-disabled={!confirmed}
-          className={`rounded-lg border px-4 py-3 text-center font-semibold ${confirmed ? "border-zinc-300 bg-white hover:bg-zinc-100" : "pointer-events-none border-zinc-200 bg-zinc-100 text-zinc-500"}`}
+          className={`rounded-lg border px-4 py-3 text-center font-semibold ${confirmed ? "border-edge bg-field hover:bg-line" : "pointer-events-none border-line bg-line text-muted"}`}
           href="/manual"
         >
           Enter my own target
         </Link>
       </div>
-      {!confirmed && <p className="mt-3 text-sm text-zinc-600">Confirm your age to continue.</p>}
+      {!confirmed && <p className="mt-3 text-sm text-muted">Confirm your age to continue.</p>}
     </Frame>
   );
 }
 
 function Calculator() {
   const draft = useGuestDraft();
-  if (!draft) return <Frame><p className="text-zinc-700">Loading your draft…</p></Frame>;
+  if (!draft) return <Frame><p className="text-muted">Loading your draft…</p></Frame>;
   return <CalculatorForm draft={draft} key={draft.guest_draft_id} />;
 }
 
@@ -249,16 +249,16 @@ function CalculatorForm({ draft }: { draft: GuestDraft }) {
 
   return (
     <Frame>
-      <Link className="text-sm font-semibold text-zinc-700 underline" href="/start">← Back</Link>
+      <Link className="text-sm font-semibold text-muted underline" href="/start">← Back</Link>
       <h1 className="mt-5 text-3xl font-bold tracking-tight">Calculate my estimate</h1>
-      <p className="mt-2 text-zinc-700">Use your current details for a starting estimate.</p>
+      <p className="mt-2 text-muted">Use your current details for a starting estimate.</p>
       <form className="mt-8 space-y-6" onSubmit={submit}>
         <NumberField label="Age" onChange={setAge} value={age} />
         <fieldset>
           <legend className="text-sm font-semibold">Units</legend>
-          <div className="mt-2 flex rounded-lg bg-zinc-200 p-1 text-sm font-semibold">
+          <div className="mt-2 flex rounded-lg bg-track p-1 text-sm font-semibold">
             {(["metric", "imperial"] as Units[]).map((option) => (
-              <button className={`flex-1 rounded-md px-3 py-2 capitalize ${units === option ? "bg-white shadow-sm" : "text-zinc-600"}`} key={option} onClick={() => setUnits(option)} type="button">{option}</button>
+              <button className={`flex-1 rounded-md px-3 py-2 capitalize ${units === option ? "bg-card shadow-sm" : "text-muted"}`} key={option} onClick={() => setUnits(option)} type="button">{option}</button>
             ))}
           </div>
         </fieldset>
@@ -267,24 +267,24 @@ function CalculatorForm({ draft }: { draft: GuestDraft }) {
         <fieldset>
           <legend className="text-sm font-semibold">Sex (used in the calorie formula): Male / Female</legend>
           <div className="mt-2 grid grid-cols-2 gap-3">
-            {(["male", "female"] as FormulaBranch[]).map((option) => <button className={`rounded-lg border px-3 py-3 font-semibold capitalize ${sex === option ? "border-lime-600 bg-lime-100" : "border-zinc-300 bg-white"}`} key={option} onClick={() => setSex(option)} type="button">{option}</button>)}
+            {(["male", "female"] as FormulaBranch[]).map((option) => <button className={`rounded-lg border px-3 py-3 font-semibold capitalize ${sex === option ? "border-selected-edge bg-selected" : "border-edge bg-field"}`} key={option} onClick={() => setSex(option)} type="button">{option}</button>)}
           </div>
         </fieldset>
         <fieldset>
           <legend className="text-sm font-semibold">Activity level</legend>
           <div className="mt-2 space-y-2">
-            {activityOptions.map((option) => <label className="flex cursor-pointer gap-3 rounded-lg border border-zinc-300 bg-white p-3" key={option.value}><input checked={activity === option.value} name="activity" onChange={() => setActivity(option.value)} type="radio" value={option.value} /><span><span className="block font-semibold">{option.title}</span><span className="block text-sm text-zinc-600">{option.detail}</span></span></label>)}
+            {activityOptions.map((option) => <label className="flex cursor-pointer gap-3 rounded-lg border border-edge bg-field p-3" key={option.value}><input checked={activity === option.value} name="activity" onChange={() => setActivity(option.value)} type="radio" value={option.value} /><span><span className="block font-semibold">{option.title}</span><span className="block text-sm text-muted">{option.detail}</span></span></label>)}
           </div>
         </fieldset>
         <fieldset>
           <legend className="text-sm font-semibold">Goal</legend>
           <div className="mt-2 space-y-2">
-            {goalOptions.map((option) => <button className={`w-full rounded-lg border p-3 text-left ${goal === option.value ? "border-lime-600 bg-lime-100" : "border-zinc-300 bg-white"}`} key={option.value} onClick={() => setGoal(option.value)} type="button"><span className="block font-semibold">{option.title}</span><span className="mt-1 block text-sm text-zinc-600">{option.detail}</span></button>)}
+            {goalOptions.map((option) => <button className={`w-full rounded-lg border p-3 text-left ${goal === option.value ? "border-selected-edge bg-selected" : "border-edge bg-field"}`} key={option.value} onClick={() => setGoal(option.value)} type="button"><span className="block font-semibold">{option.title}</span><span className="mt-1 block text-sm text-muted">{option.detail}</span></button>)}
           </div>
         </fieldset>
-        {goal !== "maintain" && <fieldset><legend className="text-sm font-semibold">Pace</legend><div className="mt-2 grid grid-cols-2 gap-2">{(["gradual", "steady"] as PaceInput[]).map((option) => <button className={`rounded-lg border px-3 py-2 font-semibold capitalize ${pace === option ? "border-lime-600 bg-lime-100" : "border-zinc-300 bg-white"}`} key={option} onClick={() => setPace(option)} type="button">{option}</button>)}</div></fieldset>}
+        {goal !== "maintain" && <fieldset><legend className="text-sm font-semibold">Pace</legend><div className="mt-2 grid grid-cols-2 gap-2">{(["gradual", "steady"] as PaceInput[]).map((option) => <button className={`rounded-lg border px-3 py-2 font-semibold capitalize ${pace === option ? "border-selected-edge bg-selected" : "border-edge bg-field"}`} key={option} onClick={() => setPace(option)} type="button">{option}</button>)}</div></fieldset>}
         <ErrorMessage message={error} />
-        <button className="w-full rounded-lg bg-lime-400 px-4 py-3 font-bold text-zinc-950 hover:bg-lime-300" type="submit">See my estimate</button>
+        <button className="w-full rounded-lg bg-accent px-4 py-3 font-bold text-on-accent text-on-accent hover:bg-accent-soft" type="submit">See my estimate</button>
       </form>
     </Frame>
   );
@@ -292,7 +292,7 @@ function CalculatorForm({ draft }: { draft: GuestDraft }) {
 
 function ManualTarget() {
   const draft = useGuestDraft();
-  if (!draft) return <Frame><p className="text-zinc-700">Loading your draft…</p></Frame>;
+  if (!draft) return <Frame><p className="text-muted">Loading your draft…</p></Frame>;
   return <ManualTargetForm draft={draft} key={draft.guest_draft_id} />;
 }
 
@@ -334,7 +334,7 @@ function ManualTargetForm({ draft }: { draft: GuestDraft }) {
     router.push("/results");
   }
 
-  return <Frame><Link className="text-sm font-semibold text-zinc-700 underline" href="/start">← Back</Link><h1 className="mt-5 text-3xl font-bold tracking-tight">Enter my own target</h1><p className="mt-2 text-zinc-700">We will use your current weight to set starting macros. Sex is not needed for this path.</p><form className="mt-8 space-y-6" onSubmit={submit}><NumberField label="Calorie target (kcal)" onChange={setTargetKcal} value={targetKcal} /><fieldset><legend className="text-sm font-semibold">Units</legend><div className="mt-2 flex rounded-lg bg-zinc-200 p-1 text-sm font-semibold">{(["metric", "imperial"] as Units[]).map((option) => <button className={`flex-1 rounded-md px-3 py-2 capitalize ${units === option ? "bg-white shadow-sm" : "text-zinc-600"}`} key={option} onClick={() => setUnits(option)} type="button">{option}</button>)}</div></fieldset><NumberField label={`Current weight (${units === "metric" ? "kg" : "lb"})`} onChange={setWeight} step="0.1" value={weight} /><ErrorMessage message={error} /><button className="w-full rounded-lg bg-lime-400 px-4 py-3 font-bold text-zinc-950 hover:bg-lime-300" type="submit">See my target</button></form></Frame>;
+  return <Frame><Link className="text-sm font-semibold text-muted underline" href="/start">← Back</Link><h1 className="mt-5 text-3xl font-bold tracking-tight">Enter my own target</h1><p className="mt-2 text-muted">We will use your current weight to set starting macros. Sex is not needed for this path.</p><form className="mt-8 space-y-6" onSubmit={submit}><NumberField label="Calorie target (kcal)" onChange={setTargetKcal} value={targetKcal} /><fieldset><legend className="text-sm font-semibold">Units</legend><div className="mt-2 flex rounded-lg bg-track p-1 text-sm font-semibold">{(["metric", "imperial"] as Units[]).map((option) => <button className={`flex-1 rounded-md px-3 py-2 capitalize ${units === option ? "bg-card shadow-sm" : "text-muted"}`} key={option} onClick={() => setUnits(option)} type="button">{option}</button>)}</div></fieldset><NumberField label={`Current weight (${units === "metric" ? "kg" : "lb"})`} onChange={setWeight} step="0.1" value={weight} /><ErrorMessage message={error} /><button className="w-full rounded-lg bg-accent px-4 py-3 font-bold text-on-accent text-on-accent hover:bg-accent-soft" type="submit">See my target</button></form></Frame>;
 }
 
 function Results() {
@@ -354,9 +354,9 @@ function Results() {
     saveDraft((current) => current.target ? { ...current, target: { ...current.target, macros: validation.data } } : current);
   }
 
-  if (!draft?.target || !displayedMacros) return <Frame><h1 className="text-3xl font-bold">No target yet</h1><p className="mt-3 text-zinc-700">Start by choosing a target method.</p><Link className="mt-6 inline-block rounded-lg bg-lime-400 px-4 py-3 font-bold" href="/start">Start setup</Link></Frame>;
+  if (!draft?.target || !displayedMacros) return <Frame><h1 className="text-3xl font-bold">No target yet</h1><p className="mt-3 text-muted">Start by choosing a target method.</p><Link className="mt-6 inline-block rounded-lg bg-accent px-4 py-3 font-bold text-on-accent" href="/start">Start setup</Link></Frame>;
   const mismatch = checkMacroMismatch(displayedMacros, draft.target.target_kcal);
-  return <Frame><Link className="text-sm font-semibold text-zinc-700 underline" href="/start">Start over</Link><p className="mt-5 text-sm font-semibold uppercase tracking-wide text-lime-700">Your starting estimate</p><h1 className="mt-2 text-4xl font-bold tracking-tight">{draft.target.target_kcal.toLocaleString()} kcal</h1><p className="mt-3 leading-7 text-zinc-700">This is a starting estimate, not an exact number. Compare it with your weight trend over time, then decide whether to edit your target.</p>{draft.target.floor_explanation && <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{draft.target.floor_explanation}</p>}<section className="mt-8"><h2 className="text-xl font-bold">Daily macros</h2><p className="mt-1 text-sm text-zinc-600">Edit grams if needed. Your calorie target stays at {draft.target.target_kcal.toLocaleString()} kcal.</p><div className="mt-4 grid gap-4 sm:grid-cols-2">{([['protein_g','Protein'],['carbs_g','Carbohydrates'],['fat_g','Fat'],['fiber_g','Fiber']] as [keyof MacroEdit,string][]).map(([name,label]) => <NumberField key={name} label={`${label} (g)`} onChange={(value) => editMacro(name,value)} value={displayedMacros[name].toString()} />)}</div><ErrorMessage message={error} />{mismatch.ok && mismatch.data.warning && <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Your macro calories differ from the target by more than 5%. This is a warning only; your calorie target has not changed.</p>}</section><nav className="mt-8 flex gap-4 text-sm font-semibold"><Link className="text-zinc-700 underline" href="/signup">Create an account to save this</Link><Link className="text-zinc-700 underline" href="/login">Log in</Link></nav></Frame>;
+  return <Frame><Link className="text-sm font-semibold text-muted underline" href="/start">Start over</Link><p className="mt-5 text-sm font-semibold uppercase tracking-wide text-accent-text">Your starting estimate</p><h1 className="mt-2 text-4xl font-bold tracking-tight">{draft.target.target_kcal.toLocaleString()} kcal</h1><p className="mt-3 leading-7 text-muted">This is a starting estimate, not an exact number. Compare it with your weight trend over time, then decide whether to edit your target.</p>{draft.target.floor_explanation && <p className="mt-4 rounded-lg bg-warn-bg p-3 text-sm text-warn">{draft.target.floor_explanation}</p>}<section className="mt-8"><h2 className="text-xl font-bold">Daily macros</h2><p className="mt-1 text-sm text-muted">Edit grams if needed. Your calorie target stays at {draft.target.target_kcal.toLocaleString()} kcal.</p><div className="mt-4 grid gap-4 sm:grid-cols-2">{([['protein_g','Protein'],['carbs_g','Carbohydrates'],['fat_g','Fat'],['fiber_g','Fiber']] as [keyof MacroEdit,string][]).map(([name,label]) => <NumberField key={name} label={`${label} (g)`} onChange={(value) => editMacro(name,value)} value={displayedMacros[name].toString()} />)}</div><ErrorMessage message={error} />{mismatch.ok && mismatch.data.warning && <p className="mt-4 rounded-lg bg-warn-bg p-3 text-sm text-warn">Your macro calories differ from the target by more than 5%. This is a warning only; your calorie target has not changed.</p>}</section><nav className="mt-8 flex gap-4 text-sm font-semibold"><Link className="text-muted underline" href="/signup">Create an account to save this</Link><Link className="text-muted underline" href="/login">Log in</Link></nav></Frame>;
 }
 
 export function GuestFlow({ screen }: { screen: Screen }) {

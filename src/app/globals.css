@@ -1,11 +1,142 @@
 @import "tailwindcss";
 
+/*
+  Colour tokens. See docs/UI-REFRESH.md.
+  Dark is the default. Light applies when <html data-theme="light"> (set by the script in layout.tsx).
+*/
+:root {
+  --page: #111413;
+  --card: #1c1c1c;
+  --ink: #fef9f5;
+  --muted: #a3a3a3;
+  --line: rgb(254 249 245 / 0.1);
+  --track: #333333;
+  --accent: #affa00;
+  --accent-soft: #cfed89;
+  --accent-text: #affa00;
+  --on-accent: #000000;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --field: #0d0d0d;
+  --edge: rgb(254 249 245 / 0.4);
+  --selected: rgb(175 250 0 / 0.12);
+  --selected-edge: #affa00;
+  --warn-bg: rgb(251 191 36 / 0.12);
+  --danger-bg: rgb(248 113 113 / 0.12);
+  --danger-edge: rgb(248 113 113 / 0.4);
+  --danger-fill: #f87171;
+  --on-danger: #000000;
+  --btn2-bg: rgb(0 0 0 / 0.3);
+  --btn2-edge: rgb(175 250 0 / 0.3);
+  --btn2-edge-hover: #affa00;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --page: #fef9f5;
+  --card: #ffffff;
+  --ink: #111111;
+  --muted: #52525b;
+  --line: rgb(0 0 0 / 0.1);
+  --track: #e4e4e7;
+  --accent-text: #3f6212;
+  --warn: #92400e;
+  --danger: #b91c1c;
+  --field: #ffffff;
+  --edge: rgb(0 0 0 / 0.5);
+  --selected: rgb(175 250 0 / 0.25);
+  --selected-edge: #4d7c0f;
+  --warn-bg: rgb(245 158 11 / 0.12);
+  --danger-bg: rgb(220 38 38 / 0.08);
+  --danger-edge: rgb(220 38 38 / 0.4);
+  --danger-fill: #b91c1c;
+  --on-danger: #ffffff;
+  --btn2-bg: rgb(0 0 0 / 0.04);
+  --btn2-edge: rgb(63 98 18 / 0.4);
+  --btn2-edge-hover: #3f6212;
+  color-scheme: light;
+}
+
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-page: var(--page);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-track: var(--track);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-text);
+  --color-on-accent: var(--on-accent);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-field: var(--field);
+  --color-edge: var(--edge);
+  --color-selected: var(--selected);
+  --color-selected-edge: var(--selected-edge);
+  --color-warn-bg: var(--warn-bg);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-edge: var(--danger-edge);
+  --color-danger-fill: var(--danger-fill);
+  --color-on-danger: var(--on-danger);
 }
 
 body {
-  background: #fafaf9;
-  color: #18181b;
+  background-color: var(--page);
+  color: var(--ink);
+}
+
+@layer components {
+  .card {
+    border-radius: 22px;
+    border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--card) 88%, transparent);
+    padding: 1.25rem;
+    box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+  }
+
+  .field {
+    border-radius: 12px;
+    border: 1px solid var(--edge);
+    background: var(--field);
+    color: var(--ink);
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    font-weight: 400;
+  }
+
+  .field:focus-visible {
+    outline: 2px solid var(--selected-edge);
+    outline-offset: 1px;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    display: inline-block;
+    border-radius: 15px;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-soft);
+  }
+
+  .btn-secondary {
+    border: 1px solid var(--btn2-edge);
+    background: var(--btn2-bg);
+    color: var(--ink);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--btn2-edge-hover);
+  }
 }

@@ -34,7 +34,7 @@ type Slots = Record<MealSlotKey, SlotState>;
 
 const gramsUnit = "grams";
 const savedMessage = "Meal saved.";
-const fieldClass = "rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base font-normal";
+const fieldClass = "rounded-lg border border-edge bg-field px-3 py-2 text-base font-normal";
 
 function localToday(): string {
   const now = new Date();
@@ -79,10 +79,10 @@ function ItemCard({ item, grams, focus, onChange, onRemove }: {
   onRemove: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4">
+    <div className="rounded-xl border border-line bg-card p-4">
       <div className="flex items-start justify-between gap-3">
-        <p className="font-bold">{item.food.name} <span className="text-sm font-normal text-zinc-600">({stateLabels[item.food.preparation_state]})</span></p>
-        <button aria-label={`Remove ${item.food.name}`} className="text-sm font-semibold text-zinc-700 underline" onClick={onRemove} type="button">Remove</button>
+        <p className="font-bold">{item.food.name} <span className="text-sm font-normal text-muted">({stateLabels[item.food.preparation_state]})</span></p>
+        <button aria-label={`Remove ${item.food.name}`} className="text-sm font-semibold text-muted underline" onClick={onRemove} type="button">Remove</button>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3">
         <label className="grid min-w-0 gap-1 text-sm font-semibold">
@@ -98,12 +98,12 @@ function ItemCard({ item, grams, focus, onChange, onRemove }: {
         </label>
       </div>
       {grams.ok ? (
-        <p className="mt-3 text-sm text-zinc-700">
+        <p className="mt-3 text-sm text-muted">
           {item.unit !== gramsUnit && <span className="font-semibold">{grams.grams} g · </span>}
           {describeNutrition(itemNutrition(item.food.nutrition, grams.grams))}
         </p>
       ) : (
-        item.amount !== "" && <p className="mt-3 text-sm text-red-800">{grams.error}</p>
+        item.amount !== "" && <p className="mt-3 text-sm text-danger">{grams.error}</p>
       )}
     </div>
   );
@@ -262,7 +262,7 @@ export function MealBuilder({ foods, initial, suggestionContext }: {
 
         <section>
           <h2 className="text-xl font-bold">Foods</h2>
-          <p className="mt-1 text-sm text-zinc-600">Fill any of these. Leave the rest empty. A meal needs at least one food.</p>
+          <p className="mt-1 text-sm text-muted">Fill any of these. Leave the rest empty. A meal needs at least one food.</p>
           <div className="mt-4 grid gap-5">
             {mealSlots.map((slot) => {
               const state = slots[slot.key];
@@ -332,7 +332,7 @@ export function MealBuilder({ foods, initial, suggestionContext }: {
                 value={search}
               />
             ) : (
-              <button className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold" onClick={() => setShowExtraSearch(true)} type="button">
+              <button className="rounded-lg border border-edge bg-field px-4 py-2 text-sm font-semibold" onClick={() => setShowExtraSearch(true)} type="button">
                 Add another food
               </button>
             )}
@@ -341,26 +341,26 @@ export function MealBuilder({ foods, initial, suggestionContext }: {
       </div>
 
       <aside className="grid gap-6 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
-        <section className="rounded-xl border border-zinc-200 bg-white p-5">
+        <section className="rounded-xl border border-line bg-card p-5">
           <h2 className="text-xl font-bold">Meal totals</h2>
           <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-5 lg:grid-cols-3">
-            <div><dt className="text-zinc-600">Calories</dt><dd className="font-bold">{Math.round(totals.kcal)} kcal</dd></div>
-            <div><dt className="text-zinc-600">Protein</dt><dd className="font-bold">{totals.protein_g.toFixed(1)} g</dd></div>
-            <div><dt className="text-zinc-600">Carbs</dt><dd className="font-bold">{totals.carbs_g.toFixed(1)} g</dd></div>
-            <div><dt className="text-zinc-600">Fat</dt><dd className="font-bold">{totals.fat_g.toFixed(1)} g</dd></div>
-            <div><dt className="text-zinc-600">Fiber</dt><dd className="font-bold">{totals.fiber_incomplete ? "Incomplete" : formatFiber(totals.fiber_g)}</dd></div>
+            <div><dt className="text-muted">Calories</dt><dd className="font-bold">{Math.round(totals.kcal)} kcal</dd></div>
+            <div><dt className="text-muted">Protein</dt><dd className="font-bold">{totals.protein_g.toFixed(1)} g</dd></div>
+            <div><dt className="text-muted">Carbs</dt><dd className="font-bold">{totals.carbs_g.toFixed(1)} g</dd></div>
+            <div><dt className="text-muted">Fat</dt><dd className="font-bold">{totals.fat_g.toFixed(1)} g</dd></div>
+            <div><dt className="text-muted">Fiber</dt><dd className="font-bold">{totals.fiber_incomplete ? "Incomplete" : formatFiber(totals.fiber_g)}</dd></div>
           </dl>
-          {totals.fiber_incomplete && <p className="mt-3 text-sm text-zinc-700">Some foods have no fiber listed, so the fiber total is not shown.</p>}
-          {hasUnusableItem && <p className="mt-3 text-sm text-zinc-700">Foods with an unfinished amount are left out of these totals.</p>}
-          <p className="mt-3 text-sm text-zinc-600">Fiber is included in carbohydrates.</p>
+          {totals.fiber_incomplete && <p className="mt-3 text-sm text-muted">Some foods have no fiber listed, so the fiber total is not shown.</p>}
+          {hasUnusableItem && <p className="mt-3 text-sm text-muted">Foods with an unfinished amount are left out of these totals.</p>}
+          <p className="mt-3 text-sm text-muted">Fiber is included in carbohydrates.</p>
         </section>
 
         <SuggestionsPanel date={date} view={suggestionsView} />
       </aside>
 
       <div className="grid gap-3 lg:col-start-1 lg:row-start-2 lg:self-start">
-        {message && <p aria-live="polite" className={message === savedMessage ? "text-sm text-zinc-700" : "text-sm text-red-800"}>{message}</p>}
-        <button className="w-fit rounded-lg bg-lime-400 px-4 py-3 font-bold disabled:cursor-not-allowed disabled:opacity-60" disabled={saving || checked.length === 0} type="submit">
+        {message && <p aria-live="polite" className={message === savedMessage ? "text-sm text-muted" : "text-sm text-danger"}>{message}</p>}
+        <button className="w-fit rounded-lg bg-accent px-4 py-3 font-bold text-on-accent disabled:cursor-not-allowed disabled:opacity-60" disabled={saving || checked.length === 0} type="submit">
           {saving ? "Saving…" : "Save meal"}
         </button>
       </div>

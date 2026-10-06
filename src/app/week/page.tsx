@@ -10,8 +10,8 @@ export default async function WeekPage() {
 
   return (
     <AuthFrame showNav>
-      <h1 className="text-3xl font-bold tracking-tight">Week</h1>
-      <p className="mt-3 text-sm text-zinc-700">Monday to Sunday. This page only shows what you have saved. It does not schedule anything.</p>
+      <h1 className="text-4xl font-medium tracking-tight">Week</h1>
+      <p className="mt-3 text-sm text-muted">Monday to Sunday. This page only shows what you have saved. It does not schedule anything.</p>
       <WeekView />
     </AuthFrame>
   );

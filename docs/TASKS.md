@@ -44,3 +44,27 @@ Suggested model per job: Job 3 Terra high. Jobs 4–7 Terra medium. Job 8 Luna m
 - [x] P4-9: Add the atomic save_profile_and_target function and build Profile and targets: edit details, recalculate, edit macros with the 5% warning, "Age last entered", new target row; test in rolled-back SQL (Opus 5.5 high)
 - [x] P4-10: Build Delete my account and data: confirmation step, server-only admin deletion of the verified caller, tests with throwaway users only (Opus 5.5 high)
 - [x] P4-11: Run the Phase 4 local walkthrough, security checks, and relevant checks; update this list only for jobs whose checks pass (Sonnet 5.5 medium)
+
+# UI refresh jobs (see docs/UI-REFRESH.md). Mark [x] only when the job is done and checked.
+- [x] UI-1: Write docs/UI-REFRESH.md (layout per page, colour tokens, rules, acceptance checks) and add these jobs. Docs only (Sonnet 5.5 medium)
+- [x] UI-2: Make 1152px the default width for signed-in pages; define the dark tokens and shared card and button classes; rebuild Dashboard, Week and Workouts as card grids with a single-row header (Sonnet 5.5 medium)
+- [x] UI-3: Rebuild Progress, Profile, Food library and Preferences as side-by-side layouts (Sonnet 5.5 medium)
+- [x] UI-4: Apply the dark tokens across all remaining pages, check contrast, run tsc, lint and tests, and do a hands-on walkthrough with a throwaway user (Sonnet 5.5 medium)
+- [x] UI-5: Charcoal page with a soft Fit Green glow, light mode with a header toggle (follows the device on first visit, then remembers), tokens for both themes, contrast checked (Sonnet 5.5 medium)
+- [x] UI-6: Rebuild Progress: stat tiles, large weight chart with soft green fill and 7 / 30 / 90 day / All range buttons, shorter inputs, two columns from 768px, workouts-per-week bars (Sonnet 5.5 medium)
+- [x] UI-7: Remove the page glow (flat backgrounds in both themes); Progress tiles: solid Fit Green Latest weight tile with a neutral 30-day change chip, and a workouts ring against planned training days (Sonnet 5.5 medium)
+- [x] UI-8: Align Progress on one 3-column grid (equal-height cards, scrolling History); black text on every Fit Green button; delete a recent workout with a Yes/No confirmation (new delete policy, rolled-back SQL test) (Sonnet 5.5 medium)
+
+# Meal planner jobs (see docs/MEAL-PLANNER.md). Mark [x] only when the job is done and checked.
+- [x] MP-1: Write docs/MEAL-PLANNER.md and add these jobs; show the USDA whey values, import whey after approval (Sonnet 5.5 medium)
+- [x] MP-2: Planner engine in src/lib/meal-planner.ts: day budgets, free labels, rotations, gram solver with rounding and caps, notes; Vitest tests (Opus 5.5 high)
+- [x] MP-3: Atomic save_meal_plan database function and saveMealPlanAction with server re-validation; rolled-back SQL tests (Opus 5.5 high)
+- [x] MP-4: Meal plan page /meals/plan: chip pickers, Day/Week, meals per day, rotations, preview, Save as meals with Yes/No (Sonnet 5.5 medium)
+- [x] MP-5: Walkthrough with a throwaway user using the agreed examples; run tsc, lint, and tests (Sonnet 5.5 medium). Done as part of MP-9.
+- [x] MP-6: Write "Realistic portions" in docs/MEAL-PLANNER.md (research, user decisions, portion classes, rules) and draft docs/portion-classes-review.csv for the 91 planner foods; stop for review (Sonnet 5.5 medium)
+- [x] MP-7: After the class list is approved: portion_class and portion_unit_g on foods with a check constraint, CSV columns, import script update and rerun, count check, rolled-back SQL checks (Opus 5.5 high)
+- [x] MP-8: Planner engine v2: bounded solver with class ranges and unit rounding, second food, whey shake, new notes; tests incl. the 2,565 kcal example at 2-6 meals (Opus 5.5 high)
+- [x] MP-9: Save checks for up to 6 items and 2 foods per group, units and Shake in the preview, then the MP-5 walkthrough; run tsc, lint, and tests (Sonnet 5.5 medium)
+- [x] MP-10: Eaten checklist data: meals.from_plan and meals.eaten (plan meals start unticked), setMealEatenAction, totals count only eaten meals (Dashboard, Week, day totals), planner still counts all saved meals; tests and rolled-back SQL (Opus 5.5 high)
+- [x] MP-11: Meals page as day cards with Today / Upcoming / Past tabs, foods and grams per meal, eaten checkboxes on Meals and Dashboard, Week shows eaten and planned, Today card shows planned kcal; walkthrough (Sonnet 5.5 medium)
+- [x] MP-12: Prep for the day: each open day card lists every food summed across all meals (eaten and planned), weights as picked; tests (Sonnet 5.5 medium)

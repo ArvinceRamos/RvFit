@@ -5,17 +5,18 @@ import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/logout-button";
 import { isActiveNavItem, signedInNavItems } from "@/lib/nav";
 
+// One row. On a phone the row scrolls sideways inside the header.
 export function SignedInNav() {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Main" className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+    <nav aria-label="Main" className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap text-sm">
       {signedInNavItems.map((item) => {
         const active = isActiveNavItem(pathname, item.href);
         return (
           <Link
             aria-current={active ? "page" : undefined}
-            className={`rounded-lg px-3 py-2 font-semibold ${active ? "bg-lime-400 text-zinc-950" : "text-zinc-700 hover:bg-zinc-100"}`}
+            className={`rounded-[10px] px-3 py-2 font-semibold ${active ? "bg-accent text-on-accent" : "text-muted hover:bg-line hover:text-ink"}`}
             href={item.href}
             key={item.href}
           >
@@ -23,7 +24,7 @@ export function SignedInNav() {
           </Link>
         );
       })}
-      <LogoutButton className="rounded-lg px-3 py-2 font-semibold text-zinc-700 hover:bg-zinc-100" />
+      <LogoutButton className="ml-auto rounded-[10px] px-3 py-2 font-semibold text-muted hover:bg-line hover:text-ink" />
     </nav>
   );
 }

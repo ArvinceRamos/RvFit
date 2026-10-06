@@ -19,7 +19,7 @@ export type WorkoutLogInitial = {
 
 type EntryState = { exerciseKey: string; sets: SetFields[] };
 
-const fieldClass = "w-full min-w-0 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base font-normal";
+const fieldClass = "w-full min-w-0 rounded-lg border border-edge bg-field px-3 py-2 text-base font-normal";
 const blankSet: SetFields = { amount: "", weight: "" };
 
 function localToday(): string {
@@ -133,11 +133,11 @@ export function WorkoutLogForm({ initial, slots, units: savedUnits, showHistory 
         </label>
         <div className="grid grid-cols-1 gap-1 text-sm font-semibold">
           <span id="weight-units-label">Weight units</span>
-          <div aria-labelledby="weight-units-label" className="inline-flex w-fit rounded-lg border border-zinc-300 bg-white p-1" role="group">
+          <div aria-labelledby="weight-units-label" className="inline-flex w-fit rounded-lg border border-edge bg-field p-1" role="group">
             {(["metric", "imperial"] as const).map((option) => (
               <button
                 aria-pressed={units === option}
-                className={`rounded-md px-4 py-1.5 text-base font-semibold ${units === option ? "bg-lime-400 text-zinc-950" : "text-zinc-700 hover:bg-zinc-100"}`}
+                className={`rounded-md px-4 py-1.5 text-base font-semibold ${units === option ? "bg-accent text-on-accent" : "text-muted hover:bg-line"}`}
                 key={option}
                 onClick={() => switchUnits(option)}
                 type="button"
@@ -149,28 +149,28 @@ export function WorkoutLogForm({ initial, slots, units: savedUnits, showHistory 
         </div>
       </div>
 
-      <p className="text-sm text-zinc-700">Fill in the sets you did. Leave a set empty to skip it.</p>
+      <p className="text-sm text-muted">Fill in the sets you did. Leave a set empty to skip it.</p>
 
       {slots.map((slot) => {
         const entry = entries[slot.slotKey];
         const choice = slot.choices.find((item) => item.key === entry.exerciseKey) ?? slot.choices[0];
         const amountLabel = choice.measure === "seconds" ? "Seconds" : "Reps";
         return (
-          <section className="rounded-xl border border-zinc-200 bg-white p-4" key={slot.slotKey}>
+          <section className="rounded-xl border border-line bg-card p-4" key={slot.slotKey}>
             <label className="grid grid-cols-1 gap-1 text-sm font-semibold">
               Exercise
               <select className={fieldClass} onChange={(event) => chooseExercise(slot, event.target.value)} value={entry.exerciseKey}>
                 {slot.choices.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
               </select>
             </label>
-            <p className="mt-2 text-sm text-zinc-600">Plan: {slot.planText}</p>
+            <p className="mt-2 text-sm text-muted">Plan: {slot.planText}</p>
             {sessions && (() => {
               const last = sessions[entry.exerciseKey];
               const prompt = last ? progressionPrompt(last, choice, slot.plannedSets, units) : null;
               return (
                 <>
-                  <p className="mt-1 text-sm text-zinc-600">Last time: {last ? lastTimeText(last, choice.measure, units) : "not logged yet"}</p>
-                  {prompt && <p className="mt-1 text-sm font-semibold text-zinc-800">{prompt}</p>}
+                  <p className="mt-1 text-sm text-muted">Last time: {last ? lastTimeText(last, choice.measure, units) : "not logged yet"}</p>
+                  {prompt && <p className="mt-1 text-sm font-semibold text-ink">{prompt}</p>}
                 </>
               );
             })()}
@@ -205,8 +205,8 @@ export function WorkoutLogForm({ initial, slots, units: savedUnits, showHistory 
         );
       })}
 
-      {error && <p aria-live="polite" className="text-sm text-red-800">{error}</p>}
-      <button className="w-fit rounded-lg bg-lime-400 px-4 py-3 font-bold disabled:cursor-not-allowed disabled:opacity-60" disabled={saving} type="submit">
+      {error && <p aria-live="polite" className="text-sm text-danger">{error}</p>}
+      <button className="w-fit rounded-lg bg-accent px-4 py-3 font-bold text-on-accent disabled:cursor-not-allowed disabled:opacity-60" disabled={saving} type="submit">
         {saving ? "Saving…" : "Save workout"}
       </button>
     </form>

@@ -2,11 +2,11 @@
 
 import { isCalendarDate } from "@/lib/meal";
 import {
+  eatenAndPlanned,
   loadMeals,
   loadPlanDays,
   loadSavedTarget,
   loadWorkouts,
-  sumMealTotals,
   type LoggedWorkout,
   type PlanDay,
   type SavedTarget,
@@ -15,7 +15,15 @@ import type { MealTotals } from "@/lib/meal";
 import { createClient } from "@/lib/supabase/server";
 import { weekDates } from "@/lib/week";
 
-export type WeekDay = { date: string; totals: MealTotals; meal_count: number; workouts: LoggedWorkout[] };
+// totals: meals ticked as eaten. planned_kcal: meals saved but not eaten yet.
+export type WeekDay = {
+  date: string;
+  totals: MealTotals;
+  meal_count: number;
+  eaten_count: number;
+  planned_kcal: number;
+  workouts: LoggedWorkout[];
+};
 
 export type WeekResult =
   | {
@@ -51,11 +59,13 @@ export async function loadWeekAction(today: unknown): Promise<WeekResult> {
     today,
     target,
     days: dates.map((date) => {
-      const dayMeals = meals.filter((meal) => meal.meal_date === date);
+      const split = eatenAndPlanned(meals.filter((meal) => meal.meal_date === date));
       return {
         date,
-        totals: sumMealTotals(dayMeals.map((meal) => meal.totals)),
-        meal_count: dayMeals.length,
+        totals: split.totals,
+        meal_count: split.meal_count,
+        eaten_count: split.eaten_count,
+        planned_kcal: split.planned.kcal,
         workouts: workouts.filter((workout) => workout.performed_on === date),
       };
     }),

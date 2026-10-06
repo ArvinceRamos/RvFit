@@ -64,16 +64,17 @@ export function PreferencesForm({ initial, offeredTags, foods }: {
   }
 
   return (
-    <form className="mt-6 grid gap-8" onSubmit={submit}>
-      <fieldset>
-        <legend className="text-xl font-bold">Allergies</legend>
-        <p className="mt-2 text-sm text-zinc-700">{allergenNotice}</p>
+    <form className="mt-8 grid items-start gap-[30px] lg:grid-cols-2 lg:grid-rows-[auto_1fr]" onSubmit={submit}>
+      <div className="grid gap-[30px] lg:col-start-2 lg:row-span-2 lg:row-start-1">
+      <fieldset className="card">
+        <legend className="float-left text-xl font-medium">Allergies</legend>
+        <p className="mt-2 clear-both text-sm text-muted">{allergenNotice}</p>
         {offeredTags.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-700">No allergy options are available yet.</p>
+          <p className="mt-3 text-sm text-muted">No allergy options are available yet.</p>
         ) : (
           <div className="mt-3 grid grid-cols-2 gap-2">
             {offeredTags.map((tag) => (
-              <label className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm" key={tag}>
+              <label className="flex items-center gap-2 rounded-xl border border-line bg-page px-3 py-2 text-sm" key={tag}>
                 <input
                   checked={values.allergyTags.includes(tag)}
                   onChange={() => setValues((current) => ({ ...current, allergyTags: toggle(current.allergyTags, tag) }))}
@@ -86,20 +87,20 @@ export function PreferencesForm({ initial, offeredTags, foods }: {
         )}
       </fieldset>
 
-      <fieldset>
-        <legend className="text-xl font-bold">Foods to avoid</legend>
-        <p className="mt-2 text-sm text-zinc-700">These foods will not be suggested. This is separate from allergies.</p>
+      <fieldset className="card">
+        <legend className="float-left text-xl font-medium">Foods to avoid</legend>
+        <p className="mt-2 clear-both text-sm text-muted">These foods will not be suggested. This is separate from allergies.</p>
         <div className="mt-3 grid gap-2">
           {foodRoles.map((role) => {
             const roleFoods = foods.filter((food) => food.role === role);
             if (roleFoods.length === 0) return null;
             const selectedCount = roleFoods.filter((food) => values.avoidedFoodIds.includes(food.id)).length;
             return (
-              <details className="rounded-lg border border-zinc-200 bg-white" key={role}>
+              <details className="rounded-xl border border-line bg-page" key={role}>
                 <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">
                   {roleLabels[role]} ({selectedCount} selected)
                 </summary>
-                <ul className="grid gap-1 border-t border-zinc-200 px-3 py-2">
+                <ul className="grid gap-1 border-t border-line px-3 py-2">
                   {roleFoods.map((food) => (
                     <li key={food.id}>
                       <label className="flex items-center gap-2 py-1 text-sm">
@@ -108,7 +109,7 @@ export function PreferencesForm({ initial, offeredTags, foods }: {
                           onChange={() => setValues((current) => ({ ...current, avoidedFoodIds: toggle(current.avoidedFoodIds, food.id) }))}
                           type="checkbox"
                         />
-                        {food.name} <span className="text-zinc-600">({stateLabels[food.preparation_state]})</span>
+                        {food.name} <span className="text-muted">({stateLabels[food.preparation_state]})</span>
                       </label>
                     </li>
                   ))}
@@ -118,39 +119,42 @@ export function PreferencesForm({ initial, offeredTags, foods }: {
           })}
         </div>
       </fieldset>
+      </div>
 
-      <section className="grid gap-4">
-        <h2 className="text-xl font-bold">Training</h2>
+      <section className="card grid gap-4 lg:col-start-1">
+        <h2 className="text-xl font-medium">Training</h2>
         <label className="grid gap-1 text-sm font-semibold">
           Experience
-          <select className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base font-normal" onChange={(event) => changeExperience(event.target.value as Experience)} value={values.experience}>
+          <select className="field" onChange={(event) => changeExperience(event.target.value as Experience)} value={values.experience}>
             {experiences.map((experience) => <option key={experience} value={experience}>{experienceLabels[experience]}</option>)}
           </select>
         </label>
         <label className="grid gap-1 text-sm font-semibold">
           Equipment
-          <select className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base font-normal" onChange={(event) => setValues((current) => ({ ...current, equipment: event.target.value as Equipment }))} value={values.equipment}>
+          <select className="field" onChange={(event) => setValues((current) => ({ ...current, equipment: event.target.value as Equipment }))} value={values.equipment}>
             {equipmentOptions.map((equipment) => <option key={equipment} value={equipment}>{equipmentLabels[equipment]}</option>)}
           </select>
           {values.equipment === "bodyweight" && (
-            <span className="text-sm font-normal text-zinc-600">Needs a pull-up bar and a sturdy chair or table.</span>
+            <span className="text-sm font-normal text-muted">Needs a pull-up bar and a sturdy chair or table.</span>
           )}
         </label>
         <label className="grid gap-1 text-sm font-semibold">
           Training days per week
-          <select className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base font-normal" onChange={(event) => setValues((current) => ({ ...current, trainingDays: Number(event.target.value) }))} value={values.trainingDays}>
+          <select className="field" onChange={(event) => setValues((current) => ({ ...current, trainingDays: Number(event.target.value) }))} value={values.trainingDays}>
             {dayOptions.map((days) => <option key={days} value={days}>{days}</option>)}
           </select>
           {values.experience === "beginner" && values.trainingDays >= 5 && (
-            <span className="text-sm font-normal text-red-800">Risk: a beginner on 5–6 days a week has little recovery time.</span>
+            <span className="text-sm font-normal text-danger">Risk: a beginner on 5–6 days a week has little recovery time.</span>
           )}
         </label>
       </section>
 
-      {message && <p aria-live="polite" className={message === savedMessage ? "text-sm text-zinc-700" : "text-sm text-red-800"}>{message}</p>}
-      <button className="w-fit rounded-lg bg-lime-400 px-4 py-3 font-bold disabled:cursor-not-allowed disabled:opacity-60" disabled={saving} type="submit">
-        {saving ? "Saving…" : "Save preferences"}
-      </button>
+      <div className="grid gap-3 lg:col-start-1">
+        {message && <p aria-live="polite" className={message === savedMessage ? "text-sm text-muted" : "text-sm text-danger"}>{message}</p>}
+        <button className="btn-primary w-fit disabled:cursor-not-allowed disabled:opacity-60" disabled={saving} type="submit">
+          {saving ? "Saving…" : "Save preferences"}
+        </button>
+      </div>
     </form>
   );
 }

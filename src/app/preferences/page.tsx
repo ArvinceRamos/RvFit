@@ -28,7 +28,7 @@ export default async function PreferencesPage() {
 
   return (
     <AuthFrame showNav>
-      <h1 className="text-3xl font-bold tracking-tight">Preferences</h1>
+      <h1 className="text-4xl font-medium tracking-tight">Preferences</h1>
       <PreferencesForm
         foods={foods as AvoidableFood[]}
         initial={{
