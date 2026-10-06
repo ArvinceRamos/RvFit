@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateWeighIn } from "./weigh-in";
+import { formatLengthCm, formatWeightKg, validateWeighIn } from "./weigh-in";
 
 describe("weigh-in validation", () => {
   it("accepts a valid metric weigh-in", () => {
@@ -37,5 +37,24 @@ describe("weigh-in validation", () => {
       ok: false,
       error: "Weight must be a number.",
     });
+  });
+});
+
+describe("formatWeightKg", () => {
+  it("shows kilograms to one decimal for metric users", () => {
+    expect(formatWeightKg(80, "metric")).toBe("80.0 kg");
+    expect(formatWeightKg(80.26, "metric")).toBe("80.3 kg");
+  });
+
+  it("converts to pounds for imperial users", () => {
+    expect(formatWeightKg(45.359237, "imperial")).toBe("100.0 lb");
+    expect(formatWeightKg(80, "imperial")).toBe("176.4 lb");
+  });
+});
+
+describe("formatLengthCm", () => {
+  it("shows centimeters or inches to one decimal", () => {
+    expect(formatLengthCm(81.28, "metric")).toBe("81.3 cm");
+    expect(formatLengthCm(81.28, "imperial")).toBe("32.0 in");
   });
 });

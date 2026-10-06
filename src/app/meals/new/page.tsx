@@ -12,7 +12,7 @@ export default async function NewMealPage() {
   const { foods, suggestionContext } = await loadMealContext(supabase);
 
   return (
-    <AuthFrame showNav>
+    <AuthFrame showNav wide>
       <h1 className="text-3xl font-bold tracking-tight">New meal</h1>
       <MealBuilder
         foods={foods}

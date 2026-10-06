@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { loadLastSessionsAction, saveWorkoutLogAction, type LastSessionsResult } from "@/app/workouts/actions";
 import { isCalendarDate } from "@/lib/meal";
 import type { PreferredUnits } from "@/lib/weigh-in";
-import { maxSetsPerExercise, weightUnit, type LogSlot, type SetFields } from "@/lib/workouts/log";
+import { convertWeightText, maxSetsPerExercise, weightUnit, type LogSlot, type SetFields } from "@/lib/workouts/log";
 import { lastTimeText, progressionPrompt } from "@/lib/workouts/progression";
 
 export type WorkoutLogInitial = {
@@ -29,9 +29,10 @@ function localToday(): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
-export function WorkoutLogForm({ initial, slots, units, showHistory }: {
+export function WorkoutLogForm({ initial, slots, units: savedUnits, showHistory }: {
   initial: WorkoutLogInitial;
   slots: LogSlot[];
+  /** The user's saved units. The kg/lb switch starts here. */
   units: PreferredUnits;
   /** New workouts show the last session and an optional progression prompt. Edits do not. */
   showHistory: boolean;
@@ -51,6 +52,7 @@ export function WorkoutLogForm({ initial, slots, units, showHistory }: {
   );
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
+  const [units, setUnits] = useState<PreferredUnits>(savedUnits);
 
   // Earlier sessions before the chosen date, fetched again whenever the date changes.
   const [history, setHistory] = useState<{ date: string; result: LastSessionsResult }>();
@@ -80,6 +82,20 @@ export function WorkoutLogForm({ initial, slots, units, showHistory }: {
     }));
   }
 
+  // Typed weights are converted so they keep meaning the same weight in the new unit.
+  function switchUnits(next: PreferredUnits) {
+    if (next === units) return;
+    setEntries((current) =>
+      Object.fromEntries(
+        Object.entries(current).map(([slotKey, entry]) => [
+          slotKey,
+          { ...entry, sets: entry.sets.map((set) => ({ ...set, weight: convertWeightText(set.weight, units, next) })) },
+        ]),
+      ),
+    );
+    setUnits(next);
+  }
+
   function updateSet(slotKey: string, index: number, changes: Partial<SetFields>) {
     updateEntry(slotKey, (entry) => ({
       ...entry,
@@ -96,6 +112,7 @@ export function WorkoutLogForm({ initial, slots, units, showHistory }: {
       templateKey: initial.templateKey,
       dayKey: initial.dayKey,
       date,
+      units,
       entries: slots.map((slot) => ({ slotKey: slot.slotKey, ...entries[slot.slotKey] })),
     });
     if (!result.ok) {
@@ -109,10 +126,28 @@ export function WorkoutLogForm({ initial, slots, units, showHistory }: {
 
   return (
     <form className="mt-6 grid grid-cols-1 gap-6" onSubmit={submit}>
-      <label className="grid grid-cols-1 gap-1 text-sm font-semibold sm:w-1/2">
-        Date
-        <input className={fieldClass} onChange={(event) => setDate(event.target.value)} required suppressHydrationWarning type="date" value={date} />
-      </label>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <label className="grid grid-cols-1 gap-1 text-sm font-semibold">
+          Date
+          <input className={fieldClass} onChange={(event) => setDate(event.target.value)} required suppressHydrationWarning type="date" value={date} />
+        </label>
+        <div className="grid grid-cols-1 gap-1 text-sm font-semibold">
+          <span id="weight-units-label">Weight units</span>
+          <div aria-labelledby="weight-units-label" className="inline-flex w-fit rounded-lg border border-zinc-300 bg-white p-1" role="group">
+            {(["metric", "imperial"] as const).map((option) => (
+              <button
+                aria-pressed={units === option}
+                className={`rounded-md px-4 py-1.5 text-base font-semibold ${units === option ? "bg-lime-400 text-zinc-950" : "text-zinc-700 hover:bg-zinc-100"}`}
+                key={option}
+                onClick={() => switchUnits(option)}
+                type="button"
+              >
+                {weightUnit(option)}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       <p className="text-sm text-zinc-700">Fill in the sets you did. Leave a set empty to skip it.</p>
 

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthFrame } from "@/components/auth-frame";
+import { DeleteMealButton } from "@/components/delete-meal-button";
+import { TodaySummary } from "@/components/today-summary";
 import { formatFiber } from "@/lib/food-catalog";
 import { mealTotals } from "@/lib/meal";
 import { nutritionColumns, nutritionFromRow } from "@/lib/meal-foods";
@@ -26,9 +28,20 @@ export default async function MealsPage() {
     .order("created_at", { ascending: false })
     .limit(recentMealLimit);
 
+  const { data: targetRows } = await supabase
+    .from("calorie_targets")
+    .select("target_kcal, protein_g, carbs_g, fat_g, fiber_g")
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const row = targetRows?.[0];
+  const target = row
+    ? { kcal: Number(row.target_kcal), protein_g: Number(row.protein_g), carbs_g: Number(row.carbs_g), fat_g: Number(row.fat_g), fiber_g: Number(row.fiber_g) }
+    : null;
+
   return (
     <AuthFrame showNav>
       <h1 className="text-3xl font-bold tracking-tight">Meals</h1>
+      <TodaySummary refreshKey={(meals ?? []).map((meal) => meal.id).join(",")} target={target} />
       <Link className="mt-6 inline-block rounded-lg bg-lime-400 px-4 py-3 font-bold" href="/meals/new">New meal</Link>
 
       {error ? (
@@ -48,7 +61,10 @@ export default async function MealsPage() {
                     <h2 className="font-bold">{meal.label}</h2>
                     <p className="text-sm text-zinc-600">{formatMealDate(meal.meal_date)} · {items.length} {items.length === 1 ? "food" : "foods"}</p>
                   </div>
-                  <Link className="text-sm font-semibold underline" href={`/meals/${meal.id}`}>Edit</Link>
+                  <div className="flex items-start gap-4">
+                    <Link className="text-sm font-semibold underline" href={`/meals/${meal.id}`}>Edit</Link>
+                    <DeleteMealButton mealId={meal.id} />
+                  </div>
                 </div>
                 <p className="mt-3 text-sm text-zinc-700">
                   {Math.round(totals.kcal)} kcal · Protein {totals.protein_g.toFixed(1)} g · Carbs {totals.carbs_g.toFixed(1)} g · Fat {totals.fat_g.toFixed(1)} g · Fiber {totals.fiber_incomplete ? "Incomplete" : formatFiber(totals.fiber_g)}

@@ -111,6 +111,27 @@ export function formatWeight(weightKg: number, units: PreferredUnits): string {
   return String(Math.round(shown * 10) / 10);
 }
 
+/**
+ * Re-expresses a typed weight in the other unit when the user flips the kg/lb switch.
+ * Blank or unreadable text is left alone. kg keeps 2 decimals (the stored precision) and lb keeps 1,
+ * so switching back and forth does not drift.
+ */
+export function convertWeightText(text: string, from: PreferredUnits, to: PreferredUnits): string {
+  if (from === to || text.trim() === "") return text;
+  const value = Number(text);
+  if (!Number.isFinite(value)) return text;
+  const factor = calculationConfig.unit_conversions.pounds_to_kilograms;
+  if (to === "metric") return String(Math.round(value * factor * 100) / 100);
+  return String(Math.round((value / factor) * 10) / 10);
+}
+
+/** The units chosen on the form. A missing choice means the saved profile units. */
+export function resolveUnits(chosen: unknown, saved: PreferredUnits): Result<PreferredUnits> {
+  if (chosen === undefined || chosen === null) return { ok: true, data: saved };
+  if (chosen === "metric" || chosen === "imperial") return { ok: true, data: chosen };
+  return failure("Choose kg or lb.");
+}
+
 function isBlank(value: string): boolean {
   return value.trim() === "";
 }
