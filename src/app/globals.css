@@ -88,6 +88,126 @@ body {
   color: var(--ink);
 }
 
+/* The landing page is always dark, whatever the saved theme. Same values as the dark tokens in :root. */
+.landing {
+  --page: #111413;
+  --card: #1c1c1c;
+  --ink: #fef9f5;
+  --muted: #a3a3a3;
+  --line: rgb(254 249 245 / 0.1);
+  --track: #333333;
+  --accent-text: #affa00;
+  --field: #0d0d0d;
+  --edge: rgb(254 249 245 / 0.4);
+  --btn2-bg: rgb(0 0 0 / 0.3);
+  --btn2-edge: rgb(175 250 0 / 0.3);
+  --btn2-edge-hover: #affa00;
+  --warn: #fbbf24;
+  --warn-bg: rgb(251 191 36 / 0.12);
+  --selected: rgb(175 250 0 / 0.12);
+  --selected-edge: #affa00;
+  background-color: var(--page);
+  color: var(--ink);
+  color-scheme: dark;
+}
+
+/* Landing page static ribbon. CSS only, no image file. It shows on phones, with reduced motion,
+   without WebGL or with data-saver, and until the 3D ribbon (RibbonBackground) is ready.
+   Kept dim so grey body text on top of it keeps at least 4.5:1 contrast. */
+.ribbon-static {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: -10;
+  height: min(100vh, 960px);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ribbon-static::before,
+.ribbon-static::after {
+  content: "";
+  position: absolute;
+  left: 35%;
+  right: -25%;
+  border-radius: 9999px;
+}
+
+.ribbon-static::before {
+  top: 40%;
+  height: 110px;
+  background: linear-gradient(90deg, transparent, rgb(175 250 0 / 0.14) 40%, rgb(207 237 137 / 0.1) 70%, transparent);
+  filter: blur(40px);
+  transform: rotate(-16deg);
+}
+
+.ribbon-static::after {
+  top: 52%;
+  height: 36px;
+  background: linear-gradient(90deg, transparent, rgb(207 237 137 / 0.1) 50%, transparent);
+  filter: blur(16px);
+  transform: rotate(-10deg);
+}
+
+/* Landing page chart draw-in. DrawIn sets data-draw="armed" before the chart scrolls into view, then "done". */
+.draw-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1.2s ease-out;
+}
+
+.draw-bar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  transition: transform 0.8s ease-out;
+}
+
+/* Horizontal bars grow from the left. Scaling (not width) keeps it on the GPU, so it does not cause layout work. */
+.draw-fill {
+  transform-origin: left;
+  transition: transform 0.9s ease-out;
+}
+
+/* The hero panel is already on screen on desktop, so its bars fill in on load instead of on scroll.
+   Pure CSS, so there is no flash of full bars before the scripts start. */
+@media (min-width: 1024px) {
+  .fill-on-load {
+    animation: fill-in 0.9s ease-out 0.2s both;
+  }
+}
+
+@keyframes fill-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+[data-draw="armed"] .draw-fill {
+  transform: scaleX(0);
+}
+
+[data-draw="armed"] .draw-line {
+  stroke-dashoffset: 1;
+}
+
+[data-draw="armed"] .draw-bar {
+  transform: scaleY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draw-line,
+  .draw-bar,
+  .draw-fill {
+    transition: none;
+  }
+
+  .fill-on-load {
+    animation: none;
+  }
+}
+
 @layer components {
   .card {
     border-radius: 22px;
