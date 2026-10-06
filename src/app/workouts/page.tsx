@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthFrame } from "@/components/auth-frame";
+import { DeleteWorkoutButton } from "@/components/delete-workout-button";
 import { SwapControl } from "@/components/swap-control";
 import { createClient } from "@/lib/supabase/server";
 import { choiceLabel, formatCalendarDate, planSummary, restText, schemeText } from "@/lib/workouts/format";
@@ -47,27 +48,27 @@ export default async function WorkoutsPage() {
 
   return (
     <AuthFrame showNav>
-      <h1 className="text-3xl font-bold tracking-tight">Workouts</h1>
+      <h1 className="text-4xl font-medium tracking-tight">Workouts</h1>
 
       {error || swapsError ? (
-        <p className="mt-6 text-sm text-red-800">Your workout plan could not be loaded. Please try again.</p>
+        <p className="mt-6 text-sm text-danger">Your workout plan could not be loaded. Please try again.</p>
       ) : !template ? (
         <div className="mt-6 grid gap-3">
-          <p className="text-sm text-zinc-700">Save your experience, equipment, and training days in Preferences to see your workout plan.</p>
-          <Link className="w-fit rounded-lg bg-lime-400 px-4 py-3 font-bold" href="/preferences">Go to Preferences</Link>
+          <p className="text-sm text-muted">Save your experience, equipment, and training days in Preferences to see your workout plan.</p>
+          <Link className="btn-primary w-fit" href="/preferences">Go to Preferences</Link>
         </div>
       ) : (
         <>
-          <p className="mt-3 text-sm text-zinc-700">
+          <p className="mt-3 text-sm text-muted">
             {planSummary(template.level, template.days.length, template.equipment)} ·{" "}
-            <Link className="font-semibold underline" href="/preferences">Change preferences</Link>
+            <Link className="font-semibold text-ink underline" href="/preferences">Change preferences</Link>
           </p>
-          <div className="mt-6 grid gap-4">
+          <div className="mt-8 grid gap-[30px] md:grid-cols-2 lg:grid-cols-3">
             {template.days.map((day) => (
-              <section className="rounded-xl border border-zinc-200 bg-white p-4" key={day.key}>
+              <section className="card" key={day.key}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-xl font-bold">{day.name}</h2>
-                  <Link className="rounded-lg bg-lime-400 px-3 py-2 text-sm font-bold" href={`/workouts/log/new?day=${day.key}`}>Log this workout</Link>
+                  <h2 className="text-xl font-medium">{day.name}</h2>
+                  <Link className="btn-primary !px-3 !py-2" href={`/workouts/log/new?day=${day.key}`}>Log this workout</Link>
                 </div>
                 <ul className="mt-3 grid gap-4">
                   {day.slots.map((slot) => {
@@ -75,7 +76,7 @@ export default async function WorkoutsPage() {
                     return (
                       <li key={slot.key}>
                         <p className="font-semibold">{slot.exercise.name}</p>
-                        <p className="text-sm text-zinc-700">{schemeText(slot.scheme, slot.exercise)} · {restText(slot.scheme)}</p>
+                        <p className="text-sm text-muted">{schemeText(slot.scheme, slot.exercise)} · {restText(slot.scheme)}</p>
                         <SwapControl
                           choices={swapOptions(template, slot.key)
                             .filter((option) => option.key !== defaultKey)
@@ -95,23 +96,28 @@ export default async function WorkoutsPage() {
       )}
 
       <section className="mt-10">
-        <h2 className="text-2xl font-bold tracking-tight">Recent workouts</h2>
+        <h2 className="text-2xl font-medium tracking-tight">Recent workouts</h2>
         {recentError ? (
-          <p className="mt-4 text-sm text-red-800">Your recent workouts could not be loaded. Please try again.</p>
+          <p className="mt-4 text-sm text-danger">Your recent workouts could not be loaded. Please try again.</p>
         ) : !recent || recent.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-700">No workouts logged yet.</p>
+          <p className="mt-4 text-sm text-muted">No workouts logged yet.</p>
         ) : (
-          <ul className="mt-4 grid gap-3">
+          <ul className="mt-4 grid gap-[30px] md:grid-cols-2 lg:grid-cols-3">
             {recent.map((log) => {
               // PostgREST returns the set count as a one-item list.
               const setCount = (log.workout_log_sets as unknown as { count: number }[])[0]?.count ?? 0;
               return (
-                <li className="flex items-start justify-between gap-3 rounded-xl border border-zinc-200 bg-white p-4" key={log.id}>
-                  <div>
-                    <p className="font-bold">{dayName(log.template_key, log.day_key)}</p>
-                    <p className="text-sm text-zinc-600">{formatCalendarDate(log.performed_on)} · {setCount} {setCount === 1 ? "set" : "sets"}</p>
+                <li className="card grid gap-3 !p-4" key={log.id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-bold">{dayName(log.template_key, log.day_key)}</p>
+                      <p className="text-sm text-muted">{formatCalendarDate(log.performed_on)} · {setCount} {setCount === 1 ? "set" : "sets"}</p>
+                    </div>
+                    <Link className="shrink-0 text-sm font-semibold underline" href={`/workouts/log/${log.id}`}>Edit</Link>
                   </div>
-                  <Link className="text-sm font-semibold underline" href={`/workouts/log/${log.id}`}>Edit</Link>
+                  <div className="flex justify-end">
+                    <DeleteWorkoutButton logId={log.id} />
+                  </div>
                 </li>
               );
             })}

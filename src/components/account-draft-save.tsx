@@ -60,5 +60,5 @@ export function AccountDraftSave({ hasSavedTarget }: { hasSavedTarget: boolean }
   }, [hasSavedTarget, router]);
 
   if (!checked || !message) return null;
-  return <p className={`mt-5 text-sm ${message.error ? "text-red-800" : "text-zinc-700"}`}>{message.text}</p>;
+  return <p className={`mt-5 text-sm ${message.error ? "text-danger" : "text-muted"}`}>{message.text}</p>;
 }

@@ -15,7 +15,7 @@ import type { PreferredUnits } from "@/lib/weigh-in";
 import { addDays, recentWeekStarts } from "@/lib/week";
 
 export type ProgressResult =
-  | { ok: true; units: PreferredUnits; trend: WeightTrend; history: WeighInRow[]; weeks: WeekCount[] }
+  | { ok: true; units: PreferredUnits; trend: WeightTrend; history: WeighInRow[]; weeks: WeekCount[]; plannedDays: number | null }
   | { ok: false; error: string };
 
 // Weigh-in history, the weight trend, and workouts per week. Values stay in kg and cm.
@@ -30,13 +30,15 @@ export async function loadProgressAction(today: unknown): Promise<ProgressResult
   const now = new Date();
   const since = new Date(now.getTime() - trend_window_days * 24 * 60 * 60 * 1000);
   const oldestWeek = recentWeekStarts(today, workout_weeks)[workout_weeks - 1];
-  const [units, history, recent, workouts] = await Promise.all([
+  const [units, history, recent, workouts, preferences] = await Promise.all([
     loadUnits(supabase),
     loadLatestWeighIns(supabase, history_weigh_ins),
     loadWeighInsSince(supabase, since),
     loadWorkouts(supabase, oldestWeek, addDays(today, 7)),
+    // Training days from Preferences, for the workouts ring. No row means no plan yet.
+    supabase.from("user_preferences").select("training_days").maybeSingle(),
   ]);
-  if (!units || !history || !recent || !workouts) {
+  if (!units || !history || !recent || !workouts || preferences.error) {
     return { ok: false, error: "Your progress could not be loaded. Please try again." };
   }
 
@@ -46,5 +48,6 @@ export async function loadProgressAction(today: unknown): Promise<ProgressResult
     trend: weightTrend(recent, now),
     history,
     weeks: workoutsPerWeek(workouts.map((workout) => workout.performed_on), today),
+    plannedDays: preferences.data?.training_days ?? null,
   };
 }

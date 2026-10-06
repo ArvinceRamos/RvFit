@@ -1,3 +1,4 @@
+import type { PortionClass } from "@/lib/calc/config";
 import type { FoodRole, PreparationState } from "@/lib/food-catalog";
 import type { NutritionPer100g } from "@/lib/meal";
 
@@ -9,11 +10,14 @@ export type BuilderFood = {
   diet_tags: string[];
   nutrition: NutritionPer100g;
   measures: { label: string; grams: number }[];
+  // Meal planner portion class and unit size. Null for foods the planner does not use.
+  portion_class: PortionClass | null;
+  portion_unit_g: number | null;
 };
 
 export const nutritionColumns =
   "kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g";
-export const builderFoodColumns = `id, name, role, preparation_state, diet_tags, ${nutritionColumns}, food_measures(label, grams)`;
+export const builderFoodColumns = `id, name, role, preparation_state, diet_tags, ${nutritionColumns}, portion_class, portion_unit_g, food_measures(label, grams)`;
 
 export type NutritionRow = {
   kcal_per_100g: number | string;
@@ -30,6 +34,8 @@ export type BuilderFoodRow = NutritionRow & {
   preparation_state: string;
   diet_tags: string[];
   food_measures: { label: string; grams: number | string }[];
+  portion_class: string | null;
+  portion_unit_g: number | string | null;
 };
 
 // Missing fiber stays null here. It must never become 0.
@@ -52,5 +58,7 @@ export function toBuilderFood(row: BuilderFoodRow): BuilderFood {
     diet_tags: row.diet_tags,
     nutrition: nutritionFromRow(row),
     measures: row.food_measures.map((measure) => ({ label: measure.label, grams: Number(measure.grams) })),
+    portion_class: row.portion_class as PortionClass | null,
+    portion_unit_g: row.portion_unit_g === null ? null : Number(row.portion_unit_g),
   };
 }

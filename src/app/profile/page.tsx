@@ -23,12 +23,12 @@ export default async function ProfilePage() {
 
   let body: React.ReactNode;
   if (profileError || targetError || weightError) {
-    body = <p className="mt-6 text-sm text-red-800">Your profile could not be loaded. Please try again.</p>;
+    body = <p className="mt-6 text-sm text-danger">Your profile could not be loaded. Please try again.</p>;
   } else if (!profile) {
     // The profile and its age confirmation are created when the first target is saved.
     body = (
-      <p className="mt-6 text-sm text-zinc-700">
-        You do not have a saved target yet. <Link className="font-semibold underline" href="/start">Set up a target</Link>, then save it to your account.
+      <p className="mt-6 text-sm text-muted">
+        You do not have a saved target yet. <Link className="font-semibold text-ink underline" href="/start">Set up a target</Link>, then save it to your account.
       </p>
     );
   } else {
@@ -56,7 +56,7 @@ export default async function ProfilePage() {
 
   return (
     <AuthFrame showNav>
-      <h1 className="text-3xl font-bold tracking-tight">Profile and targets</h1>
+      <h1 className="text-4xl font-medium tracking-tight">Profile and targets</h1>
       {body}
       <DeleteAccountSection />
     </AuthFrame>

@@ -5,7 +5,7 @@ import { roleLabels, stateLabels, suggestFoods, type FoodRole, type PreparationS
 
 export type SuggestableFood = { id: string; name: string; role: FoodRole; preparation_state: PreparationState };
 
-const inputClass = "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base font-normal";
+const inputClass = "field w-full";
 
 export function FoodAutocomplete({ foods, value, onValueChange, onSelect, label, name, placeholder, maxLength }: {
   foods: SuggestableFood[];
@@ -75,11 +75,11 @@ export function FoodAutocomplete({ foods, value, onValueChange, onSelect, label,
         value={value}
       />
       {showList && (
-        <ul className="absolute left-0 right-0 top-full z-10 mt-1 max-h-72 overflow-auto rounded-lg border border-zinc-300 bg-white shadow-lg" id={listId} role="listbox">
+        <ul className="absolute left-0 right-0 top-full z-10 mt-1 max-h-72 overflow-auto rounded-lg border border-edge bg-card shadow-lg" id={listId} role="listbox">
           {suggestions.map((food, index) => (
             <li
               aria-selected={index === active}
-              className={`cursor-pointer px-3 py-2 text-sm font-normal ${index === active ? "bg-lime-100" : "hover:bg-zinc-100"}`}
+              className={`cursor-pointer px-3 py-2 text-sm font-normal ${index === active ? "bg-selected" : "hover:bg-line"}`}
               id={`${listId}-${index}`}
               key={food.id}
               // mousedown runs before the input loses focus, so the list is still there to click.
@@ -90,7 +90,7 @@ export function FoodAutocomplete({ foods, value, onValueChange, onSelect, label,
               role="option"
             >
               <span className="block font-semibold">{food.name}</span>
-              <span className="block text-xs text-zinc-600">{roleLabels[food.role]} · {stateLabels[food.preparation_state]}</span>
+              <span className="block text-xs text-muted">{roleLabels[food.role]} · {stateLabels[food.preparation_state]}</span>
             </li>
           ))}
         </ul>

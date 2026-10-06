@@ -69,7 +69,7 @@ const macroPer100g = {
 const remainingKey = { protein: "protein_g", carb: "carbs_g", fat: "fat_g" } as const;
 
 // A food is excluded only by its saved diet tags or its own id, never by guessing from its name.
-function isExcluded(food: SuggestableFood, exclusions: Exclusions): boolean {
+export function isExcluded(food: Pick<SuggestableFood, "id" | "diet_tags">, exclusions: Exclusions): boolean {
   return exclusions.avoidedFoodIds.includes(food.id) || food.diet_tags.some((tag) => exclusions.allergyTags.includes(tag));
 }
 

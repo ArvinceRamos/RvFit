@@ -11,6 +11,14 @@ const workspace = join(dirname(fileURLToPath(import.meta.url)), '..');
 const csvPath = join(workspace, 'docs', 'phase2-usda-mapping.csv');
 const dryRun = process.argv.includes('--dry-run');
 
+// Meal planner portion classes (MP-7). Keep in step with foods_portion_class_check and calculationConfig.meal_planner.
+const plannerRoles = ['protein', 'carb', 'fat'];
+const portionClasses = [
+  'meat_fish_cooked', 'meat_fish_raw', 'egg', 'egg_white', 'dairy_protein', 'plant_protein', 'powder',
+  'grain_cooked', 'grain_dry', 'bread', 'starchy_veg', 'oil', 'nut_seed', 'avocado_olive', 'dairy_fat',
+];
+const unitClasses = ['egg', 'egg_white', 'powder', 'bread'];
+
 function parseCsv(text) {
   const rows = [];
   let row = [];
@@ -78,6 +86,16 @@ function loadApprovedRows(csvText) {
     const fdcId = Number(record.fdc_id);
     if (!Number.isInteger(fdcId) || fdcId <= 0) fail(`${where}: bad fdc_id "${record.fdc_id}"`);
 
+    const portionClass = record.portion_class || null;
+    if (portionClass !== null && !portionClasses.includes(portionClass)) fail(`${where}: unknown portion class "${portionClass}"`);
+    if (plannerRoles.includes(record.role) !== (portionClass !== null)) {
+      fail(`${where}: Protein, Carbs, and Fats foods need a portion class, and only they may have one`);
+    }
+    const portionUnit = record.portion_unit_g === '' ? null : numberOrFail(record.portion_unit_g, `${where} portion unit`);
+    if (unitClasses.includes(portionClass) ? !(portionUnit > 0) : portionUnit !== null) {
+      fail(`${where}: portion_unit_g is needed only for ${unitClasses.join(', ')}`);
+    }
+
     foods.push({
       fdc_id: fdcId,
       source_type: record.source_type,
@@ -92,6 +110,8 @@ function loadApprovedRows(csvText) {
       // Missing fiber must stay null, never 0.
       fiber_g_per_100g:
         record.fiber_g_per_100g === '' ? null : numberOrFail(record.fiber_g_per_100g, `${where} fiber`),
+      portion_class: portionClass,
+      portion_unit_g: portionUnit,
     });
 
     const labels = new Set();
@@ -114,6 +134,7 @@ const expected = {
   measures: measures.length,
   nullFiber: foods.filter((food) => food.fiber_g_per_100g === null).length,
   zeroFiber: foods.filter((food) => food.fiber_g_per_100g === 0).length,
+  portionClasses: foods.filter((food) => food.portion_class !== null).length,
 };
 console.log('CSV expects:', expected);
 
@@ -155,7 +176,7 @@ if (measureRows.length > 0) {
 // Verify what is now in the database against the CSV.
 const { data: dbFoods, error: verifyFoodsError } = await supabase
   .from('foods')
-  .select('fdc_id, fiber_g_per_100g')
+  .select('fdc_id, fiber_g_per_100g, portion_class, portion_unit_g')
   .in('fdc_id', fdcIds);
 if (verifyFoodsError) fail(`verify foods: ${verifyFoodsError.message}`);
 const { count: measureCount, error: verifyMeasuresError } = await supabase
@@ -170,6 +191,7 @@ const actual = {
   measures: measureCount,
   nullFiber: dbFoods.filter((row) => row.fiber_g_per_100g === null).length,
   zeroFiber: dbFoods.filter((row) => row.fiber_g_per_100g !== null && Number(row.fiber_g_per_100g) === 0).length,
+  portionClasses: dbFoods.filter((row) => row.portion_class !== null).length,
 };
 console.log('Database has:', actual, `(total rows in foods: ${totalFoods})`);
 
@@ -178,11 +200,18 @@ const fiberMismatches = dbFoods.filter((row) => {
   const csv = csvFiber.get(row.fdc_id);
   return csv === null ? row.fiber_g_per_100g !== null : Number(row.fiber_g_per_100g) !== csv;
 });
+const csvPortion = new Map(foods.map((food) => [food.fdc_id, food]));
+const portionMismatches = dbFoods.filter((row) => {
+  const csv = csvPortion.get(row.fdc_id);
+  const unit = row.portion_unit_g === null ? null : Number(row.portion_unit_g);
+  return row.portion_class !== csv.portion_class || unit !== csv.portion_unit_g;
+});
 const problems = [
   ...Object.keys(expected)
     .filter((key) => expected[key] !== actual[key])
     .map((key) => `${key}: expected ${expected[key]}, got ${actual[key]}`),
   ...(fiberMismatches.length ? [`${fiberMismatches.length} foods have fiber that differs from the CSV`] : []),
+  ...(portionMismatches.length ? [`${portionMismatches.length} foods have a portion class or unit that differs from the CSV`] : []),
 ];
 if (problems.length) fail(problems.join('; '));
-console.log('PASS: counts match the CSV and missing fiber is null.');
+console.log('PASS: counts match the CSV, missing fiber is null, and portion classes match.');
