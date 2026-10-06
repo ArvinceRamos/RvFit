@@ -4,7 +4,7 @@
 
 - This document is the Phase 5 behavior and design outline. Phase 5 remains local-only; do not deploy.
 - Phase 5 adds no new health or safety wording beyond the honest-estimates line and the existing footer disclaimer.
-- Items marked **Decision** have a recommended default. Confirm or change them before P5-2.
+- Items marked **Decision** were confirmed by the user in P5-1 (2026-10-07). See "Decisions (confirmed in P5-1)".
 - `docs/PLAN.md` Phase 5 stays the source of truth for the five stages, the honest-estimates line, the hero actions, and the palette rules. This document adds the visual direction and the job list.
 
 ## Visual reference
@@ -41,13 +41,36 @@ Other places to study (not copy):
 
 | Stage | Title | Preview panel | Links to |
 | --- | --- | --- | --- |
-| 1 | Know your numbers | Sample calorie and macro result card (no math shown) | `/` calculator start |
+| 1 | Know your numbers | Sample calorie and macro result card (no math shown) | `/start` (target-method screen with the age checkbox) |
 | 2 | Fuel your day | Meal builder slots and a daily calories bar | `/meals` (sign-in required) |
 | 3 | Train your week | Workout plan day with exercises | `/workouts` |
 | 4 | Track your trend | Weight line and 7-day average | `/progress` |
 | 5 | Review and adjust | Profile and targets with the macro warning | `/profile` |
 
 Links to signed-in screens send signed-out visitors to Log in, as the app already does.
+
+**Feature lines (user decision, 2026-10-07).** The page is an overview of the whole app. Under each stage's exact plan sentence, show 3-4 short feature lines. They only name features the app already has. No outcome promises, no new health or safety wording, and no claims about allergy safety. Draft wording, final in P5-2:
+
+| Stage | Feature lines |
+| --- | --- |
+| 1 Know your numbers | Calorie estimate or your own target · Protein, carb, fat and fiber targets · Try it before you make an account |
+| 2 Fuel your day | Meal builder with protein, carb, fat and fiber slots · Meal planner for a day or a week · Food library and food preferences · Eaten checklist and a prep list for the day |
+| 3 Train your week | Workout plan from your preferences · Swap exercises · Log your sets · Optional progression prompts from your last session |
+| 4 Track your trend | Weigh-ins with a 7-day average · Weight chart over 7, 30 or 90 days · Workouts per week · Dashboard and weekly plan |
+| 5 Review and adjust | Edit your details and recalculate · Edit macros with a mismatch warning · Delete your account and data |
+
+Hero and final call-to-action links:
+
+| Action | Links to |
+| --- | --- |
+| Get my starting estimate | `/start` |
+| See the roadmap | `#roadmap` on the same page |
+| Enter my own target (smaller link) | `/start` |
+| Log in | `/login` |
+
+- Both target actions go to `/start` so the "I am 18 or older" checkbox is never skipped. Do not link straight to `/calculate` or `/manual`.
+- Keep the "Your account and data were deleted." notice that shows at `/?account=deleted`.
+- The landing page is always dark, whatever the saved theme. It has no theme toggle. Signed-in screens keep their light and dark themes.
 
 ## 3D scope
 
@@ -56,19 +79,20 @@ Links to signed-in screens send signed-out visitors to Log in, as the app alread
 - One light-ribbon or macro-dial scene behind the page, drawn on a canvas. Scroll position moves the camera so the ribbon shifts for each stage. It reads as a "3D roadmap" while the text and panels stay normal HTML.
 - Loads after first paint. The page is fully usable before it loads, and if it fails.
 - Static image instead on: phones and small screens, `prefers-reduced-motion`, no WebGL, and data-saver. 3D is a desktop enhancement.
-- **Decision (needs your yes): add a 3D library.** Recommended: `three` with `@react-three/fiber`, loaded only on the landing page with a dynamic import. The alternative is a hand-written canvas or CSS ribbon with no new dependency, which looks flatter. If you want the smallest V1, choose that.
+- **Decision (confirmed): add `three` only.** No `@react-three/fiber`. One hand-written client component, loaded only on the landing page with a dynamic import. One new dependency and no tie to React versions. If the phase grows, cut this first; the static fallback then becomes the only version.
 
 ## Charts and previews
 
-- **Decision: the preview panels are built from fake demo data, not photographed screens.** The plan says "screenshots from a seeded demo account". Screenshots go stale and cannot animate. Recommended: build the panels as small static components with fake data and inline SVG (same approach as the Phase 4 weight chart, no chart library), and label each **App preview**. Take real screenshots only if you prefer them.
+- **Decision (confirmed): the preview panels are built from fake demo data, not photographed screens.** For Phase 5 this replaces the plan's "screenshots from a seeded demo account". Panels are small static components with fake data and inline SVG (same approach as the Phase 4 weight chart, no chart library), each labelled **App preview**. All fake data lives in one module. A code comment on each panel names the screen it mirrors; update the panel when that screen changes.
 - Charts animate in once when scrolled into view (draw the line, fill the bars). With reduced motion they simply appear.
 - No real user data and no fake counts anywhere on the page.
 
 ## Palette and type
 
-- `#AFFA00` Fit Green and `#CFED89` pale green as fills and accents; `#1C1C1C` and `#000000` as backgrounds; `#FFFFFF` for text on dark. `#FEF9F5` only if you choose it as the off-white token.
+- `#AFFA00` Fit Green and `#CFED89` pale green as fills and accents; `#1C1C1C` and `#000000` as backgrounds; `#FEF9F5` off-white for text on dark.
+- **Decision (confirmed): keep `#FEF9F5` as the off-white.** It is already the app's `--ink` (dark) and light `--page` token, so nothing outside the landing page changes.
 - Fit Green is never text on white or off-white. On the lime block use black text.
-- Headline: the app's sans plus one italic serif word. A web font only if it is loaded locally by `next/font`, with no third-party request at runtime.
+- Headline: the app's sans (Geist) plus one italic serif word. Add one serif (for example Instrument Serif, italic) through `next/font`, which hosts the file with the app. No third-party request at runtime.
 - Contrast on dark must pass for body text and small mono labels.
 
 ## Accessibility and performance
@@ -78,6 +102,12 @@ Links to signed-in screens send signed-out visitors to Log in, as the app alread
 - Reduced motion: no scroll-driven camera, no chart animation, no ribbon motion.
 - Phone width: one column, no horizontal scroll, panels stack under each stage.
 - 3D code does not load for signed-in app screens.
+
+## Decisions (confirmed in P5-1)
+
+1. **3D:** `three` only, hand-written, dynamic import on the landing page. No `@react-three/fiber`.
+2. **Previews:** components with fake demo data and inline SVG, labelled **App preview**. No screenshots, no demo account.
+3. **Off-white:** keep `#FEF9F5`, the existing token.
 
 ## Out of scope
 
@@ -122,5 +152,17 @@ Source: `C:\Users\arvince\Downloads\ezgif-6002b943bc52dfaa-jpg.zip`, 73 frames o
 - **Look:** near-black page, one lime accent, glass cards with thin borders and soft rounded corners, mono micro-labels, big sans headline with one italic serif word.
 - **3D:** one glowing ribbon-of-light scene behind the page. It is sharp in the hero and soft and blurred behind content sections. Scroll moves it. This is the "3D roadmap" feel; the roadmap text and cards stay plain HTML on top.
 - **Charts to build (inline SVG, fake demo data, labelled App preview):** calorie bar for the day, macro bars (one lime, rest grey), weight line with 7-day average, workouts-per-week bars with the current week highlighted, a lime progress ring for "target hit today" style display (no outcome promises), a smooth wave line only if it adds meaning.
-- **Motion:** logo-pulse loader into the hero, charts draw in once on scroll, lime block as a chapter break before the final call to action. All of it off with reduced motion.
+- **Motion:** charts draw in once on scroll, lime block as a chapter break before the final call to action. All of it off with reduced motion. **No loader screen:** it would hide the hero actions, which must show right away.
 - **Skip:** status pill, app-tile row, pricing, testimonials, stat counters, "free for 14 days" copy.
+
+## Jobs
+
+One small job each. Mark a job done in `docs/TASKS.md` only after its checks pass. Run `npx tsc --noEmit`, `npm run lint` and `npm test` in every code job.
+
+- **P5-2: Landing content and hero.** Put stage titles, sentences, feature lines, links and the honest-estimates line in one typed module. Add Vitest tests that they match `docs/PLAN.md` word for word and that both target actions go to `/start`. Replace `src/app/page.tsx` with the dark hero: headline with one italic serif word (`next/font`), support line, the four actions, the account-deleted notice, and the footer. Always dark. (Sonnet 5.5 medium)
+- **P5-3: Roadmap timeline.** Five stages in a plain vertical timeline under `#roadmap`: mono `stage n / 5` label, title, sentence, its 3-4 feature lines, link, and an empty preview slot. One column on phones. (Sonnet 5.5 medium)
+- **P5-4: Fake demo data and the first three previews.** One demo-data module. Panels for stages 1-3: sample result card (no math), meal slots with a daily calories bar, and a workout day. Each labelled **App preview**. (Sonnet 5.5 medium)
+- **P5-5: Chart previews and the hero panel.** Stage 4 weight line with 7-day average and workouts-per-week bars, stage 5 profile and targets with the macro warning, and the static hero panel. Inline SVG. Charts draw in once on scroll; no motion with reduced motion. (Sonnet 5.5 medium)
+- **P5-6: Honest-estimates card, lime block, final call to action.** Exact plan line, black text on lime, the four actions again. (Sonnet 5.5 low)
+- **P5-7: 3D ribbon / macro-dial.** Add `three`. One client component, loaded with a dynamic import after first paint, `aria-hidden`. Scroll moves the camera between stages. Static fallback on small screens, reduced motion, no WebGL and data-saver. Confirm `three` is not in signed-in page bundles. Cut this job first if the phase grows. (Opus 5.5 high)
+- **P5-8: Phase 5 walkthrough and checks.** Run the acceptance checks above: five stages and their links (signed out, and signed in with a throwaway user), phone width, reduced motion, 3D off, no third-party requests in the network tab, and contrast. Run tsc, lint and tests, then `npm run build` with the dev server stopped. (Sonnet 5.5 medium)

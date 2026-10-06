@@ -71,3 +71,14 @@ Suggested model per job: Job 3 Terra high. Jobs 4–7 Terra medium. Job 8 Luna m
 - [x] TG-1: Clearer goal and pace wording (Slow / Faster with weekly estimates, goal text for each kind of person) and a balanced full-width Profile layout; stored values unchanged (Sonnet 5.5 low)
 - [x] TG-1b: Profile polish: Sex joins the weight/age/height row, five activity cards in one row (no hole on tablet), result scrolls into view after Recalculate (Sonnet 5.5 low)
 - [x] TG-1c: Profile form as a two-column bento of cards (setup, your details, activity, goal with How fast?), options stacked in columns, rows share height; one column on smaller screens (Sonnet 5.5 low)
+
+# Phase 5 jobs (see docs/PHASE5.md). Mark [x] only when the job is done and checked.
+- [x] P5-1: Plan the roadmap landing page: confirm the three decisions (three only, component previews with fake data, keep #FEF9F5), fix the stage 1 link to /start, add these jobs. Docs only (Opus 5.5 medium)
+- [x] P5-2: Landing content module (stages, feature lines, links) with word-for-word tests; dark hero with the four actions, italic serif word, account-deleted notice, footer (Sonnet 5.5 medium)
+- [x] P5-3: Roadmap timeline: five stages under #roadmap with mono labels, titles, sentences, feature lines, links, preview slots; one column on phones (Sonnet 5.5 medium)
+- [x] P5-4: Fake demo data module and App preview panels for stages 1-3 (Sonnet 5.5 medium)
+- [x] P5-5: Inline SVG chart previews for stages 4-5 and the static hero panel; draw in once, no motion with reduced motion (Sonnet 5.5 medium)
+- [x] P5-6: Honest-estimates card, lime block with black text, final call to action (Sonnet 5.5 low)
+- [x] P5-7: 3D ribbon / macro-dial with three, dynamic import, static fallback; not in signed-in bundles; cut first if the phase grows (Opus 5.5 high)
+- [x] P5-7b: Landing preview bars fill in: hero calorie and macro bars on load on desktop, stage 2 calories bar and phone hero bars on scroll; off with reduced motion (Opus 5.5 high)
+- [x] P5-8: Phase 5 walkthrough, no third-party requests, contrast, tsc, lint, tests, build with the dev server stopped (Sonnet 5.5 medium)
