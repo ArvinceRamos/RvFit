@@ -22,7 +22,7 @@ import {
   updateGuestDraft,
   type GuestDraft,
 } from "@/lib/guest-draft";
-import { activityOptions, goalOptions } from "@/lib/target-options";
+import { activityOptions, goalOptions, paceOptions } from "@/lib/target-options";
 import { AppFooter } from "./app-footer";
 
 type Screen = "start" | "calculate" | "manual" | "results";
@@ -282,7 +282,7 @@ function CalculatorForm({ draft }: { draft: GuestDraft }) {
             {goalOptions.map((option) => <button className={`w-full rounded-lg border p-3 text-left ${goal === option.value ? "border-selected-edge bg-selected" : "border-edge bg-field"}`} key={option.value} onClick={() => setGoal(option.value)} type="button"><span className="block font-semibold">{option.title}</span><span className="mt-1 block text-sm text-muted">{option.detail}</span></button>)}
           </div>
         </fieldset>
-        {goal !== "maintain" && <fieldset><legend className="text-sm font-semibold">Pace</legend><div className="mt-2 grid grid-cols-2 gap-2">{(["gradual", "steady"] as PaceInput[]).map((option) => <button className={`rounded-lg border px-3 py-2 font-semibold capitalize ${pace === option ? "border-selected-edge bg-selected" : "border-edge bg-field"}`} key={option} onClick={() => setPace(option)} type="button">{option}</button>)}</div></fieldset>}
+        {goal !== "maintain" && <fieldset><legend className="text-sm font-semibold">How fast?</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{paceOptions[goal].map((option) => <button className={`w-full rounded-lg border p-3 text-left ${pace === option.value ? "border-selected-edge bg-selected" : "border-edge bg-field"}`} key={option.value} onClick={() => setPace(option.value)} type="button"><span className="block font-semibold">{option.title}</span><span className="mt-1 block text-sm text-muted">{option.detail}</span></button>)}</div></fieldset>}
         <ErrorMessage message={error} />
         <button className="w-full rounded-lg bg-accent px-4 py-3 font-bold text-on-accent text-on-accent hover:bg-accent-soft" type="submit">See my estimate</button>
       </form>

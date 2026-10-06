@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveProfileAndTargetAction } from "@/app/profile/actions";
 import { checkMacroMismatch, validateMacroEdit, type DefaultMacros } from "@/lib/calc/calculate";
 import { calculationConfig, type ActivityLevel, type FormulaBranch } from "@/lib/calc/config";
 import { computeProfileTarget, heightFields, weightField, type ComputedTarget, type ProfileFormInput } from "@/lib/profile-save";
-import { activityOptions, goalOptions } from "@/lib/target-options";
+import { activityOptions, goalOptions, paceOptions } from "@/lib/target-options";
 import type { PreferredUnits } from "@/lib/weigh-in";
 
 export type SavedProfile = {
@@ -84,6 +84,15 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
   const [message, setMessage] = useState<string>();
   const [saving, setSaving] = useState(false);
 
+  const resultRef = useRef<HTMLElement>(null);
+
+  // After Recalculate, bring the new target into view; it sits below the long form.
+  useEffect(() => {
+    if (!preview) return;
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    resultRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
+  }, [preview]);
+
   const detailsKey = JSON.stringify(details);
   const showPreview = preview && preview.key === detailsKey && macros;
   const weightUnit = details.units === "metric" ? "kg" : "lb";
@@ -152,8 +161,8 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
   }
 
   return (
-    <div className="mt-8 grid items-start gap-[30px] lg:grid-cols-2 lg:grid-rows-[auto_1fr]">
-      <section className="card lg:col-start-1">
+    <div className="mt-8 grid gap-[30px]">
+      <section className="card">
         <h2 className="text-xl font-medium">Current target</h2>
         {current ? (
           <>
@@ -178,121 +187,138 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
         {message && <p aria-live="polite" className="mt-3 text-sm font-semibold text-accent-text">{message}</p>}
       </section>
 
-      <section className="card lg:col-start-2 lg:row-span-2 lg:row-start-1">
+      <div>
         <h2 className="text-xl font-medium">Update your target</h2>
         <p className="mt-1 text-sm text-muted">Change your details, then recalculate. Nothing is saved until you press Save.</p>
 
-        <div className="mt-5 grid gap-5">
-          <fieldset>
-            <legend className="text-sm font-semibold">How to set the target</legend>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              <button aria-pressed={details.method === "calculated"} className={choiceClass(details.method === "calculated")} onClick={() => update({ method: "calculated" })} type="button">Calculate from my details</button>
-              <button aria-pressed={details.method === "manual"} className={choiceClass(details.method === "manual")} onClick={() => update({ method: "manual" })} type="button">Enter my own target</button>
-            </div>
-          </fieldset>
+        {/* A two-column bento on wide screens: setup and details on top, activity beside goal below. One column on smaller screens. */}
+        <div className="mt-5 grid gap-[30px] lg:grid-cols-2">
+          <section className="card grid gap-5">
+            <fieldset>
+              <legend className="text-sm font-semibold">How to set the target</legend>
+              <div className="mt-2 grid gap-2">
+                <button aria-pressed={details.method === "calculated"} className={choiceClass(details.method === "calculated")} onClick={() => update({ method: "calculated" })} type="button">Calculate from my details</button>
+                <button aria-pressed={details.method === "manual"} className={choiceClass(details.method === "manual")} onClick={() => update({ method: "manual" })} type="button">Enter my own target</button>
+              </div>
+            </fieldset>
 
-          <fieldset>
-            <legend className="text-sm font-semibold">Units</legend>
-            <div className="mt-2 inline-flex rounded-xl border border-edge bg-field p-1">
-              {(["metric", "imperial"] as const).map((option) => (
-                <button
-                  aria-pressed={details.units === option}
-                  className={`rounded-md px-4 py-1.5 text-sm font-semibold ${details.units === option ? "bg-accent text-on-accent" : "text-muted hover:bg-line"}`}
-                  key={option}
-                  onClick={() => switchUnits(option)}
-                  type="button"
-                >
-                  {option === "metric" ? "Metric (kg, cm)" : "Imperial (lb, ft, in)"}
-                </button>
-              ))}
-            </div>
-          </fieldset>
+            <fieldset>
+              <legend className="text-sm font-semibold">Units</legend>
+              <div className="mt-2 inline-flex rounded-xl border border-edge bg-field p-1">
+                {(["metric", "imperial"] as const).map((option) => (
+                  <button
+                    aria-pressed={details.units === option}
+                    className={`rounded-md px-4 py-1.5 text-sm font-semibold ${details.units === option ? "bg-accent text-on-accent" : "text-muted hover:bg-line"}`}
+                    key={option}
+                    onClick={() => switchUnits(option)}
+                    type="button"
+                  >
+                    {option === "metric" ? "Metric (kg, cm)" : "Imperial (lb, ft, in)"}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          </section>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field
-              hint={latestWeightKg !== null ? "From your latest weigh-in. A new value is saved as a new weigh-in." : undefined}
-              label={`Current weight (${weightUnit})`}
-              onChange={(weight) => update({ weight })}
-              value={details.weight}
-            />
-            {details.method === "manual" && <Field label="Calorie target (kcal)" onChange={(targetKcal) => update({ targetKcal })} value={details.targetKcal} />}
-            {details.method === "calculated" && (
+          <section className="card">
+            <h3 className="text-sm font-semibold">Your details</h3>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
               <Field
-                hint={profile.age_years !== null ? "The app never changes your age. Update it here." : undefined}
-                label={profile.age_years !== null ? "Age last entered" : "Age"}
-                onChange={(age) => update({ age })}
-                value={details.age}
+                hint={latestWeightKg !== null ? "From your latest weigh-in. A new value is saved as a new weigh-in." : undefined}
+                label={`Current weight (${weightUnit})`}
+                onChange={(weight) => update({ weight })}
+                value={details.weight}
               />
-            )}
-          </div>
+              {details.method === "manual" && <Field label="Calorie target (kcal)" onChange={(targetKcal) => update({ targetKcal })} value={details.targetKcal} />}
+              {details.method === "calculated" && (
+                <>
+                  <Field
+                    hint={profile.age_years !== null ? "The app never changes your age. Update it here." : undefined}
+                    label={profile.age_years !== null ? "Age last entered" : "Age"}
+                    onChange={(age) => update({ age })}
+                    value={details.age}
+                  />
+                  {/* Height sits at the bottom of its row so it lines up with the Sex buttons, whose label wraps. */}
+                  <div className="min-w-0 self-end">
+                    {details.units === "metric" ? (
+                      <Field label="Height (cm)" onChange={(height) => update({ height })} value={details.height} />
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <Field label="Height (ft)" onChange={(feet) => update({ feet })} value={details.feet} />
+                        <Field label="Height (in)" onChange={(inches) => update({ inches })} value={details.inches} />
+                      </div>
+                    )}
+                  </div>
+                  <fieldset className="min-w-0 self-end">
+                    <legend className="text-sm font-semibold">Sex (used in the calorie formula): Male / Female</legend>
+                    <div className="mt-1 grid grid-cols-2 gap-2">
+                      {(["male", "female"] as const).map((option) => (
+                        <button aria-pressed={details.sex === option} className={`${choiceClass(details.sex === option)} capitalize`} key={option} onClick={() => update({ sex: option })} type="button">{option}</button>
+                      ))}
+                    </div>
+                  </fieldset>
+                </>
+              )}
+            </div>
+          </section>
 
           {details.method === "calculated" && (
             <>
-              {details.units === "metric" ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Height (cm)" onChange={(height) => update({ height })} value={details.height} />
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Height (ft)" onChange={(feet) => update({ feet })} value={details.feet} />
-                  <Field label="Height (in)" onChange={(inches) => update({ inches })} value={details.inches} />
-                </div>
-              )}
-
-              <fieldset>
-                <legend className="text-sm font-semibold">Sex (used in the calorie formula): Male / Female</legend>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {(["male", "female"] as const).map((option) => (
-                    <button aria-pressed={details.sex === option} className={`${choiceClass(details.sex === option)} capitalize`} key={option} onClick={() => update({ sex: option })} type="button">{option}</button>
-                  ))}
-                </div>
-              </fieldset>
-
-              <fieldset>
-                <legend className="text-sm font-semibold">Activity level</legend>
-                <div className="mt-2 grid gap-2">
-                  {activityOptions.map((option) => (
-                    <label className="flex cursor-pointer gap-3 rounded-xl border border-edge bg-field p-3" key={option.value}>
-                      <input checked={details.activity === option.value} name="activity" onChange={() => update({ activity: option.value })} type="radio" value={option.value} />
-                      <span><span className="block font-semibold">{option.title}</span><span className="block text-sm text-muted">{option.detail}</span></span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-
-              <fieldset>
-                <legend className="text-sm font-semibold">Goal</legend>
-                <div className="mt-2 grid gap-2">
-                  {goalOptions.map((option) => (
-                    <button aria-pressed={details.goal === option.value} className={`${choiceClass(details.goal === option.value)} w-full`} key={option.value} onClick={() => update({ goal: option.value })} type="button">
-                      <span className="block">{option.title}</span>
-                      <span className="mt-1 block text-sm font-normal text-muted">{option.detail}</span>
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-
-              {details.goal !== "maintain" && (
+              <section className="card">
                 <fieldset>
-                  <legend className="text-sm font-semibold">Pace</legend>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    {(["gradual", "steady"] as const).map((option) => (
-                      <button aria-pressed={details.pace === option} className={`${choiceClass(details.pace === option)} capitalize`} key={option} onClick={() => update({ pace: option })} type="button">{option}</button>
+                  <legend className="text-sm font-semibold">Activity level</legend>
+                  <div className="mt-2 grid gap-2">
+                    {activityOptions.map((option) => (
+                      <label className="flex cursor-pointer gap-3 rounded-xl border border-edge bg-field p-3" key={option.value}>
+                        <input checked={details.activity === option.value} name="activity" onChange={() => update({ activity: option.value })} type="radio" value={option.value} />
+                        <span><span className="block font-semibold">{option.title}</span><span className="block text-sm text-muted">{option.detail}</span></span>
+                      </label>
                     ))}
                   </div>
                 </fieldset>
-              )}
+              </section>
+
+              <section className="card">
+                <fieldset>
+                  <legend className="text-sm font-semibold">Goal</legend>
+                  <div className="mt-2 grid gap-2">
+                    {goalOptions.map((option) => (
+                      <button aria-pressed={details.goal === option.value} className={`${choiceClass(details.goal === option.value)} w-full`} key={option.value} onClick={() => update({ goal: option.value })} type="button">
+                        <span className="block">{option.title}</span>
+                        <span className="mt-1 block text-sm font-normal text-muted">{option.detail}</span>
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+
+                {(details.goal === "lose" || details.goal === "gain") && (
+                  <fieldset className="mt-5 border-t border-line pt-4">
+                    <legend className="sr-only">How fast?</legend>
+                    <p aria-hidden className="text-sm font-semibold">How fast?</p>
+                    <div className="mt-2 grid gap-2">
+                      {paceOptions[details.goal].map((option) => (
+                        <button aria-pressed={details.pace === option.value} className={`${choiceClass(details.pace === option.value)} w-full`} key={option.value} onClick={() => update({ pace: option.value })} type="button">
+                          <span className="block">{option.title}</span>
+                          <span className="mt-1 block text-sm font-normal text-muted">{option.detail}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
+              </section>
             </>
           )}
+        </div>
 
+        <div className="mt-[30px] grid gap-3">
           {error && <p aria-live="polite" className="rounded-lg bg-danger-bg p-3 text-sm text-danger">{error}</p>}
           {preview && preview.key !== detailsKey && <p className="text-sm text-muted">Your details changed. Recalculate to see the new target.</p>}
           <button className="btn-primary w-fit" onClick={recalculate} type="button">Recalculate</button>
         </div>
-      </section>
+      </div>
 
       {showPreview && (
-        <section aria-live="polite" className="card lg:col-start-1">
+        <section aria-live="polite" className="card scroll-mt-6" ref={resultRef}>
           <h2 className="text-xl font-medium">New target</h2>
           <p className="mt-3 text-3xl font-medium tracking-tight">{targetKcal.toLocaleString("en-US")} kcal</p>
           <p className="mt-1 text-sm text-muted">Not saved yet. This is a starting estimate, not an exact number.</p>
