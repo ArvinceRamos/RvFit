@@ -68,3 +68,6 @@ Suggested model per job: Job 3 Terra high. Jobs 4–7 Terra medium. Job 8 Luna m
 - [x] MP-10: Eaten checklist data: meals.from_plan and meals.eaten (plan meals start unticked), setMealEatenAction, totals count only eaten meals (Dashboard, Week, day totals), planner still counts all saved meals; tests and rolled-back SQL (Opus 5.5 high)
 - [x] MP-11: Meals page as day cards with Today / Upcoming / Past tabs, foods and grams per meal, eaten checkboxes on Meals and Dashboard, Week shows eaten and planned, Today card shows planned kcal; walkthrough (Sonnet 5.5 medium)
 - [x] MP-12: Prep for the day: each open day card lists every food summed across all meals (eaten and planned), weights as picked; tests (Sonnet 5.5 medium)
+- [x] TG-1: Clearer goal and pace wording (Slow / Faster with weekly estimates, goal text for each kind of person) and a balanced full-width Profile layout; stored values unchanged (Sonnet 5.5 low)
+- [x] TG-1b: Profile polish: Sex joins the weight/age/height row, five activity cards in one row (no hole on tablet), result scrolls into view after Recalculate (Sonnet 5.5 low)
+- [x] TG-1c: Profile form as a two-column bento of cards (setup, your details, activity, goal with How fast?), options stacked in columns, rows share height; one column on smaller screens (Sonnet 5.5 low)

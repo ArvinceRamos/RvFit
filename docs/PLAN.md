@@ -110,7 +110,7 @@ Allow macro editing. Reject negative macro grams and protein above the 35% cap. 
 
 - The target-method screen requires the checkbox “I am 18 or older” before either target path. The calculator also rejects ages under 18 with an error and no results. This is self-reported, not age verification.
 
-- Goal labels include short descriptions. Maintain mentions that it is also a common choice for slowly losing fat and building muscle. This copy is a placeholder pending reviewer approval.
+- Goal labels include short descriptions written for each kind of person: Lose weight (lose fat; Slow keeps more muscle, Faster if the scale matters most), Maintain (stay about the same weight; good for toning up by losing a little fat and building a little muscle slowly), and Gain weight (build muscle; Slow for less fat gain, Faster to mainly gain weight). The pace choice is shown as "How fast?" with Slow (stored as gradual) and Faster (stored as steady), each with a rough weekly estimate. This copy is a placeholder pending reviewer approval.
 
 - Calculator sex field label: “Sex (used in the calorie formula): Male / Female”. Sex is required for the calculator.
 

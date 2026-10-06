@@ -158,7 +158,7 @@ export function calculateTarget(input: CalculateTargetInput): Result<CalculatedT
   let adjustedEstimate = maintenanceEstimate;
   if (input.goal === "lose") {
     if (!input.pace || !hasOwnKey(calculationConfig.goal_adjustments.loss_paces_kcal, input.pace)) {
-      return failure("Choose a gradual or steady pace for weight loss.");
+      return failure("Choose a Slow or Faster pace for weight loss.");
     }
     const selectedDeficit =
       calculationConfig.goal_adjustments.loss_paces_kcal[input.pace];
@@ -169,7 +169,7 @@ export function calculateTarget(input: CalculateTargetInput): Result<CalculatedT
     adjustedEstimate -= deficit;
   } else if (input.goal === "gain") {
     if (!input.pace || !hasOwnKey(calculationConfig.goal_adjustments.gain_paces_kcal, input.pace)) {
-      return failure("Choose a gradual or steady pace for weight gain.");
+      return failure("Choose a Slow or Faster pace for weight gain.");
     }
     adjustedEstimate += calculationConfig.goal_adjustments.gain_paces_kcal[input.pace];
   } else if (input.goal !== "maintain") {
