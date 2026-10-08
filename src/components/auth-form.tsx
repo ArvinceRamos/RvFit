@@ -160,7 +160,7 @@ export function GoogleButton() {
     <div className="space-y-3">
       <button
         aria-busy={pending}
-        className="inline-flex min-h-11 w-full items-center justify-center gap-3 rounded-[14px] border border-line bg-[#fef9f5] px-4 py-2.5 text-sm font-bold text-[#1b1f1d] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+        className="btn-secondary w-full gap-3 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={pending}
         onClick={continueWithGoogle}
         type="button"

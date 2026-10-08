@@ -36,7 +36,13 @@ The log in and sign-up pages can show **Continue with Google**. It stays hidden 
 4. In `supabase/config.toml`, set `enabled = true` under `[auth.external.google]`, then run `npx supabase stop` and `npx supabase start`.
 5. Add `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` to `.env.local` and restart `npm run dev`.
 
-With the flag on but Google not set up, the button says Google sign-in is not set up yet. Production redirect URIs are set when deploying.
+With the flag on but Google not set up, the button says Google sign-in is not set up yet.
+
+**Hosted projects (Vercel + Supabase):**
+
+1. In the same Google OAuth client, add `https://<project-ref>.supabase.co/auth/v1/callback` for each Supabase project (staging and production).
+2. In each Supabase project, open Authentication → Sign In / Providers → Google, turn it on, and paste the client ID and secret.
+3. Only then add `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` in Vercel (Production, and Preview for staging) and redeploy.
 
 ## Learn More
 
