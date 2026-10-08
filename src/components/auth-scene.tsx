@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "./logo";
 import { AppFooter } from "./app-footer";
 
 // Log in, sign-up and the password pages. Always dark like the landing page (.landing), with the
@@ -9,7 +10,7 @@ export function AuthScene({ children }: { children: React.ReactNode }) {
       <header className="landing-nav sticky top-0 z-20 border-b border-line">
         <nav aria-label="Main" className="mx-auto flex w-full max-w-6xl items-center px-5 py-3 text-sm">
           <Link className="mr-auto text-lg font-bold tracking-tight" href="/">
-            RvFit<span aria-hidden="true" className="text-accent-text">.</span>
+            <Logo />
           </Link>
           <Link className="btn-ghost btn-sm" href="/">
             <span aria-hidden="true">←</span> Back to home

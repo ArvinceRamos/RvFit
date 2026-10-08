@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "./logo";
 import { AppFooter } from "./app-footer";
 import { SignedInNav } from "./signed-in-nav";
 import { ThemeToggle } from "./theme-toggle";
@@ -13,7 +14,7 @@ export function AuthFrame({ children, showNav = false }: { children: React.React
       {/* Sticky glass header: content scrolls under it, so the blur has something to do. */}
       <header className="surface-float sticky top-0 z-20 !rounded-none !border-x-0 !border-t-0 px-4 py-2.5 !shadow-none sm:px-5">
         <div className={`mx-auto flex items-center gap-3 sm:gap-6 ${width}`}>
-          <Link className="shrink-0 text-lg font-bold tracking-tight" href="/">RvFit<span className="text-accent-text">.</span></Link>
+          <Link className="shrink-0 text-lg font-bold tracking-tight" href="/"><Logo /></Link>
           {showNav ? <SignedInNav /> : <div className="flex-1" />}
           <ThemeToggle />
         </div>
