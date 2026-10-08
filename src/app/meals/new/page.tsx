@@ -10,7 +10,7 @@ export default async function NewMealPage() {
 
   return (
     <AuthFrame showNav>
-      <h1 className="text-3xl font-bold tracking-tight">New meal</h1>
+      <h1 className="text-4xl font-medium tracking-tight">New meal</h1>
       <MealBuilder
         foods={foods}
         suggestionContext={suggestionContext}

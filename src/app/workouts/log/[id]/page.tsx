@@ -37,7 +37,7 @@ export default async function EditWorkoutLogPage({ params }: PageProps<"/workout
   return (
     <AuthFrame showNav>
       <Link className="text-sm font-semibold underline" href="/workouts">Back to Workouts</Link>
-      <h1 className="mt-3 text-3xl font-bold tracking-tight">Edit {templateDay?.name ?? "workout"}</h1>
+      <h1 className="mt-3 text-4xl font-medium tracking-tight">Edit {templateDay?.name ?? "workout"}</h1>
       {!rules || !templateDay || !slots ? (
         <p className="mt-6 text-sm text-danger">This workout could not be loaded. Please try again.</p>
       ) : (

@@ -24,7 +24,7 @@ export default async function MealsPage({ searchParams }: PageProps<"/meals">) {
 
   return (
     <AuthFrame showNav>
-      <h1 className="text-3xl font-bold tracking-tight">Meals</h1>
+      <h1 className="text-4xl font-medium tracking-tight">Meals</h1>
       {planSaved && (
         <p className="alert-success mt-4" role="status">
           Your plan is saved. Tick each planned meal when you eat it; only ticked meals count toward the day&apos;s totals.
