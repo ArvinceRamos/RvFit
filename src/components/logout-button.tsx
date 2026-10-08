@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { GUEST_DRAFT_STORAGE_KEY } from "@/lib/guest-draft";
 import { createClient } from "@/lib/supabase/client";
 
 const defaultClassName = "mt-6 rounded-lg border border-edge bg-field px-4 py-3 font-semibold hover:bg-line";
 
 export function LogoutButton({ className = defaultClassName }: { className?: string }) {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -30,8 +28,9 @@ export function LogoutButton({ className = defaultClassName }: { className?: str
     } catch {
       // Storage can be blocked; nothing else to clear.
     }
-    router.replace("/login");
-    router.refresh();
+    // A full page load, not router.replace + refresh: the refresh re-rendered the old signed-in page and left a blank screen.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- the hard load is deliberate
+    window.location.assign("/login");
   }
 
   return (
