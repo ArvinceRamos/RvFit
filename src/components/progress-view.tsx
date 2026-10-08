@@ -8,6 +8,7 @@ import { WeighInForm } from "@/components/weigh-in-form";
 import { calculationConfig } from "@/lib/calc/config";
 import type { WeighInRow } from "@/lib/overview-data";
 import type { WeekCount } from "@/lib/progress";
+import { goalPaceLabel } from "@/lib/target-options";
 import { chartLayout, chartRanges, filterByRange, weightChange, type ChartRangeKey } from "@/lib/weight-chart";
 import { formatLengthCm, formatWeightKg, type PreferredUnits } from "@/lib/weigh-in";
 import { formatCalendarDate } from "@/lib/workouts/format";
@@ -37,7 +38,7 @@ function StatTile({ label, value, note }: { label: string; value: string; note: 
 
 const changeDays = 30;
 
-// The Fit Green tile. Black text on Fit Green only. The chip states the change in plain numbers, with no
+// The Fit Green tile. Black text on Fit Green only. The chip compares weekly averages (see weightChange) in plain numbers, with no
 // good or bad colour, because the app does not know or judge the user's goal here.
 function LatestWeightTile({ history, units }: { history: WeighInRow[]; units: PreferredUnits }) {
   const [now] = useState(() => Date.now());
@@ -50,8 +51,8 @@ function LatestWeightTile({ history, units }: { history: WeighInRow[]; units: Pr
   const chip = change === null
     ? null
     : Math.abs(change) < 0.05
-      ? `No change in ${changeDays} days`
-      : `${change < 0 ? "−" : "+"}${Math.abs(change).toFixed(1)} ${unit} in ${changeDays} days`;
+      ? `No change in ${changeDays} days (weekly avg)`
+      : `${change < 0 ? "−" : "+"}${Math.abs(change).toFixed(1)} ${unit} in ${changeDays} days (weekly avg)`;
 
   return (
     <div className="rounded-[22px] bg-accent p-4 text-on-accent">
@@ -59,7 +60,7 @@ function LatestWeightTile({ history, units }: { history: WeighInRow[]; units: Pr
       <p className="mt-1 text-3xl font-medium tracking-tight">{latest ? formatWeightKg(latest.weight_kg as number, units) : "—"}</p>
       <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
         <span>{latest ? dateFormat.format(new Date(latest.logged_at)) : "No weigh-ins yet"}</span>
-        {chip && <span className="rounded-full bg-black px-2.5 py-0.5 text-xs font-semibold text-white">{chip}</span>}
+        {chip && <span className="rounded-full bg-on-accent px-2.5 py-0.5 text-xs font-semibold text-accent">{chip}</span>}
       </div>
     </div>
   );
@@ -185,11 +186,10 @@ function WeightChartCard({ history, units }: { history: WeighInRow[]; units: Pre
     <section className="card h-full">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-medium">Weight chart</h2>
-        <div aria-label="Chart range" className="inline-flex rounded-xl border border-edge bg-field p-1" role="group">
+        <div aria-label="Chart range" className="segmented text-sm" role="group">
           {chartRanges.map((option) => (
             <button
               aria-pressed={range === option.key}
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${range === option.key ? "bg-accent text-on-accent" : "text-muted hover:bg-line hover:text-ink"}`}
               key={option.key}
               onClick={() => setRange(option.key)}
               type="button"
@@ -246,9 +246,16 @@ export function ProgressView() {
   if (!result) return <p className="mt-6 text-sm text-muted">Loading your progress…</p>;
   if (!result.ok) return <p className="mt-6 text-sm text-danger">{result.error}</p>;
 
-  const { units, trend, history, weeks, plannedDays } = result;
+  const { units, trend, history, weeks, plannedDays, goal, pace } = result;
+  const goalLabel = goalPaceLabel(goal, pace);
   return (
     <div className="mt-8 grid gap-[30px]">
+      {goalLabel && (
+        <p className="-mb-4 text-sm text-muted">
+          Goal: <span className="font-semibold text-ink">{goalLabel}</span> ·{" "}
+          <Link className="font-semibold text-ink underline" href="/profile">Target check-in</Link>
+        </p>
+      )}
       <div className="grid gap-[30px] sm:grid-cols-3">
         <LatestWeightTile history={history} units={units} />
         <StatTile

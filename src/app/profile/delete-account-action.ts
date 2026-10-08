@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { getActionUser } from "@/lib/supabase/auth";
+import { logError } from "@/lib/log";
 
 export type DeleteAccountResult = { ok: false; error: string };
 
@@ -13,9 +14,9 @@ const failed = "Your account could not be deleted. Nothing was removed. Please t
 // rows when the account goes (profile, targets, weigh-ins, preferences, avoided foods, meals and
 // items, workout logs, sets, and swaps). On success it signs out and goes to the home page.
 export async function deleteAccountAction(): Promise<DeleteAccountResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false, error: "You must be signed in to delete your account." };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: "You must be signed in to delete your account." };
+  const { supabase, user } = auth;
 
   let deleteError: unknown;
   try {
@@ -24,7 +25,10 @@ export async function deleteAccountAction(): Promise<DeleteAccountResult> {
   } catch (error) {
     deleteError = error;
   }
-  if (deleteError) return { ok: false, error: failed };
+  if (deleteError) {
+    logError("account.delete", deleteError);
+    return { ok: false, error: failed };
+  }
 
   // The account is gone, so only clear this browser's session cookies. A failure here must not hide
   // the fact that the account was deleted, so it is ignored.

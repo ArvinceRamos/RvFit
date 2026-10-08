@@ -1,16 +1,13 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { AuthFrame } from "@/components/auth-frame";
 import { MealPlannerForm } from "@/components/meal-planner-form";
 import { loadMealContext } from "@/lib/meal-context";
 import { plannerGroups } from "@/lib/meal-planner";
 import { isExcluded } from "@/lib/suggestions";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/auth";
 
 export default async function MealPlanPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { supabase } = await requireUser();
 
   const { foods, suggestionContext: context } = await loadMealContext(supabase);
 

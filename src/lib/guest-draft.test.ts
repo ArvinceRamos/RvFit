@@ -3,6 +3,7 @@ import {
   GUEST_DRAFT_STORAGE_KEY,
   createGuestDraft,
   readGuestDraft,
+  storedDraftHasTarget,
   updateGuestDraft,
   writeGuestDraft,
 } from "./guest-draft";
@@ -72,5 +73,14 @@ describe("guest drafts", () => {
     storage.setItem(GUEST_DRAFT_STORAGE_KEY, "not json");
 
     expect(readGuestDraft(storage).guest_draft_id).toEqual(expect.any(String));
+  });
+});
+
+describe("storedDraftHasTarget", () => {
+  it("is true only for a draft with a finished target", () => {
+    expect(storedDraftHasTarget(null)).toBe(false);
+    expect(storedDraftHasTarget("not json")).toBe(false);
+    expect(storedDraftHasTarget(JSON.stringify({ guest_draft_id: "x", adult_confirmed_at: "2026-10-04T00:00:00.000Z" }))).toBe(false);
+    expect(storedDraftHasTarget(JSON.stringify({ guest_draft_id: "x", target: { source: "manual", target_kcal: 2000 } }))).toBe(true);
   });
 });

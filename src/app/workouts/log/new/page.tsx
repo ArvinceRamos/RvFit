@@ -2,16 +2,14 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AuthFrame } from "@/components/auth-frame";
 import { WorkoutLogForm } from "@/components/workout-log-form";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/auth";
 import { logSlots, planForLog } from "@/lib/workouts/log";
 import { loadLogRules } from "@/lib/workouts/log-context";
 import { templateKey } from "@/lib/workouts/templates";
 
 export default async function NewWorkoutLogPage({ searchParams }: PageProps<"/workouts/log/new">) {
   const { day } = await searchParams;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { supabase } = await requireUser();
 
   const { data: saved } = await supabase
     .from("user_preferences")

@@ -118,9 +118,9 @@ Per meal. "Unit" classes count whole units of `portion_unit_g`, taken from a cat
 ## Eaten checklist (MP-10, MP-11)
 
 The user's decisions (2026-10-08):
-- Meals saved by the planner start as planned (`from_plan` true, `eaten` false). Meals logged with "New meal" are eaten from the start.
+- Meals saved by the planner start as planned (`from_plan` true, `eaten` false). Since AU-43 (2026-10-08, the user's choice) meals from "New meal" and "Log again" also start unticked, so nothing counts until it is ticked. Meals saved before AU-43 keep their tick.
 - Day totals (Today card, Dashboard, Week, kcal left) count only meals ticked as eaten. Planned meals are shown apart, for example "+1,225 kcal planned".
-- Planner meals get an "I ate this" checkbox on the Meals page and the Dashboard. Future days cannot be ticked.
+- Every meal gets an "I ate this" checkbox on the Meals page and the Dashboard (AU-43; before, only planner meals had one). Future days cannot be ticked.
 - The planner still counts every saved meal, planned or eaten, so a day is never planned twice.
 - The Meals page shows day cards (tap to open) with Today, Upcoming, and Past tabs.
 - "Prep for the day" (MP-12): an open day card with 2 or more meals lists each food summed across all its meals, eaten and planned, in the weight it was picked (cooked foods in cooked grams; no raw conversion).

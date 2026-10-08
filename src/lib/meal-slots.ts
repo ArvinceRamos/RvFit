@@ -40,3 +40,8 @@ export function mapItemsToSlots<T extends { role: FoodRole | null }>(
 export function takenMealLabels(labels: readonly string[]): string[] {
   return mealLabels.filter((label) => labels.includes(label));
 }
+
+// The first of Meal 1 to Meal 6 not used on a date, or null when all six are taken.
+export function firstFreeMealLabel(usedLabels: readonly string[]): string | null {
+  return mealLabels.find((label) => !usedLabels.includes(label)) ?? null;
+}

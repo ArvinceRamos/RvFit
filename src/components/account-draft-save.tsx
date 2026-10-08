@@ -1,16 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveGuestDraftAction } from "@/app/account/actions";
-import { GUEST_DRAFT_EVENT, GUEST_DRAFT_STORAGE_KEY } from "@/lib/guest-draft";
+import { GUEST_DRAFT_EVENT, GUEST_DRAFT_STORAGE_KEY, storedDraftHasTarget } from "@/lib/guest-draft";
 
-type Message = { text: string; error?: boolean };
+type Message = { text: string; tone: "success" | "info" | "error"; profileLink?: boolean };
 
-export function AccountDraftSave({ hasSavedTarget }: { hasSavedTarget: boolean }) {
+function clearDraft() {
+  window.localStorage.removeItem(GUEST_DRAFT_STORAGE_KEY);
+  window.dispatchEvent(new Event(GUEST_DRAFT_EVENT));
+}
+
+// Saves a finished guest target from this browser after sign-in, once.
+// It says nothing when there is nothing to save, so returning users never see a stale message.
+// A user without a target is guided by the dashboard's setup steps instead.
+export function AccountDraftSave() {
   const router = useRouter();
   const sent = useRef(false);
-  const [checked, setChecked] = useState(false);
   const [message, setMessage] = useState<Message>();
 
   useEffect(() => {
@@ -18,47 +26,38 @@ export function AccountDraftSave({ hasSavedTarget }: { hasSavedTarget: boolean }
     sent.current = true;
 
     const rawDraft = window.localStorage.getItem(GUEST_DRAFT_STORAGE_KEY);
-    if (!rawDraft) {
-      void Promise.resolve().then(() => {
-        if (!hasSavedTarget) {
-          setMessage({ text: "Draft not found. Return to the browser or device where you started setup to save your draft." });
-        } else {
-          setMessage({ text: "Saved." });
-        }
-        setChecked(true);
-      });
-      return;
-    }
+    if (!storedDraftHasTarget(rawDraft)) return;
 
-    let draft: unknown;
-    try {
-      draft = JSON.parse(rawDraft);
-    } catch {
-      void Promise.resolve().then(() => {
-        setMessage({ text: "Your local draft could not be read. It has not been removed.", error: true });
-        setChecked(true);
-      });
-      return;
-    }
-
-    void saveGuestDraftAction(draft).then((result) => {
+    void saveGuestDraftAction(JSON.parse(rawDraft!)).then((result) => {
       if (!result.ok) {
-        setMessage({ text: result.error, error: true });
-      } else if (result.status === "saved_target_exists") {
-        setMessage({ text: "Your account already has a saved target, so these answers were not saved." });
-      } else {
-        window.localStorage.removeItem(GUEST_DRAFT_STORAGE_KEY);
-        window.dispatchEvent(new Event(GUEST_DRAFT_EVENT));
-        setMessage({ text: "Saved." });
+        setMessage({ text: result.error, tone: "error" });
+        return;
       }
-      setChecked(true);
-      router.refresh();
+      clearDraft();
+      if (result.status === "saved") {
+        setMessage({ text: "Your targets are saved to your account.", tone: "success" });
+        router.refresh();
+      } else if (result.status === "saved_target_exists") {
+        // Shown once: the draft is cleared so this does not repeat on every visit.
+        setMessage({
+          text: "Your account already had saved targets, so the numbers from this browser were not saved. To change your target, use",
+          tone: "info",
+          profileLink: true,
+        });
+      }
     }).catch(() => {
-      setMessage({ text: "Your draft could not be saved. It has not been removed.", error: true });
-      setChecked(true);
+      setMessage({ text: "Your targets could not be saved right now. They are still in this browser, so reload the page to try again.", tone: "error" });
     });
-  }, [hasSavedTarget, router]);
+  }, [router]);
 
-  if (!checked || !message) return null;
-  return <p className={`mt-5 text-sm ${message.error ? "text-danger" : "text-muted"}`}>{message.text}</p>;
+  if (!message) return null;
+  const style = message.tone === "error"
+    ? "bg-danger-bg text-danger"
+    : message.tone === "success" ? "bg-selected text-ink" : "bg-warn-bg text-warn";
+  return (
+    <p className={`mt-5 rounded-lg p-3 text-sm ${style}`} role={message.tone === "error" ? "alert" : "status"}>
+      {message.text}
+      {message.profileLink && <> <Link className="font-semibold underline" href="/profile">Profile and targets</Link>.</>}
+    </p>
+  );
 }

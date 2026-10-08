@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loadDayTotalsAction, saveMealAction, type DayTotalsResult } from "@/app/meals/actions";
 import { FoodAutocomplete } from "@/components/food-autocomplete";
@@ -34,7 +35,7 @@ type Slots = Record<MealSlotKey, SlotState>;
 
 const gramsUnit = "grams";
 const savedMessage = "Meal saved.";
-const fieldClass = "rounded-lg border border-edge bg-field px-3 py-2 text-base font-normal";
+const fieldClass = "field";
 
 function localToday(): string {
   const now = new Date();
@@ -359,8 +360,19 @@ export function MealBuilder({ foods, initial, suggestionContext }: {
       </aside>
 
       <div className="grid gap-3 lg:col-start-1 lg:row-start-2 lg:self-start">
-        {message && <p aria-live="polite" className={message === savedMessage ? "text-sm text-muted" : "text-sm text-danger"}>{message}</p>}
-        <button className="w-fit rounded-lg bg-accent px-4 py-3 font-bold text-on-accent disabled:cursor-not-allowed disabled:opacity-60" disabled={saving || checked.length === 0} type="submit">
+        <div aria-live="polite">
+          {message === savedMessage ? (
+            <p className="alert-success">
+              {savedMessage} It is on your Meals page for that day.{" "}
+              <Link className="font-semibold underline" href="/meals">View my meals</Link>
+              {" · "}
+              <Link className="font-semibold underline" href="/dashboard">Dashboard</Link>
+            </p>
+          ) : (
+            message && <p className="alert-danger" role="alert">{message}</p>
+          )}
+        </div>
+        <button className="btn-primary w-fit" disabled={saving || checked.length === 0} type="submit">
           {saving ? "Saving…" : "Save meal"}
         </button>
       </div>

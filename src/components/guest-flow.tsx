@@ -22,8 +22,9 @@ import {
   updateGuestDraft,
   type GuestDraft,
 } from "@/lib/guest-draft";
+import { createClient } from "@/lib/supabase/client";
 import { activityOptions, goalOptions, paceOptions } from "@/lib/target-options";
-import { AppFooter } from "./app-footer";
+import { AuthFrame } from "./auth-frame";
 
 type Screen = "start" | "calculate" | "manual" | "results";
 type Units = "metric" | "imperial";
@@ -55,23 +56,14 @@ function useGuestDraft() {
   );
 }
 
+// The guest pages share the app frame: same header, theme toggle, and floating card as log-in.
 function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen text-ink">
-      <header className="border-b border-line bg-card px-5 py-4">
-        <Link className="mx-auto block max-w-xl text-lg font-bold tracking-tight" href="/">
-          RvFit
-        </Link>
-      </header>
-      <main className="mx-auto w-full max-w-xl px-5 py-10">{children}</main>
-      <AppFooter />
-    </div>
-  );
+  return <AuthFrame>{children}</AuthFrame>;
 }
 
 function ErrorMessage({ message }: { message?: string }) {
   if (!message) return null;
-  return <p className="mt-4 rounded-lg bg-danger-bg p-3 text-sm text-danger">{message}</p>;
+  return <p className="mt-4 alert-danger" role="alert">{message}</p>;
 }
 
 function NumberField({
@@ -89,7 +81,7 @@ function NumberField({
     <label className="block text-sm font-semibold">
       {label}
       <input
-        className="mt-2 w-full rounded-lg border border-edge bg-field px-3 py-2 text-base outline-none ring-accent focus:ring-2"
+        className="field mt-2 w-full"
         inputMode="decimal"
         min="0"
         onChange={(event) => onChange(event.target.value)}
@@ -119,7 +111,7 @@ function AdultGate() {
       <p className="mt-3 leading-7 text-muted">
         You can start with an estimate or enter a calorie target you already use.
       </p>
-      <label className="mt-8 flex gap-3 rounded-xl border border-edge bg-field p-4 text-sm font-semibold">
+      <label className="choice mt-8 flex gap-3 p-4 text-sm font-semibold">
         <input
           checked={confirmed}
           className="mt-0.5 size-5 accent-accent"
@@ -131,14 +123,14 @@ function AdultGate() {
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <Link
           aria-disabled={!confirmed}
-          className={`rounded-lg px-4 py-3 text-center font-semibold ${confirmed ? "bg-accent text-on-accent hover:bg-accent-soft" : "pointer-events-none bg-track text-muted"}`}
+          className={`btn-primary ${confirmed ? "" : "pointer-events-none !bg-track !text-muted"}`}
           href="/calculate"
         >
           Calculate my estimate
         </Link>
         <Link
           aria-disabled={!confirmed}
-          className={`rounded-lg border px-4 py-3 text-center font-semibold ${confirmed ? "border-edge bg-field hover:bg-line" : "pointer-events-none border-line bg-line text-muted"}`}
+          className={`btn-secondary ${confirmed ? "" : "pointer-events-none opacity-60"}`}
           href="/manual"
         >
           Enter my own target
@@ -256,9 +248,9 @@ function CalculatorForm({ draft }: { draft: GuestDraft }) {
         <NumberField label="Age" onChange={setAge} value={age} />
         <fieldset>
           <legend className="text-sm font-semibold">Units</legend>
-          <div className="mt-2 flex rounded-lg bg-track p-1 text-sm font-semibold">
+          <div className="segmented mt-2 flex text-sm">
             {(["metric", "imperial"] as Units[]).map((option) => (
-              <button className={`flex-1 rounded-md px-3 py-2 capitalize ${units === option ? "bg-card shadow-sm" : "text-muted"}`} key={option} onClick={() => setUnits(option)} type="button">{option}</button>
+              <button aria-pressed={units === option} className="flex-1 capitalize" key={option} onClick={() => setUnits(option)} type="button">{option}</button>
             ))}
           </div>
         </fieldset>
@@ -267,24 +259,24 @@ function CalculatorForm({ draft }: { draft: GuestDraft }) {
         <fieldset>
           <legend className="text-sm font-semibold">Sex (used in the calorie formula): Male / Female</legend>
           <div className="mt-2 grid grid-cols-2 gap-3">
-            {(["male", "female"] as FormulaBranch[]).map((option) => <button className={`rounded-lg border px-3 py-3 font-semibold capitalize ${sex === option ? "border-selected-edge bg-selected" : "border-edge bg-field"}`} key={option} onClick={() => setSex(option)} type="button">{option}</button>)}
+            {(["male", "female"] as FormulaBranch[]).map((option) => <button aria-pressed={sex === option} className="choice py-3 text-center font-semibold capitalize" key={option} onClick={() => setSex(option)} type="button">{option}</button>)}
           </div>
         </fieldset>
         <fieldset>
           <legend className="text-sm font-semibold">Activity level</legend>
           <div className="mt-2 space-y-2">
-            {activityOptions.map((option) => <label className="flex cursor-pointer gap-3 rounded-lg border border-edge bg-field p-3" key={option.value}><input checked={activity === option.value} name="activity" onChange={() => setActivity(option.value)} type="radio" value={option.value} /><span><span className="block font-semibold">{option.title}</span><span className="block text-sm text-muted">{option.detail}</span></span></label>)}
+            {activityOptions.map((option) => <label className="choice flex cursor-pointer gap-3" key={option.value}><input checked={activity === option.value} name="activity" onChange={() => setActivity(option.value)} type="radio" value={option.value} /><span><span className="block font-semibold">{option.title}</span><span className="block text-sm text-muted">{option.detail}</span></span></label>)}
           </div>
         </fieldset>
         <fieldset>
           <legend className="text-sm font-semibold">Goal</legend>
           <div className="mt-2 space-y-2">
-            {goalOptions.map((option) => <button className={`w-full rounded-lg border p-3 text-left ${goal === option.value ? "border-selected-edge bg-selected" : "border-edge bg-field"}`} key={option.value} onClick={() => setGoal(option.value)} type="button"><span className="block font-semibold">{option.title}</span><span className="mt-1 block text-sm text-muted">{option.detail}</span></button>)}
+            {goalOptions.map((option) => <button aria-pressed={goal === option.value} className="choice w-full" key={option.value} onClick={() => setGoal(option.value)} type="button"><span className="block font-semibold">{option.title}</span><span className="mt-1 block text-sm text-muted">{option.detail}</span></button>)}
           </div>
         </fieldset>
-        {goal !== "maintain" && <fieldset><legend className="text-sm font-semibold">How fast?</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{paceOptions[goal].map((option) => <button className={`w-full rounded-lg border p-3 text-left ${pace === option.value ? "border-selected-edge bg-selected" : "border-edge bg-field"}`} key={option.value} onClick={() => setPace(option.value)} type="button"><span className="block font-semibold">{option.title}</span><span className="mt-1 block text-sm text-muted">{option.detail}</span></button>)}</div></fieldset>}
+        {goal !== "maintain" && <fieldset><legend className="text-sm font-semibold">How fast?</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{paceOptions[goal].map((option) => <button aria-pressed={pace === option.value} className="choice w-full" key={option.value} onClick={() => setPace(option.value)} type="button"><span className="block font-semibold">{option.title}</span><span className="mt-1 block text-sm text-muted">{option.detail}</span></button>)}</div></fieldset>}
         <ErrorMessage message={error} />
-        <button className="w-full rounded-lg bg-accent px-4 py-3 font-bold text-on-accent text-on-accent hover:bg-accent-soft" type="submit">See my estimate</button>
+        <button className="btn-primary w-full" type="submit">See my estimate</button>
       </form>
     </Frame>
   );
@@ -334,11 +326,83 @@ function ManualTargetForm({ draft }: { draft: GuestDraft }) {
     router.push("/results");
   }
 
-  return <Frame><Link className="text-sm font-semibold text-muted underline" href="/start">← Back</Link><h1 className="mt-5 text-3xl font-bold tracking-tight">Enter my own target</h1><p className="mt-2 text-muted">We will use your current weight to set starting macros. Sex is not needed for this path.</p><form className="mt-8 space-y-6" onSubmit={submit}><NumberField label="Calorie target (kcal)" onChange={setTargetKcal} value={targetKcal} /><fieldset><legend className="text-sm font-semibold">Units</legend><div className="mt-2 flex rounded-lg bg-track p-1 text-sm font-semibold">{(["metric", "imperial"] as Units[]).map((option) => <button className={`flex-1 rounded-md px-3 py-2 capitalize ${units === option ? "bg-card shadow-sm" : "text-muted"}`} key={option} onClick={() => setUnits(option)} type="button">{option}</button>)}</div></fieldset><NumberField label={`Current weight (${units === "metric" ? "kg" : "lb"})`} onChange={setWeight} step="0.1" value={weight} /><ErrorMessage message={error} /><button className="w-full rounded-lg bg-accent px-4 py-3 font-bold text-on-accent text-on-accent hover:bg-accent-soft" type="submit">See my target</button></form></Frame>;
+  return <Frame><Link className="text-sm font-semibold text-muted underline" href="/start">← Back</Link><h1 className="mt-5 text-3xl font-bold tracking-tight">Enter my own target</h1><p className="mt-2 text-muted">We will use your current weight to set starting macros. Sex is not needed for this path.</p><form className="mt-8 space-y-6" onSubmit={submit}><NumberField label="Calorie target (kcal)" onChange={setTargetKcal} value={targetKcal} /><fieldset><legend className="text-sm font-semibold">Units</legend><div className="segmented mt-2 flex text-sm">{(["metric", "imperial"] as Units[]).map((option) => <button aria-pressed={units === option} className="flex-1 capitalize" key={option} onClick={() => setUnits(option)} type="button">{option}</button>)}</div></fieldset><NumberField label={`Current weight (${units === "metric" ? "kg" : "lb"})`} onChange={setWeight} step="0.1" value={weight} /><ErrorMessage message={error} /><button className="btn-primary w-full" type="submit">See my target</button></form></Frame>;
+}
+
+type AccountState = "checking" | "guest" | "no-target" | "has-target";
+
+// Who is looking at the results, so the save action fits: a guest creates an account,
+// a signed-in user without targets saves straight to the account, and a user who already
+// has targets is pointed to Profile instead of being told to sign up.
+function useAccountState(): AccountState {
+  const [state, setState] = useState<AccountState>("checking");
+  useEffect(() => {
+    let active = true;
+    const supabase = createClient();
+    void (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        if (active) setState("guest");
+        return;
+      }
+      const { data, error } = await supabase.from("calorie_targets").select("id").limit(1);
+      // On a read error, offer the save; the dashboard checks again before saving anything.
+      if (active) setState(!error && data && data.length > 0 ? "has-target" : "no-target");
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+  return state;
+}
+
+const macroNotes: Record<keyof MacroEdit, string> = {
+  protein_g: "Helps keep and build muscle.",
+  carbs_g: "Main fuel for training and daily energy.",
+  fat_g: "Needed for hormones and absorbing vitamins.",
+  fiber_g: "Helps fullness and digestion. Counted inside carbs.",
+};
+
+function SaveTargets({ state }: { state: AccountState }) {
+  if (state === "checking") return <div aria-hidden className="mt-8 h-32" />;
+  if (state === "has-target") {
+    return (
+      <section className="tile mt-8 p-5">
+        <h2 className="text-lg font-bold">You already have saved targets</h2>
+        <p className="mt-2 text-sm text-muted">These new numbers are not saved. To change your target, recalculate it in Profile and targets.</p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link className="btn-primary" href="/profile">Go to Profile and targets</Link>
+          <Link className="btn-secondary" href="/dashboard">Back to Dashboard</Link>
+        </div>
+      </section>
+    );
+  }
+  if (state === "no-target") {
+    return (
+      <section className="tile mt-8 p-5">
+        <h2 className="text-lg font-bold">Save these targets</h2>
+        <p className="mt-2 text-sm text-muted">They will be used for your meals, suggestions, and progress.</p>
+        {/* The dashboard saves the draft from this browser and confirms it. */}
+        <Link className="btn-primary mt-4 w-full text-center sm:w-auto" href="/dashboard">Save to my account</Link>
+      </section>
+    );
+  }
+  return (
+    <section className="tile mt-8 p-5">
+      <h2 className="text-lg font-bold">Keep these numbers</h2>
+      <p className="mt-2 text-sm text-muted">
+        A free account saves your targets and unlocks meal plans, beginner workouts, and progress tracking.
+        Until then, they stay only in this browser.
+      </p>
+      <Link className="btn-primary mt-4 block w-full text-center sm:inline-block sm:w-auto" href="/signup">Save my targets (free account)</Link>
+      <p className="mt-3 text-sm text-muted">Already have an account? <Link className="font-semibold text-ink underline" href="/login">Log in to save them</Link></p>
+    </section>
+  );
 }
 
 function Results() {
   const draft = useGuestDraft();
+  const account = useAccountState();
   const [macros, setMacros] = useState<MacroEdit>();
   const [error, setError] = useState<string>();
 
@@ -354,9 +418,47 @@ function Results() {
     saveDraft((current) => current.target ? { ...current, target: { ...current.target, macros: validation.data } } : current);
   }
 
-  if (!draft?.target || !displayedMacros) return <Frame><h1 className="text-3xl font-bold">No target yet</h1><p className="mt-3 text-muted">Start by choosing a target method.</p><Link className="mt-6 inline-block rounded-lg bg-accent px-4 py-3 font-bold text-on-accent" href="/start">Start setup</Link></Frame>;
+  if (!draft?.target || !displayedMacros) {
+    return (
+      <Frame>
+        <h1 className="text-3xl font-bold">No target yet</h1>
+        <p className="mt-3 text-muted">
+          {account === "has-target" || account === "no-target"
+            ? "Nothing is waiting to be saved here. If you already saved your targets, find them on your Dashboard."
+            : "Start by choosing a target method."}
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link className="btn-primary" href="/start">Start setup</Link>
+          {(account === "has-target" || account === "no-target") && <Link className="btn-secondary" href="/dashboard">Go to Dashboard</Link>}
+        </div>
+      </Frame>
+    );
+  }
   const mismatch = checkMacroMismatch(displayedMacros, draft.target.target_kcal);
-  return <Frame><Link className="text-sm font-semibold text-muted underline" href="/start">Start over</Link><p className="mt-5 text-sm font-semibold uppercase tracking-wide text-accent-text">Your starting estimate</p><h1 className="mt-2 text-4xl font-bold tracking-tight">{draft.target.target_kcal.toLocaleString()} kcal</h1><p className="mt-3 leading-7 text-muted">This is a starting estimate, not an exact number. Compare it with your weight trend over time, then decide whether to edit your target.</p>{draft.target.floor_explanation && <p className="mt-4 rounded-lg bg-warn-bg p-3 text-sm text-warn">{draft.target.floor_explanation}</p>}<section className="mt-8"><h2 className="text-xl font-bold">Daily macros</h2><p className="mt-1 text-sm text-muted">Edit grams if needed. Your calorie target stays at {draft.target.target_kcal.toLocaleString()} kcal.</p><div className="mt-4 grid gap-4 sm:grid-cols-2">{([['protein_g','Protein'],['carbs_g','Carbohydrates'],['fat_g','Fat'],['fiber_g','Fiber']] as [keyof MacroEdit,string][]).map(([name,label]) => <NumberField key={name} label={`${label} (g)`} onChange={(value) => editMacro(name,value)} value={displayedMacros[name].toString()} />)}</div><ErrorMessage message={error} />{mismatch.ok && mismatch.data.warning && <p className="mt-4 rounded-lg bg-warn-bg p-3 text-sm text-warn">Your macro calories differ from the target by more than 5%. This is a warning only; your calorie target has not changed.</p>}</section><nav className="mt-8 flex gap-4 text-sm font-semibold"><Link className="text-muted underline" href="/signup">Create an account to save this</Link><Link className="text-muted underline" href="/login">Log in</Link></nav></Frame>;
+  return (
+    <Frame>
+      <Link className="text-sm font-semibold text-muted underline" href="/start">Start over</Link>
+      <p className="mt-5 text-sm font-semibold uppercase tracking-wide text-accent-text">Your starting estimate</p>
+      <h1 className="mt-2 text-4xl font-bold tracking-tight">{draft.target.target_kcal.toLocaleString()} kcal</h1>
+      <p className="mt-3 leading-7 text-muted">This is a starting estimate, not an exact number. Compare it with your weight trend over time, then decide whether to edit your target.</p>
+      {draft.target.floor_explanation && <p className="mt-4 alert-warn" role="note">{draft.target.floor_explanation}</p>}
+      <section className="mt-8">
+        <h2 className="text-xl font-bold">Daily macros</h2>
+        <p className="mt-1 text-sm text-muted">These are suggested grams. Editing is optional. Your calorie target stays at {draft.target.target_kcal.toLocaleString()} kcal.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {([["protein_g", "Protein"], ["carbs_g", "Carbohydrates"], ["fat_g", "Fat"], ["fiber_g", "Fiber"]] as [keyof MacroEdit, string][]).map(([name, label]) => (
+            <div key={name}>
+              <NumberField label={`${label} (g)`} onChange={(value) => editMacro(name, value)} value={displayedMacros[name].toString()} />
+              <p className="mt-1 text-xs text-muted">{macroNotes[name]}</p>
+            </div>
+          ))}
+        </div>
+        <ErrorMessage message={error} />
+        {mismatch.ok && mismatch.data.warning && <p className="mt-4 alert-warn">Your macro calories differ from the target by more than 5%. This is a warning only; your calorie target has not changed.</p>}
+      </section>
+      <SaveTargets state={account} />
+    </Frame>
+  );
 }
 
 export function GuestFlow({ screen }: { screen: Screen }) {

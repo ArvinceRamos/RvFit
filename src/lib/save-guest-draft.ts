@@ -8,6 +8,7 @@ import {
   type DefaultMacros,
 } from "@/lib/calc/calculate";
 import { type ActivityLevel, type FormulaBranch } from "@/lib/calc/config";
+import { logError } from "@/lib/log";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -196,7 +197,11 @@ export async function saveInitialGuestDraft(client: GuestDraftRpcClient, userId:
     p_target: payload.data.target,
     p_initial_body_log: payload.data.initialBodyLog,
   });
-  if (error) return { ok: false, error: error.message };
+  // Database messages are not shown to users. The draft stays in the browser so the user can retry.
+  if (error) {
+    logError("guestDraft.save", error);
+    return { ok: false, error: "Your targets could not be saved right now. They are still in this browser, so you can try again." };
+  }
   if (!isRecord(data) || (data.status !== "saved" && data.status !== "already_saved" && data.status !== "saved_target_exists")) {
     return { ok: false, error: "The draft could not be saved." };
   }

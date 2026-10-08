@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { AuthFrame } from "@/components/auth-frame";
 import { FoodSearchInput, type SuggestableFood } from "@/components/food-autocomplete";
 import {
@@ -14,12 +13,10 @@ import {
   roleLabels,
   stateLabels,
 } from "@/lib/food-catalog";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/auth";
 
 export default async function FoodsPage({ searchParams }: PageProps<"/foods">) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { supabase } = await requireUser();
 
   const filters = readFoodFilters(await searchParams);
 
@@ -34,11 +31,12 @@ export default async function FoodsPage({ searchParams }: PageProps<"/foods">) {
   if (filters.q) query = query.ilike("name", `%${escapeLikePattern(filters.q)}%`);
   if (filters.role) query = query.eq("role", filters.role);
   if (filters.state) query = query.eq("preparation_state", filters.state);
-  const { data: foods, error, count } = await query;
+  // The filtered list, and every name for the search box's type-ahead, load together.
+  const [{ data: foods, error, count }, { data: suggestionFoods }] = await Promise.all([
+    query,
+    supabase.from("foods").select("id, name, role, preparation_state").order("name"),
+  ]);
   const total = count ?? foods?.length ?? 0;
-
-  // Names for the search box's type-ahead suggestions.
-  const { data: suggestionFoods } = await supabase.from("foods").select("id, name, role, preparation_state").order("name");
 
   return (
     <AuthFrame showNav>

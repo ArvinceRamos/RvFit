@@ -1,17 +1,15 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { AuthFrame } from "@/components/auth-frame";
 import { WorkoutLogForm, type WorkoutLogInitial } from "@/components/workout-log-form";
 import { isUuid } from "@/lib/meal";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/auth";
 import { formatWeight, logSlots, planForLog } from "@/lib/workouts/log";
 import { loadLogRules, loadSavedLog, savedExercisesBySlot } from "@/lib/workouts/log-context";
 
 export default async function EditWorkoutLogPage({ params }: PageProps<"/workouts/log/[id]">) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { supabase } = await requireUser();
   if (!isUuid(id)) notFound();
 
   const log = await loadSavedLog(supabase, id);

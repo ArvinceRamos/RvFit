@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { loadMealDaysAction, type MealDaysResult } from "@/app/meals/actions";
+import { CopyMealButton } from "@/components/copy-meal-button";
 import { DeleteMealButton } from "@/components/delete-meal-button";
 import { MealEatenToggle } from "@/components/meal-eaten-toggle";
 import { localToday, TodaySummary } from "@/components/today-summary";
@@ -29,14 +30,11 @@ function formatDay(value: string): string {
 }
 
 function MealRow({ meal, date, today, onChanged }: { meal: MealDayMeal; date: string; today: string; onChanged: () => void }) {
-  const notTicked = meal.from_plan && !meal.eaten;
-  const status = notTicked ? (date < today ? "Not eaten" : "Planned") : null;
+  const status = meal.eaten ? null : date < today ? "Not eaten" : "Planned";
   return (
     <li className="flex gap-3 border-t border-line pt-3">
       <div className="w-5 shrink-0 pt-0.5">
-        {meal.from_plan && (
-          <MealEatenToggle eaten={meal.eaten} future={date > today} label={meal.label} mealId={meal.id} onChanged={onChanged} />
-        )}
+        <MealEatenToggle eaten={meal.eaten} future={date > today} label={meal.label} mealId={meal.id} onChanged={onChanged} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
@@ -45,7 +43,8 @@ function MealRow({ meal, date, today, onChanged }: { meal: MealDayMeal; date: st
             <span className="text-muted"> · {Math.round(meal.totals.kcal)} kcal</span>
             {status && <span className="ml-2 rounded-full border border-line px-2 py-0.5 text-xs text-muted">{status}</span>}
           </p>
-          <div className="flex items-start gap-4">
+          <div className="flex flex-wrap items-start gap-4">
+            {date < today && <CopyMealButton mealId={meal.id} />}
             <Link className="text-sm font-semibold underline" href={`/meals/${meal.id}`}>Edit</Link>
             <DeleteMealButton mealId={meal.id} onDeleted={onChanged} />
           </div>
@@ -129,7 +128,7 @@ export function MealDaysView({ target, view }: { target: DailyTargets | null; vi
         {tabs.map((tab) => (
           <Link
             aria-current={tab.view === view ? "page" : undefined}
-            className={`rounded-full border px-4 py-2 text-sm font-semibold ${tab.view === view ? "border-accent bg-accent text-on-accent" : "border-edge bg-field"}`}
+            className={`chip px-4 py-2 ${tab.view === view ? "!border-accent !bg-accent text-on-accent" : ""}`}
             href={tab.view === "today" ? "/meals" : `/meals?view=${tab.view}`}
             key={tab.view}
           >

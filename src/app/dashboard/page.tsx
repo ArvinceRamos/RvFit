@@ -1,13 +1,10 @@
-import { redirect } from "next/navigation";
 import { AccountDraftSave } from "@/components/account-draft-save";
 import { AuthFrame } from "@/components/auth-frame";
 import { DashboardView } from "@/components/dashboard-view";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/auth";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user?.email) redirect("/login");
+  const { supabase, user } = await requireUser();
 
   const { data: savedTargets } = await supabase
     .from("calorie_targets")
@@ -21,7 +18,7 @@ export default async function DashboardPage() {
       <h1 className="text-4xl font-medium tracking-tight">Dashboard</h1>
       <p className="mt-3 text-sm text-muted">Signed in as {user.email}</p>
       {/* Saves a guest draft from this browser after sign-in. The page refreshes when it saves one. */}
-      <AccountDraftSave hasSavedTarget={Boolean(savedTarget)} />
+      <AccountDraftSave />
       <DashboardView refreshKey={savedTarget?.created_at ?? "none"} />
     </AuthFrame>
   );

@@ -20,8 +20,8 @@ Define in `globals.css` (`@theme inline` plus `:root`). Use semantic names so no
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `--color-page` | `#111413` (charcoal, changed from `#000000` in UI-5 at the user's request) | Page background, flat (the UI-5 glow was removed in UI-7 at the user's request). Black is still the text colour on Fit Green. |
-| `--color-card` | `#1C1C1C` | Cards, header, inputs |
+| `--color-page` | `#161A18` (soft charcoal; `#000000` in UI-5, `#111413` until AU-27; no pure black anywhere, at the user's request) | Page background, flat (the UI-5 glow was removed in UI-7 at the user's request). Black is still the text colour on Fit Green. |
+| `--color-card` | `#222624` (was `#1C1C1C`) | Cards (as 62% glass), header, inputs |
 | `--color-accent` | `#AFFA00` | Primary buttons, progress bars, rings, active nav, focus ring |
 | `--color-accent-soft` | `#CFED89` | Soft fills, hover on accent |
 | `--color-ink` | `#FEF9F5` | Text on dark |
@@ -35,7 +35,7 @@ Added in UI-3 and UI-4 (all in `globals.css`; the whole app is dark, there is no
 | `--color-warn` / `--color-warn-bg` | `#FBBF24` / amber at 12% | Over-target bars and warning text |
 | `--color-danger` / `--color-danger-bg` / `--color-danger-edge` | `#F87171` / red at 12% / red at 40% | Errors and the delete section |
 | `--color-danger-fill` / `--color-on-danger` | `#F87171` / black | "Delete everything" button |
-| `--color-field` / `--color-edge` | `#0D0D0D` / `#FEF9F5` at 40% | Inputs and their borders |
+| `--color-field` / `--color-edge` | `#1B1F1D` (was `#0D0D0D`) / `#FEF9F5` at 40% | Inputs and their borders |
 | `--color-selected` / `--color-selected-edge` | Fit Green at 12% / Fit Green | Chosen option |
 | `--color-track` | `#333333` | Bar tracks, disabled buttons |
 | `--color-accent-text` | `#AFFA00` | Fit Green used as text (dark backgrounds only) |
@@ -120,3 +120,20 @@ UI-2 to UI-4 are done when:
 - Native controls (select, date, number spinners) may stay light. Set `color-scheme: dark` on the document and check them.
 - Eight nav items need a plan for phones. Sideways scroll is the V1 choice.
 - Wider pages make long text lines. Keep paragraph text to about 65–75 characters wide inside cards.
+
+## Design system (AU-9 to AU-12)
+
+Shared classes in `src/app/globals.css`. Use these instead of long class strings.
+
+- **Surfaces (AU-28).** `.card` is frosted glass like the landing PreviewFrame: 62% card tint, 18px blur, 140% saturation, `--glass-edge` border, soft shadow. Also `.card-compact`, `.card-danger`, `.tile` (a block inside a card; never nest a card in a card). `.surface-float` is glass too: sticky headers, the guest card, dropdowns. Phones keep the glass with a 12px blur; only `prefers-reduced-transparency` makes these surfaces solid.
+- **No pure black (AU-27).** Text on Fit Green is `#141A0F`, text on red is `#1F1414`, shadows use `rgb(8 12 10 / x)`, light-theme ink is `#1B1F1D`. Older notes in this file that say "black" now mean these soft values.
+- **Auth pages (AU-22).** Log in, sign-up and the password pages are always dark (`.landing`), with a top bar (RvFit. and Back to home, no theme toggle) and one glass `.card` at 28px radius with a mono pill label.
+- **Controls.** `.field` (12px, 44px tall where it fits), `.btn-primary`, `.btn-secondary`, `.btn-ghost` (nav pills; `aria-current="page"` fills it), `.btn-danger`, `.btn-danger-outline`, `.btn-sm`. `.segmented` for unit and range toggles, `.chip` for round pickers, `.choice` for option cards. Selected state comes from `aria-pressed` or a checked input, not a colour class.
+- **Messages.** `.alert-danger`, `.alert-warn`, `.alert-success`; always with words.
+- **Focus.** One ring for every link, button and control: 2px `--focus` (lime on dark, dark green `#3F6212` on light, 3:1 or better on both).
+- **Light mode (AU-44, replaces the `#FEF9F5` page).** Light is the dark theme flipped: sage page `#F3F5F1`, white frosted cards, fields `#F7F8F5` sunk slightly below the card, sage muted `#525A55` and track `#E2E7DF`, shadows and lines tinted `rgb(27 31 29)`, and a faint ink hairline on cards. The ribbon uses `mix-blend-mode: multiply` in light, so its glow shows as soft green streaks. Contrast on the page, glass card, field and glow: ink 14.1+, muted 6.0+, accent text 6.0+, danger 5.5+, input edges 3.2 (50% ink is the floor for 3:1).
+- **Radius.** 10px small buttons, 12px controls and tiles, 14px buttons, 22px cards, 28px the floating auth card.
+- **Ribbon (AU-29).** It lives in the root layout behind every page and is not restarted on navigation. `ribbonRoute`: the landing page scrolls through its stops, the auth pages hold the sharp hero pose, other pages show a calm, blurred glow (`CALM_SOFT`) that drifts as you scroll. 3D on every screen size when motion is allowed, WebGL 2 works and data saver is off. Below 1024px it runs the lite scene (1x pixels, fewer segments, about 30 fps, camera pulled back). Otherwise the static CSS ribbon stays.
+- **Honest estimates scroll story (AU-41).** Below the roadmap (which stays a plain timeline with App previews): Estimate → Track → Adjust, each step with a 3D object modelled in three.js (ring, smart scale, sliders; graphite rubber, chrome and lime materials, one studio light setup, contact shadow). Desktop pins the object on the right and swaps it as you scroll; phones show it at the top of the active step. No timer and no carousel. Reduced motion shows icons instead. The ribbon animates continuously by the user's choice.
+- **Honest line (AU-41).** Closes the Estimate → Track → Adjust story as a large quote with a lime rule; the plan wording is unchanged.
+- **Honest estimates without repeats (AU-42).** The Estimate → Track → Adjust steps repeated roadmap stages 1, 4 and 5, so the section now explains how RvFit treats your numbers: "An estimate is a first guess", "One weigh-in means little", "Nothing changes on its own". Same 3D objects, scroll behaviour and closing line; the roadmap is unchanged.

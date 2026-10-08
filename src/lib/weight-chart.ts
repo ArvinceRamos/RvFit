@@ -58,12 +58,18 @@ export function filterByRange(points: readonly ChartPoint[], days: number | null
   return points.filter((point) => point.time >= since);
 }
 
-// Latest weight minus the earliest weight in the last `days` days, by time. null with fewer than two points.
-// Plain arithmetic only: it says what changed, not whether the change is good.
-export function weightChange(points: readonly ChartPoint[], days: number, now: number): number | null {
-  const inWindow = filterByRange(points, days, now)
-    .filter((point) => Number.isFinite(point.time) && Number.isFinite(point.value))
-    .sort((a, b) => a.time - b.time);
-  if (inWindow.length < 2) return null;
-  return inWindow[inWindow.length - 1].value - inWindow[0].value;
+// Change over the last "days" days, as the average of the most recent week minus the average of the
+// first week of the window. Daily weight swings by 1-2 kg with water and food, so comparing two single
+// weigh-ins is mostly noise; weekly averages match the 7-day trend used elsewhere.
+// null unless both weeks have at least one weigh-in. Plain arithmetic only: it says what changed, not
+// whether the change is good.
+export function weightChange(points: readonly ChartPoint[], days: number, now: number, weekDays = 7): number | null {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const valid = points.filter((point) => Number.isFinite(point.time) && Number.isFinite(point.value));
+  const start = now - days * dayMs;
+  const early = valid.filter((point) => point.time >= start && point.time < start + weekDays * dayMs);
+  const recent = valid.filter((point) => point.time >= now - weekDays * dayMs);
+  if (early.length === 0 || recent.length === 0) return null;
+  const average = (list: readonly ChartPoint[]) => list.reduce((sum, point) => sum + point.value, 0) / list.length;
+  return average(recent) - average(early);
 }

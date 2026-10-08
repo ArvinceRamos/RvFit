@@ -20,6 +20,24 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Google sign-in (optional, local)
+
+The log in and sign-up pages can show **Continue with Google**. It stays hidden until you turn it on.
+
+1. In Google Cloud Console, create an OAuth client ID (type: Web application).
+2. Add this authorized redirect URI: `http://127.0.0.1:54321/auth/v1/callback`.
+3. Put the client ID and secret in `supabase/.env` (ignored by git, never commit it):
+
+   ```
+   SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID=your-client-id
+   SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=your-secret
+   ```
+
+4. In `supabase/config.toml`, set `enabled = true` under `[auth.external.google]`, then run `npx supabase stop` and `npx supabase start`.
+5. Add `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` to `.env.local` and restart `npm run dev`.
+
+With the flag on but Google not set up, the button says Google sign-in is not set up yet. Production redirect URIs are set when deploying.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
@@ -29,8 +47,17 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Checks
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run typecheck
+npm run lint
+npm test
+npm run build
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+CI runs the same four on every push and pull request (`.github/workflows/ci.yml`). Copy `.env.example` to `.env.local` for local settings.
+
+## Deploying
+
+Do not deploy until the launch review in `docs/PLAN.md` is done. Setup, deploys, monitoring, backups and rollback are in [docs/RUNBOOK.md](docs/RUNBOOK.md).

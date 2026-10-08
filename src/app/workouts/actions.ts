@@ -1,13 +1,15 @@
 "use server";
 
 import { isCalendarDate, isUuid } from "@/lib/meal";
-import { createClient } from "@/lib/supabase/server";
+import { getActionUser } from "@/lib/supabase/auth";
+import type { createClient } from "@/lib/supabase/server";
 import { getExercise } from "@/lib/workouts/exercises";
 import { resolveUnits, validateWorkoutLog } from "@/lib/workouts/log";
 import { loadLogRules, loadSavedLog, savedExercisesBySlot } from "@/lib/workouts/log-context";
 import { pickLastSessions, type EarlierLog, type LastSession } from "@/lib/workouts/progression";
 import { orderSwaps, validateResetRequest, validateSwapRequest } from "@/lib/workouts/swaps";
 import { templateKey } from "@/lib/workouts/templates";
+import { logError } from "@/lib/log";
 
 export type SwapActionResult = { ok: true } | { ok: false; error: string };
 export type DeleteWorkoutResult = { ok: true } | { ok: false; error: string };
@@ -15,13 +17,16 @@ export type DeleteWorkoutResult = { ok: true } | { ok: false; error: string };
 // Deletes one of the caller's workout logs. Row-level security limits it to their own rows,
 // and the sets are removed by the cascade.
 export async function deleteWorkoutLogAction(logId: unknown): Promise<DeleteWorkoutResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false, error: "You must be signed in to delete a workout." };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: "You must be signed in to delete a workout." };
+  const { supabase } = auth;
   if (!isUuid(logId)) return { ok: false, error: "Workout details are invalid." };
 
   const { data, error } = await supabase.from("workout_logs").delete().eq("id", logId).select("id");
-  if (error) return { ok: false, error: "The workout could not be deleted. Please try again." };
+  if (error) {
+    logError("workouts.delete", error);
+    return { ok: false, error: "The workout could not be deleted. Please try again." };
+  }
   if (!data || data.length === 0) return { ok: false, error: "Workout not found." };
   return { ok: true };
 }
@@ -38,16 +43,19 @@ async function currentTemplateKey(supabase: Awaited<ReturnType<typeof createClie
 }
 
 export async function saveSwapAction(rawSwap: unknown): Promise<SwapActionResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false, error: signInError };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: signInError };
+  const { supabase, user } = auth;
 
   const requestedKey = (rawSwap as { templateKey?: unknown } | null)?.templateKey;
   const { data: saved, error: loadError } = await supabase
     .from("user_exercise_swaps")
     .select("slot_key, exercise_key, updated_at")
     .eq("template_key", typeof requestedKey === "string" ? requestedKey : "");
-  if (loadError) return { ok: false, error: "Your swap could not be saved. Please try again." };
+  if (loadError) {
+    logError("workouts.loadSwap", loadError);
+    return { ok: false, error: "Your swap could not be saved. Please try again." };
+  }
 
   const validated = validateSwapRequest(rawSwap, orderSwaps(saved ?? []));
   if (!validated.ok) return validated;
@@ -66,14 +74,17 @@ export async function saveSwapAction(rawSwap: unknown): Promise<SwapActionResult
     },
     { onConflict: "user_id,template_key,slot_key" },
   );
-  if (error) return { ok: false, error: "Your swap could not be saved. Please try again." };
+  if (error) {
+    logError("workouts.saveSwap", error);
+    return { ok: false, error: "Your swap could not be saved. Please try again." };
+  }
   return { ok: true };
 }
 
 export async function resetSwapAction(rawReset: unknown): Promise<SwapActionResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false, error: signInError };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: signInError };
+  const { supabase, user } = auth;
 
   const validated = validateResetRequest(rawReset);
   if (!validated.ok) return validated;
@@ -84,7 +95,10 @@ export async function resetSwapAction(rawReset: unknown): Promise<SwapActionResu
     .eq("user_id", user.id)
     .eq("template_key", validated.data.templateKey)
     .eq("slot_key", validated.data.slotKey);
-  if (error) return { ok: false, error: "Your swap could not be reset. Please try again." };
+  if (error) {
+    logError("workouts.resetSwap", error);
+    return { ok: false, error: "Your swap could not be reset. Please try again." };
+  }
   return { ok: true };
 }
 
@@ -93,9 +107,9 @@ export type SaveWorkoutResult = { ok: true; logId: string } | { ok: false; error
 const saveError = "Your workout could not be saved. Please try again.";
 
 export async function saveWorkoutLogAction(rawLog: unknown): Promise<SaveWorkoutResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false, error: "You must be signed in to save a workout." };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: "You must be signed in to save a workout." };
+  const { supabase } = auth;
 
   const input = (rawLog ?? {}) as { logId?: unknown; templateKey?: unknown; dayKey?: unknown };
   if (typeof input.templateKey !== "string" || typeof input.dayKey !== "string") {
@@ -149,9 +163,9 @@ const earlierWorkoutLimit = 100;
 
 // For each exercise, the most recent workout before the given date that contains it.
 export async function loadLastSessionsAction(date: unknown, exerciseKeys: unknown): Promise<LastSessionsResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false };
+  const { supabase } = auth;
   if (typeof date !== "string" || !isCalendarDate(date)) return { ok: false };
   if (!Array.isArray(exerciseKeys) || exerciseKeys.length > maxExerciseKeys) return { ok: false };
   const keys = [...new Set(exerciseKeys)];

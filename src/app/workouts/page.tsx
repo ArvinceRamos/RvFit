@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { AuthFrame } from "@/components/auth-frame";
 import { DeleteWorkoutButton } from "@/components/delete-workout-button";
 import { SwapControl } from "@/components/swap-control";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/auth";
 import { choiceLabel, formatCalendarDate, planSummary, restText, schemeText } from "@/lib/workouts/format";
 import { orderSwaps } from "@/lib/workouts/swaps";
 import { applySwaps, resolveTemplate, resolveTemplateByKey, swapOptions } from "@/lib/workouts/templates";
@@ -14,15 +13,21 @@ function dayName(templateKey: string, dayKey: string): string {
   return resolveTemplateByKey(templateKey)?.days.find((day) => day.key === dayKey)?.name ?? dayKey;
 }
 
-export default async function WorkoutsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+export default async function WorkoutsPage({ searchParams }: PageProps<"/workouts">) {
+  const { supabase } = await requireUser();
+  // Set by the log form after a save, so the user sees it worked.
+  const savedParam = (await searchParams).saved;
+  const savedNotice = savedParam === "new" || savedParam === "updated" ? savedParam : null;
 
-  const { data: saved, error } = await supabase
-    .from("user_preferences")
-    .select("experience, equipment, training_days")
-    .maybeSingle();
+  const [{ data: saved, error }, { data: recent, error: recentError }] = await Promise.all([
+    supabase.from("user_preferences").select("experience, equipment, training_days").maybeSingle(),
+    supabase
+      .from("workout_logs")
+      .select("id, template_key, day_key, performed_on, workout_log_sets(count)")
+      .order("performed_on", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(recentWorkoutLimit),
+  ]);
 
   // Never guess level, equipment, or days. A saved row that no longer fits any template is treated as not set.
   const defaultTemplate = saved ? resolveTemplate(saved.experience, saved.training_days, saved.equipment) : null;
@@ -34,13 +39,6 @@ export default async function WorkoutsPage() {
         .eq("template_key", defaultTemplate.key)
     : { data: null, error: null };
 
-  const { data: recent, error: recentError } = await supabase
-    .from("workout_logs")
-    .select("id, template_key, day_key, performed_on, workout_log_sets(count)")
-    .order("performed_on", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(recentWorkoutLimit);
-
   const template = defaultTemplate ? applySwaps(defaultTemplate, orderSwaps(savedSwaps ?? [])) : null;
   const defaultExerciseBySlot = new Map(
     defaultTemplate?.days.flatMap((day) => day.slots.map((slot) => [slot.key, slot.exercise.key] as const)),
@@ -49,6 +47,12 @@ export default async function WorkoutsPage() {
   return (
     <AuthFrame showNav>
       <h1 className="text-4xl font-medium tracking-tight">Workouts</h1>
+      {savedNotice && (
+        <p className="alert-success mt-4" role="status">
+          {savedNotice === "updated" ? "Workout updated." : "Workout saved. Nice work."}{" "}
+          <Link className="font-semibold underline" href="/progress">See your progress</Link>
+        </p>
+      )}
 
       {error || swapsError ? (
         <p className="mt-6 text-sm text-danger">Your workout plan could not be loaded. Please try again.</p>
@@ -77,6 +81,7 @@ export default async function WorkoutsPage() {
                       <li key={slot.key}>
                         <p className="font-semibold">{slot.exercise.name}</p>
                         <p className="text-sm text-muted">{schemeText(slot.scheme, slot.exercise)} · {restText(slot.scheme)}</p>
+                        {slot.exercise.cue && <p className="mt-0.5 text-sm italic text-muted"><span className="sr-only">Form tip: </span>{slot.exercise.cue}</p>}
                         <SwapControl
                           choices={swapOptions(template, slot.key)
                             .filter((option) => option.key !== defaultKey)

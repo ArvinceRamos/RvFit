@@ -32,3 +32,12 @@ export const paceOptions: Record<"lose" | "gain", { value: PaceInput; title: str
     { value: "steady", title: "Faster", detail: "About 0.2 kg a week; a bit more fat." },
   ],
 };
+
+/** Short goal and pace context, such as "Lose weight · Slow pace". null when there is no goal (a manual target). */
+export function goalPaceLabel(goal: GoalInput | null | undefined, pace: PaceInput | null | undefined): string | null {
+  const goalTitle = goalOptions.find((option) => option.value === goal)?.title;
+  if (!goalTitle) return null;
+  if (goal === "maintain") return goalTitle;
+  const paceTitle = paceOptions[goal as "lose" | "gain"].find((option) => option.value === pace)?.title;
+  return paceTitle ? `${goalTitle} · ${paceTitle} pace` : goalTitle;
+}

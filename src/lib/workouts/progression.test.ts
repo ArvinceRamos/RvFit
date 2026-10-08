@@ -49,25 +49,50 @@ describe("lastTimeText", () => {
 describe("progressionPrompt", () => {
   const top = session([[12, null, 50], [12, null, 50], [12, null, 52.5]]);
 
-  it("adds the upper-body step to the heaviest weight, rounded to 0.5 kg", () => {
+  it("adds the upper-body step to the lowest planned weight, rounded to 0.5 kg", () => {
     expect(progressionPrompt(top, upperLoaded, 3, "metric")).toBe(
-      "You reached the top of the range on every set last time. Optional: try 55 kg.",
+      "You reached the top of the range on every set last time. Optional: try 52.5 kg and start again at the bottom of the rep range.",
     );
   });
 
   it("uses the larger step for lower-body patterns", () => {
-    expect(progressionPrompt(top, lowerLoaded, 3, "metric")).toContain("try 57.5 kg.");
+    expect(progressionPrompt(top, lowerLoaded, 3, "metric")).toContain("try 55 kg");
   });
 
-  it("rounds to 1 lb in imperial units", () => {
-    // 52.5 kg + 2.5 kg = 55 kg = 121.25 lb
-    expect(progressionPrompt(top, upperLoaded, 3, "imperial")).toContain("try 121 lb.");
+  it("ignores an extra heavy set beyond the plan (regression: 3x12 at 40 kg plus 1 set at 80 kg)", () => {
+    const extra = session([[12, null, 40], [12, null, 40], [12, null, 40], [3, null, 80]]);
+    expect(progressionPrompt(extra, upperLoaded, 3, "metric")).toContain("try 42.5 kg");
+    expect(progressionPrompt(extra, lowerLoaded, 3, "metric")).toContain("try 45 kg");
+  });
+
+  it("uses a small step for light loads such as a 6 kg lateral raise", () => {
+    const light = session([[12, null, 6], [12, null, 6], [12, null, 6]]);
+    expect(progressionPrompt(light, { ...upperLoaded, pattern: "side_delt" }, 3, "metric")).toContain("try 7 kg");
+    expect(progressionPrompt(light, { ...lowerLoaded, pattern: "single_leg" }, 3, "metric")).toContain("try 7 kg");
+  });
+
+  it("suggests loadable pound weights in 2.5 lb steps", () => {
+    // 50 kg = 110.2 lb; +5 lb = 115.2, rounded to 115
+    expect(progressionPrompt(top, upperLoaded, 3, "imperial")).toContain("try 115 lb");
+    // 6 kg = 13.2 lb; +2.5 lb = 15.7, rounded to 15
+    const light = session([[12, null, 6], [12, null, 6], [12, null, 6]]);
+    expect(progressionPrompt(light, upperLoaded, 3, "imperial")).toContain("try 15 lb");
+    // A lower-body lift logged as 225 lb steps to 235 lb.
+    const squat = session([[12, null, 102.06], [12, null, 102.06], [12, null, 102.06]]);
+    expect(progressionPrompt(squat, lowerLoaded, 3, "imperial")).toContain("try 235 lb");
+  });
+
+  it("always suggests more than the current weight", () => {
+    const sets = session([[12, null, 19.9], [12, null, 19.9], [12, null, 19.9]]);
+    const prompt = progressionPrompt(sets, upperLoaded, 3, "metric");
+    expect(prompt).toContain("try 21 kg");
   });
 
   it("does not show when a planned set missed the top, or too few sets were logged", () => {
     expect(progressionPrompt(session([[12, null, 50], [11, null, 50], [12, null, 50]]), upperLoaded, 3, "metric")).toBeNull();
     expect(progressionPrompt(session([[12, null, 50], [12, null, 50]]), upperLoaded, 3, "metric")).toBeNull();
     expect(progressionPrompt(session([]), upperLoaded, 3, "metric")).toBeNull();
+    expect(progressionPrompt(session([]), upperLoaded, 0, "metric")).toBeNull();
   });
 
   it("allows extra sets and only checks the planned ones", () => {
@@ -75,16 +100,26 @@ describe("progressionPrompt", () => {
     expect(progressionPrompt(extra, upperLoaded, 3, "metric")).not.toBeNull();
   });
 
-  it("shows nothing for a loaded exercise logged without weights", () => {
+  it("shows nothing for a loaded exercise when a planned set has no weight", () => {
     expect(progressionPrompt(session([[12, null, null], [12, null, null], [12, null, null]]), upperLoaded, 3, "metric")).toBeNull();
+    expect(progressionPrompt(session([[12, null, 50], [12, null, null], [12, null, 50]]), upperLoaded, 3, "metric")).toBeNull();
   });
 
   it("suggests a few more reps for an unloaded exercise", () => {
     expect(progressionPrompt(session([[12, null, null], [13, null, null]]), bodyweight, 2, "metric")).toContain("aim for 14 reps per set.");
   });
 
-  it("suggests a few more seconds for a hold", () => {
+  it("caps bodyweight reps and suggests a harder exercise at the ceiling", () => {
+    expect(progressionPrompt(session([[19, null, null], [19, null, null]]), bodyweight, 2, "metric")).toContain("aim for 20 reps per set.");
+    const many = progressionPrompt(session([[30, null, null], [30, null, null]]), bodyweight, 2, "metric");
+    expect(many).toContain("harder exercise with Swap");
+    expect(many).not.toContain("reps per set");
+  });
+
+  it("suggests a few more seconds for a hold, capped, then a harder exercise", () => {
     expect(progressionPrompt(session([[null, 40, null], [null, 42, null]]), hold, 2, "metric")).toContain("hold 45 seconds per set.");
     expect(progressionPrompt(session([[null, 39, null], [null, 42, null]]), hold, 2, "metric")).toBeNull();
+    expect(progressionPrompt(session([[null, 58, null], [null, 58, null]]), hold, 2, "metric")).toContain("hold 60 seconds per set.");
+    expect(progressionPrompt(session([[null, 60, null], [null, 75, null]]), hold, 2, "metric")).toContain("harder exercise with Swap");
   });
 });

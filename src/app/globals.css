@@ -5,19 +5,19 @@
   Dark is the default. Light applies when <html data-theme="light"> (set by the script in layout.tsx).
 */
 :root {
-  --page: #111413;
-  --card: #1c1c1c;
+  --page: #161a18;
+  --card: #222624;
   --ink: #fef9f5;
   --muted: #a3a3a3;
   --line: rgb(254 249 245 / 0.1);
-  --track: #333333;
+  --track: #363b38;
   --accent: #affa00;
   --accent-soft: #cfed89;
   --accent-text: #affa00;
-  --on-accent: #000000;
+  --on-accent: #141a0f;
   --warn: #fbbf24;
   --danger: #f87171;
-  --field: #0d0d0d;
+  --field: #1b1f1d;
   --edge: rgb(254 249 245 / 0.4);
   --selected: rgb(175 250 0 / 0.12);
   --selected-edge: #affa00;
@@ -25,25 +25,39 @@
   --danger-bg: rgb(248 113 113 / 0.12);
   --danger-edge: rgb(248 113 113 / 0.4);
   --danger-fill: #f87171;
-  --on-danger: #000000;
-  --btn2-bg: rgb(0 0 0 / 0.3);
+  --on-danger: #1f1414;
+  --btn2-bg: rgb(34 38 36 / 0.5);
   --btn2-edge: rgb(175 250 0 / 0.3);
   --btn2-edge-hover: #affa00;
+  /* Design system (AU-9). Glass is for floating surfaces only: sticky headers, the auth card, dropdowns. */
+  --focus: #affa00;
+  --float: rgb(34 38 36 / 0.62);
+  --float-edge: rgb(254 249 245 / 0.1);
+  --highlight: inset 0 1px 0 0 rgb(255 255 255 / 0.05);
+  --shadow-card: 0 1px 2px rgb(8 12 10 / 0.35), 0 12px 32px -16px rgb(8 12 10 / 0.55);
+  --shadow-float: 0 24px 64px -24px rgb(8 12 10 / 0.7);
+  --tile: rgb(255 255 255 / 0.03);
+  --glass-edge: rgb(254 249 245 / 0.12);
+  --success-bg: rgb(175 250 0 / 0.1);
+  --success-edge: rgb(175 250 0 / 0.35);
   color-scheme: dark;
 }
 
+/* Light is the dark theme flipped (AU-44): sage-tinted neutrals that sit well with lime, frosted white
+   glass over a soft green glow, fields sunk slightly below the card, and shadows tinted like the ink. */
 :root[data-theme="light"] {
-  --page: #fef9f5;
+  --page: #f3f5f1;
   --card: #ffffff;
-  --ink: #111111;
-  --muted: #52525b;
-  --line: rgb(0 0 0 / 0.1);
-  --track: #e4e4e7;
+  --ink: #1b1f1d;
+  --muted: #525a55;
+  --line: rgb(27 31 29 / 0.1);
+  --track: #e2e7df;
   --accent-text: #3f6212;
   --warn: #92400e;
   --danger: #b91c1c;
-  --field: #ffffff;
-  --edge: rgb(0 0 0 / 0.5);
+  --field: #f7f8f5;
+  /* 50% is the lowest that keeps input borders at 3:1. */
+  --edge: rgb(27 31 29 / 0.5);
   --selected: rgb(175 250 0 / 0.25);
   --selected-edge: #4d7c0f;
   --warn-bg: rgb(245 158 11 / 0.12);
@@ -51,10 +65,27 @@
   --danger-edge: rgb(220 38 38 / 0.4);
   --danger-fill: #b91c1c;
   --on-danger: #ffffff;
-  --btn2-bg: rgb(0 0 0 / 0.04);
+  --btn2-bg: rgb(255 255 255 / 0.55);
   --btn2-edge: rgb(63 98 18 / 0.4);
   --btn2-edge-hover: #3f6212;
+  --focus: #3f6212;
+  --float: rgb(255 255 255 / 0.68);
+  --float-edge: rgb(27 31 29 / 0.08);
+  --highlight: inset 0 1px 0 0 rgb(255 255 255 / 0.95);
+  /* The first ring is a faint ink hairline: a white glass edge alone disappears on the sage page. */
+  --shadow-card: 0 0 0 1px rgb(27 31 29 / 0.05), 0 1px 2px rgb(27 31 29 / 0.06), 0 12px 32px -16px rgb(27 31 29 / 0.18);
+  --shadow-float: 0 24px 64px -24px rgb(27 31 29 / 0.24);
+  --tile: rgb(27 31 29 / 0.03);
+  --glass-edge: rgb(255 255 255 / 0.8);
+  --success-bg: rgb(77 124 15 / 0.1);
+  --success-edge: rgb(77 124 15 / 0.4);
   color-scheme: light;
+}
+
+/* The ribbon glows with additive light, which vanishes on a light page. Multiply turns it into soft green streaks instead. */
+:root[data-theme="light"] .ribbon-canvas,
+:root[data-theme="light"] .ribbon-static {
+  mix-blend-mode: multiply;
 }
 
 @theme inline {
@@ -81,6 +112,12 @@
   --color-danger-edge: var(--danger-edge);
   --color-danger-fill: var(--danger-fill);
   --color-on-danger: var(--on-danger);
+  --color-focus: var(--focus);
+  --color-tile: var(--tile);
+  --color-success-bg: var(--success-bg);
+  --color-success-edge: var(--success-edge);
+  --color-btn2-edge: var(--btn2-edge);
+  --color-btn2-edge-hover: var(--btn2-edge-hover);
 }
 
 body {
@@ -90,25 +127,38 @@ body {
 
 /* The landing page is always dark, whatever the saved theme. Same values as the dark tokens in :root. */
 .landing {
-  --page: #111413;
-  --card: #1c1c1c;
+  --page: #161a18;
+  --card: #222624;
   --ink: #fef9f5;
   --muted: #a3a3a3;
   --line: rgb(254 249 245 / 0.1);
-  --track: #333333;
+  --track: #363b38;
   --accent-text: #affa00;
-  --field: #0d0d0d;
+  --field: #1b1f1d;
   --edge: rgb(254 249 245 / 0.4);
-  --btn2-bg: rgb(0 0 0 / 0.3);
+  --btn2-bg: rgb(34 38 36 / 0.5);
   --btn2-edge: rgb(175 250 0 / 0.3);
   --btn2-edge-hover: #affa00;
   --warn: #fbbf24;
   --warn-bg: rgb(251 191 36 / 0.12);
   --selected: rgb(175 250 0 / 0.12);
   --selected-edge: #affa00;
-  background-color: var(--page);
+  --focus: #affa00;
+  --float: rgb(34 38 36 / 0.62);
+  --float-edge: rgb(254 249 245 / 0.1);
+  --highlight: inset 0 1px 0 0 rgb(255 255 255 / 0.05);
+  --shadow-card: 0 1px 2px rgb(8 12 10 / 0.35), 0 12px 32px -16px rgb(8 12 10 / 0.55);
+  --shadow-float: 0 24px 64px -24px rgb(8 12 10 / 0.7);
+  --tile: rgb(255 255 255 / 0.03);
+  --glass-edge: rgb(254 249 245 / 0.12);
   color: var(--ink);
   color-scheme: dark;
+}
+
+/* The ribbon lives in the root layout behind every page, so the landing wrapper paints no background of its own.
+   The page colour comes from the body instead, kept dark on the landing page whatever the saved theme. */
+body:has(.landing) {
+  background-color: #161a18;
 }
 
 /* Landing page static ribbon. CSS only, no image file. It shows on phones, with reduced motion,
@@ -311,15 +361,50 @@ body {
   }
 }
 
+/* Keyboard focus: one visible ring everywhere (WCAG 2.4.7). --focus is lime on dark and dark green on light. */
+:where(a, button, summary, [role="button"], input[type="checkbox"], input[type="radio"]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/*
+  Design system (AU-9). Radius: 12px controls and tiles, 14px buttons, 22px cards.
+  Cards and floating surfaces are frosted glass over the ribbon. Tiles, fields and chips inside them stay solid enough to read.
+*/
 @layer components {
+  /* Frosted glass, like the landing PreviewFrame: the ribbon behind the page shows through, blurred. */
   .card {
     border-radius: 22px;
-    border: 1px solid var(--line);
-    background: color-mix(in srgb, var(--card) 88%, transparent);
+    border: 1px solid var(--glass-edge);
+    background: color-mix(in srgb, var(--card) 62%, transparent);
     padding: 1.25rem;
-    box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+    box-shadow: var(--highlight), var(--shadow-card);
+    backdrop-filter: blur(18px) saturate(140%);
   }
 
+  .card-compact {
+    padding: 1rem;
+  }
+
+  .card-danger {
+    border-color: var(--danger-edge);
+  }
+
+  /* A block inside a card (stat tiles, option rows). Use instead of a card inside a card. */
+  .tile {
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--tile);
+  }
+
+  .surface-float {
+    border: 1px solid var(--float-edge);
+    background: var(--float);
+    box-shadow: var(--highlight), var(--shadow-float);
+    backdrop-filter: blur(16px) saturate(140%);
+  }
+
+  /* Inputs */
   .field {
     border-radius: 12px;
     border: 1px solid var(--edge);
@@ -330,18 +415,39 @@ body {
     font-weight: 400;
   }
 
+  .field::placeholder {
+    color: var(--muted);
+  }
+
   .field:focus-visible {
-    outline: 2px solid var(--selected-edge);
+    outline: 2px solid var(--focus);
     outline-offset: 1px;
   }
 
+  .field:disabled {
+    opacity: 0.6;
+  }
+
+  /* Buttons. Each class works alone; add .btn-sm for a compact one. */
   .btn-primary,
-  .btn-secondary {
-    display: inline-block;
-    border-radius: 15px;
-    padding: 0.75rem 1rem;
+  .btn-secondary,
+  .btn-ghost,
+  .btn-danger,
+  .btn-danger-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    border-radius: 14px;
+    padding: 0.625rem 1rem;
     font-size: 0.875rem;
     font-weight: 700;
+    text-align: center;
+    transition:
+      background-color 0.15s ease-out,
+      border-color 0.15s ease-out,
+      color 0.15s ease-out;
   }
 
   .btn-primary {
@@ -362,4 +468,198 @@ body {
   .btn-secondary:hover {
     border-color: var(--btn2-edge-hover);
   }
+
+  .btn-ghost {
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .btn-ghost:hover {
+    background: var(--line);
+    color: var(--ink);
+  }
+
+  .btn-ghost[aria-current="page"] {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .btn-danger {
+    background: var(--danger-fill);
+    color: var(--on-danger);
+  }
+
+  .btn-danger-outline {
+    border: 1px solid var(--danger-edge);
+    color: var(--danger);
+  }
+
+  .btn-danger-outline:hover {
+    background: var(--danger-bg);
+  }
+
+  .btn-sm {
+    min-height: 2.25rem;
+    border-radius: 10px;
+    padding: 0.375rem 0.75rem;
+  }
+
+  :is(.btn-primary, .btn-secondary, .btn-ghost, .btn-danger, .btn-danger-outline):disabled,
+  :is(.btn-primary, .btn-secondary, .btn-ghost, .btn-danger, .btn-danger-outline)[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  /* Segmented control: a row of buttons with aria-pressed; the pressed one is filled. */
+  .segmented {
+    display: inline-flex;
+    gap: 0.25rem;
+    border-radius: 12px;
+    border: 1px solid var(--edge);
+    background: var(--field);
+    padding: 0.25rem;
+  }
+
+  .segmented > button {
+    border-radius: 9px;
+    padding: 0.375rem 0.875rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .segmented > button:hover {
+    background: var(--line);
+    color: var(--ink);
+  }
+
+  .segmented > button[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  /* Chips: small round toggles for foods, days and filters. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 9999px;
+    border: 1px solid var(--edge);
+    background: var(--field);
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .chip:hover {
+    border-color: var(--selected-edge);
+  }
+
+  .chip[aria-pressed="true"],
+  .chip:has(input:checked) {
+    border-color: var(--selected-edge);
+    background: var(--selected);
+  }
+
+  /* Option cards: a larger choice with a title and a line of detail. */
+  .choice {
+    border-radius: 12px;
+    border: 1px solid var(--edge);
+    background: var(--field);
+    padding: 0.75rem;
+    text-align: left;
+  }
+
+  .choice:hover {
+    border-color: var(--selected-edge);
+  }
+
+  .choice[aria-pressed="true"],
+  .choice:has(input:checked) {
+    border-color: var(--selected-edge);
+    background: var(--selected);
+  }
+
+  /* Messages. Always with words, so colour is never the only signal. */
+  .alert-danger,
+  .alert-warn,
+  .alert-success {
+    border-radius: 12px;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .alert-danger {
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+
+  .alert-warn {
+    background: var(--warn-bg);
+    color: var(--warn);
+  }
+
+  .alert-success {
+    border: 1px solid var(--success-edge);
+    background: var(--success-bg);
+    color: var(--ink);
+  }
 }
+
+/* Phones keep the glass with a lighter blur, which costs less to draw. */
+@media (max-width: 767px) {
+  .card,
+  .surface-float,
+  .landing .preview-card,
+  .landing-nav {
+    backdrop-filter: blur(12px) saturate(140%);
+  }
+}
+
+/* Anyone who asks the system for less transparency gets solid surfaces. */
+@media (prefers-reduced-transparency: reduce) {
+  .card,
+  .surface-float,
+  .landing .preview-card,
+  .landing-nav {
+    backdrop-filter: none;
+    background: var(--card);
+  }
+}
+
+/* Honest-estimates 3D stages (EstimateStory): a dark graphite studio with a soft lime glow. */
+.showcase-stage {
+  background:
+    radial-gradient(60% 50% at 75% 55%, rgb(175 250 0 / 0.07), transparent 70%),
+    linear-gradient(180deg, #121614, #1a1f1c 60%, #121614);
+}
+
+/* The floor glow under the 3D object. */
+.showcase-floor {
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  bottom: 8%;
+  height: 18%;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgb(175 250 0 / 0.22), rgb(175 250 0 / 0.06) 60%, transparent);
+  filter: blur(18px);
+}
+
+/* The pinned panel's label and facts fade in when the active stage changes. */
+.roadmap-pinned-text {
+  animation: pinned-in 0.4s ease-out both;
+}
+
+@keyframes pinned-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roadmap-pinned-text {
+    animation: none;
+  }
+}
+

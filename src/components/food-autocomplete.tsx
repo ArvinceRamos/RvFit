@@ -75,7 +75,7 @@ export function FoodAutocomplete({ foods, value, onValueChange, onSelect, label,
         value={value}
       />
       {showList && (
-        <ul className="absolute left-0 right-0 top-full z-10 mt-1 max-h-72 overflow-auto rounded-lg border border-edge bg-card shadow-lg" id={listId} role="listbox">
+        <ul className="surface-float absolute left-0 right-0 top-full z-10 mt-1 max-h-72 overflow-auto rounded-xl" id={listId} role="listbox">
           {suggestions.map((food, index) => (
             <li
               aria-selected={index === active}

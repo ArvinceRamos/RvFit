@@ -28,6 +28,12 @@ describe("logSlots", () => {
     expect(slots[0].choices.map((choice) => choice.key)).toEqual([squat.exercise.key, ...swapOptions(plan, squat.key).map((item) => item.key)]);
   });
 
+  it("carries each exercise's form cue so the log screen can show it", () => {
+    const slots = logSlots(plan, "a", new Map())!;
+    expect(slots[0].choices[0].cue).toBe(squat.exercise.cue);
+    expect(slots.flatMap((slot) => slot.choices).filter((choice) => choice.cue).length).toBeGreaterThan(0);
+  });
+
   it("returns null for an unknown day and keeps a saved exercise that is no longer an option", () => {
     expect(logSlots(plan, "nope", new Map())).toBeNull();
     const slots = logSlots(plan, "a", new Map([[squat.key, "push-up"]]))!;

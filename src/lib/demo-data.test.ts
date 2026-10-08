@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   barPercent,
   DEMO_MEAL,
+  DEMO_OWN_TARGET,
   DEMO_PROFILE_EDIT,
   DEMO_RESULT,
   DEMO_SWAP_KEYS,
@@ -17,6 +18,7 @@ import {
   demoWeightWindow,
   sevenDayAverages,
 } from "./demo-data";
+import { checkMacroMismatch } from "./calc/calculate";
 import { getExercise } from "./workouts/exercises";
 
 describe("barPercent", () => {
@@ -44,9 +46,11 @@ describe("demo data", () => {
     expect(DEMO_MEAL.slots.map((s) => s.slot)).toEqual(["Protein", "Carbs", "Fat", "Fiber"]);
   });
 
-  it("has a workout day with exercises", () => {
-    expect(DEMO_WORKOUT.exercises.length).toBeGreaterThan(0);
+  it("has a workout day made only of real library exercises", () => {
+    expect(DEMO_WORKOUT.exerciseKeys.length).toBeGreaterThan(0);
+    for (const key of DEMO_WORKOUT.exerciseKeys) expect(getExercise(key)).toBeDefined();
   });
+
 });
 
 describe("chart demo data", () => {
@@ -72,13 +76,26 @@ describe("chart demo data", () => {
   });
 });
 
+describe("redesigned preview data", () => {
+  it("gives the own target believable macros (no 5% warning)", () => {
+    const g = (label: string) => DEMO_OWN_TARGET.macros.find((m) => m.label === label)!.grams;
+    const result = checkMacroMismatch({ protein_g: g("Protein"), carbs_g: g("Carbs"), fat_g: g("Fat"), fiber_g: g("Fiber") }, DEMO_OWN_TARGET.calories);
+    expect(result.ok && result.data.warning).toBe(false);
+  });
+
+  it("never shows more workouts this week than planned", () => {
+    const now = DEMO_WORKOUT_WEEKS.counts[DEMO_WORKOUT_WEEKS.counts.length - 1];
+    expect(now).toBeLessThanOrEqual(DEMO_WORKOUT_WEEKS.planned);
+  });
+});
+
 describe("interactive preview data", () => {
   it("unticking the meal takes exactly its calories off the day", () => {
     expect(DEMO_MEAL.eatenBefore + DEMO_MEAL.mealCalories).toBe(DEMO_MEAL.dayCalories);
   });
 
   it("swaps only to real exercises from the library, starting with the shown one", () => {
-    expect(getExercise(DEMO_SWAP_KEYS[0])?.name).toBe(DEMO_WORKOUT.exercises[0].name);
+    expect(DEMO_SWAP_KEYS[0]).toBe(DEMO_WORKOUT.exerciseKeys[0]);
     for (const key of DEMO_SWAP_KEYS) expect(getExercise(key)).toBeDefined();
   });
 

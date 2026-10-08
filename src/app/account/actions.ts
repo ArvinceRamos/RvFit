@@ -1,14 +1,14 @@
 "use server";
 
 import { saveInitialGuestDraft, type SaveGuestDraftResult } from "@/lib/save-guest-draft";
-import { createClient } from "@/lib/supabase/server";
+import { getActionUser } from "@/lib/supabase/auth";
 import { readWeighInFields, validateWeighIn } from "@/lib/weigh-in";
+import { logError } from "@/lib/log";
 
 export async function saveGuestDraftAction(rawDraft: unknown): Promise<SaveGuestDraftResult> {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return { ok: false, error: "You must be signed in to save your draft." };
-  return saveInitialGuestDraft(supabase, user.id, rawDraft);
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: "You must be signed in to save your draft." };
+  return saveInitialGuestDraft(auth.supabase, auth.user.id, rawDraft);
 }
 
 export type SaveWeighInResult = { ok: true } | { ok: false; error: string };
@@ -17,9 +17,9 @@ export async function saveWeighInAction(
   rawFields: unknown,
   preferredUnits: unknown,
 ): Promise<SaveWeighInResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false, error: "You must be signed in to save a weigh-in." };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: "You must be signed in to save a weigh-in." };
+  const { supabase, user } = auth;
 
   if (preferredUnits !== "metric" && preferredUnits !== "imperial") {
     return { ok: false, error: "Choose metric or imperial units." };
@@ -34,7 +34,10 @@ export async function saveWeighInAction(
     logged_at: new Date().toISOString(),
     ...validated.data,
   });
-  if (error) return { ok: false, error: "Your weigh-in could not be saved. Please try again." };
+  if (error) {
+    logError("account.saveWeighIn", error);
+    return { ok: false, error: "Your weigh-in could not be saved. Please try again." };
+  }
 
   return { ok: true };
 }

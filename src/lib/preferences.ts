@@ -136,3 +136,52 @@ export function diffAvoidedFoods(current: string[], next: string[]): { toAdd: st
     toRemove: current.filter((id) => !nextSet.has(id)),
   };
 }
+
+type ReadResult<T> = { data: T | null; error: unknown };
+
+export type PreferencesPageData = {
+  foods: { id: string; name: string; role: string; preparation_state: string; diet_tags: string[] | null }[];
+  offeredTags: DietTag[];
+  initial: {
+    allergyTags: DietTag[];
+    avoidedFoodIds: string[];
+    experience: Experience;
+    equipment: Equipment;
+    trainingDays: number;
+  };
+  // False when no preferences row exists yet, so the values shown are unsaved defaults.
+  isSaved: boolean;
+};
+
+/**
+ * Builds the Preferences form values from the three reads.
+ * Returns null if any read failed. Showing empty values after a failed read would let
+ * Save overwrite the user's real allergy tags and avoided foods.
+ */
+export function preferencesPageData(
+  catalog: ReadResult<PreferencesPageData["foods"]>,
+  saved: ReadResult<{ allergy_tags: string[] | null; experience: string | null; equipment: string | null; training_days: number | null }>,
+  avoided: ReadResult<{ food_id: string }[]>,
+): PreferencesPageData | null {
+  if (catalog.error || saved.error || avoided.error || !catalog.data || !avoided.data) return null;
+
+  const row = saved.data;
+  const foods = catalog.data;
+  const experience = experiences.find((value) => value === row?.experience) ?? "beginner";
+  const equipment = equipmentOptions.find((value) => value === row?.equipment) ?? "bodyweight";
+  const trainingDays = row && trainingDayOptions(experience).includes(row.training_days ?? 0) ? row.training_days! : 3;
+  const offeredTags = availableAllergyTags(foods.map((food) => food.diet_tags));
+
+  return {
+    foods,
+    offeredTags,
+    initial: {
+      allergyTags: dietTags.filter((tag) => offeredTags.includes(tag) && row?.allergy_tags?.includes(tag)),
+      avoidedFoodIds: avoided.data.map((item) => item.food_id),
+      experience,
+      equipment,
+      trainingDays,
+    },
+    isSaved: row !== null,
+  };
+}

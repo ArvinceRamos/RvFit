@@ -1,7 +1,7 @@
 "use server";
 
 import { calculationConfig } from "@/lib/calc/config";
-import { createClient } from "@/lib/supabase/server";
+import { getActionUser } from "@/lib/supabase/auth";
 import { addTotals, isCalendarDate, isUuid, mealTotals, validateMeal, type MealTotals } from "@/lib/meal";
 import { groupMealDays, mealDaysRange, readMealDayView, type MealDay } from "@/lib/meal-days";
 import { nutritionColumns, type NutritionRow } from "@/lib/meal-foods";
@@ -13,15 +13,17 @@ import {
   type PlanFood,
 } from "@/lib/meal-plan-save";
 import type { LoggedDay } from "@/lib/meal-planner";
+import { firstFreeMealLabel } from "@/lib/meal-slots";
 import { eatenAndPlanned, itemRowsTotals, loadMeals } from "@/lib/overview-data";
 import { addDays } from "@/lib/week";
+import { logError } from "@/lib/log";
 
 export type SaveMealResult = { ok: true; mealId: string } | { ok: false; error: string };
 
 export async function saveMealAction(rawMeal: unknown): Promise<SaveMealResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false, error: "You must be signed in to save a meal." };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: "You must be signed in to save a meal." };
+  const { supabase } = auth;
 
   const validated = validateMeal(rawMeal);
   if (!validated.ok) return validated;
@@ -43,14 +45,42 @@ export async function saveMealAction(rawMeal: unknown): Promise<SaveMealResult> 
   return { ok: true, mealId };
 }
 
+export type CopyMealResult = { ok: true; label: string } | { ok: false; error: string };
+
+// "Log again": copies a saved meal's foods and grams to a date as a new logged meal, under the first
+// free label. Row-level security means only the owner's meal can be read.
+export async function copyMealToDateAction(mealId: unknown, date: unknown): Promise<CopyMealResult> {
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: "You must be signed in to log a meal." };
+  const { supabase } = auth;
+  if (!isUuid(mealId) || typeof date !== "string" || !isCalendarDate(date)) return { ok: false, error: "Meal details are invalid." };
+
+  const [{ data: meal, error: mealError }, { data: sameDay, error: dayError }] = await Promise.all([
+    supabase.from("meals").select("meal_items(food_id, grams)").eq("id", mealId).maybeSingle(),
+    supabase.from("meals").select("label").eq("meal_date", date),
+  ]);
+  if (mealError || dayError) {
+    logError("meals.copy", mealError, dayError);
+    return { ok: false, error: "That meal could not be copied. Please try again." };
+  }
+  if (!meal) return { ok: false, error: "That meal was not found." };
+
+  const label = firstFreeMealLabel((sameDay ?? []).map((row) => row.label as string));
+  if (!label) return { ok: false, error: "All six meal labels are used on that day." };
+
+  const items = (meal.meal_items as { food_id: string; grams: number | string }[]).map((item) => ({ foodId: item.food_id, grams: Number(item.grams) }));
+  const saved = await saveMealAction({ mealId: null, date, label, items });
+  return saved.ok ? { ok: true, label } : { ok: false, error: saved.error };
+}
+
 export type SaveMealPlanResult = { ok: true; mealIds: string[] } | { ok: false; error: string };
 
 // Saves a previewed meal plan as normal meals. Everything is checked again here, and the database
 // function saves the whole plan or nothing.
 export async function saveMealPlanAction(rawPlan: unknown): Promise<SaveMealPlanResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false, error: "You must be signed in to save a meal plan." };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: "You must be signed in to save a meal plan." };
+  const { supabase } = auth;
 
   const validated = validateMealPlan(rawPlan);
   if (!validated.ok) return validated;
@@ -66,6 +96,7 @@ export async function saveMealPlanAction(rawPlan: unknown): Promise<SaveMealPlan
   ]);
   // If saved allergies or avoided foods cannot be read, save nothing rather than skip the check.
   if (foods.error || preferences.error || avoided.error || saved.error || !foods.data || !avoided.data || !saved.data) {
+    logError("meals.savePlan", foods.error, preferences.error, avoided.error, saved.error);
     return { ok: false, error: "Your plan could not be saved. Please try again." };
   }
 
@@ -93,13 +124,16 @@ export type SetMealEatenResult = { ok: true } | { ok: false; error: string };
 
 // Ticks a meal as eaten, or unticks it. Row-level security limits the update to the owner's meals.
 export async function setMealEatenAction(mealId: unknown, eaten: unknown): Promise<SetMealEatenResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false, error: "You must be signed in to update a meal." };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: "You must be signed in to update a meal." };
+  const { supabase } = auth;
   if (!isUuid(mealId) || typeof eaten !== "boolean") return { ok: false, error: "Meal details are invalid." };
 
   const { data, error } = await supabase.from("meals").update({ eaten }).eq("id", mealId).select("id");
-  if (error) return { ok: false, error: "The meal could not be updated. Please try again." };
+  if (error) {
+    logError("meals.update", error);
+    return { ok: false, error: "The meal could not be updated. Please try again." };
+  }
   if (!data || data.length === 0) return { ok: false, error: "Meal not found." };
   return { ok: true };
 }
@@ -108,13 +142,16 @@ export type DeleteMealResult = { ok: true } | { ok: false; error: string };
 
 // Row-level security limits the delete to the owner's meals. Meal items go with the meal.
 export async function deleteMealAction(mealId: unknown): Promise<DeleteMealResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false, error: "You must be signed in to delete a meal." };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: "You must be signed in to delete a meal." };
+  const { supabase } = auth;
   if (!isUuid(mealId)) return { ok: false, error: "Meal details are invalid." };
 
   const { data, error } = await supabase.from("meals").delete().eq("id", mealId).select("id");
-  if (error) return { ok: false, error: "The meal could not be deleted. Please try again." };
+  if (error) {
+    logError("meals.delete", error);
+    return { ok: false, error: "The meal could not be deleted. Please try again." };
+  }
   if (!data || data.length === 0) return { ok: false, error: "Meal not found." };
   return { ok: true };
 }
@@ -125,9 +162,9 @@ export type DayTotalsResult = { ok: true; totals: MealTotals; planned: MealTotal
 // Totals of the user's saved meals on one date, leaving out the meal being edited
 // because the builder counts that meal's current items itself.
 export async function loadDayTotalsAction(date: unknown, excludeMealId: unknown): Promise<DayTotalsResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false };
+  const { supabase } = auth;
   if (typeof date !== "string" || !isCalendarDate(date)) return { ok: false };
   if (excludeMealId !== null && !isUuid(excludeMealId)) return { ok: false };
 
@@ -157,9 +194,9 @@ export type PlanDaysResult = { ok: true; logged: Record<string, LoggedDay> } | {
 
 // Labels and totals of the meals already saved on each date of a plan, for the meal planner.
 export async function loadPlanDaysAction(startDate: unknown, days: unknown): Promise<PlanDaysResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false };
+  const { supabase } = auth;
   if (typeof startDate !== "string" || !isCalendarDate(startDate)) return { ok: false };
   if (typeof days !== "number" || !Number.isInteger(days) || days < 1 || days > calculationConfig.meal_planner.max_days) {
     return { ok: false };
@@ -180,9 +217,9 @@ export type MealDaysResult = { ok: true; days: MealDay[] } | { ok: false };
 
 // Meals for the Meals page tabs, grouped by day with food names and grams. "today" is the browser's local date.
 export async function loadMealDaysAction(view: unknown, today: unknown): Promise<MealDaysResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false };
+  const { supabase } = auth;
   if (typeof today !== "string" || !isCalendarDate(today)) return { ok: false };
 
   const range = mealDaysRange(readMealDayView(view), today);

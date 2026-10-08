@@ -7,7 +7,7 @@ const limits = calculationConfig.workouts;
 const lowerBodyPatterns: readonly string[] = ["squat", "hinge", "single_leg"];
 
 export type LastSet = { setNumber: number; reps: number | null; seconds: number | null; weightKg: number | null };
-export type LastSession = { performedOn: string; sets: LastSet[] };
+export type LastSession = { performedOn: string; sets: readonly LastSet[] };
 
 // Rows as returned for earlier workouts, newest first, each holding only the sets we asked about.
 export type EarlierLog = {
@@ -50,16 +50,29 @@ export function lastTimeText(last: LastSession, measure: LogChoice["measure"], u
   return `${formatCalendarDate(last.performedOn)}: ${sets.join(", ")}`;
 }
 
-// Practical step: 0.5 kg, or 1 lb.
-function roundWeight(weightKg: number, units: PreferredUnits): number {
-  if (units === "metric") return Math.round(weightKg * 2) / 2;
-  return Math.round(weightKg / calculationConfig.unit_conversions.pounds_to_kilograms);
+function roundTo(value: number, step: number): number {
+  return Math.round(value / step) * step;
 }
+
+// The next weight, in the user's units. The base is the lowest weight across the planned sets,
+// so an extra heavy (or light) set never drives the suggestion. Light loads use a smaller step,
+// and the result is rounded to a weight people can actually load (0.5 kg or 2.5 lb).
+function nextWeight(baseKg: number, lowerBody: boolean, units: PreferredUnits): number {
+  const size = baseKg < limits.small_load_kg ? "small" : lowerBody ? "lower" : "upper";
+  const base = units === "metric" ? baseKg : baseKg / calculationConfig.unit_conversions.pounds_to_kilograms;
+  const step = units === "metric" ? limits.weight_step_kg[size] : limits.weight_step_lb[size];
+  const rounding = units === "metric" ? limits.weight_rounding.kg : limits.weight_rounding.lb;
+  let target = roundTo(base + step, rounding);
+  if (target <= base) target += rounding;
+  return Math.round(target * 10) / 10;
+}
+
+const harderOption = "Optional: try a harder exercise with Swap on the Workouts page.";
 
 /**
  * An optional suggestion, or null. It never changes a plan or a log.
  * It shows only when the last session has at least the planned number of sets and each
- * planned set reached the top of the range.
+ * planned set reached the top of the range. Only the planned sets are used.
  */
 export function progressionPrompt(
   last: LastSession,
@@ -67,19 +80,23 @@ export function progressionPrompt(
   plannedSets: number,
   units: PreferredUnits,
 ): string | null {
-  if (last.sets.length < plannedSets) return null;
+  if (plannedSets < 1 || last.sets.length < plannedSets) return null;
   const planned = last.sets.slice(0, plannedSets);
   if (planned.some((set) => amountOf(set) < choice.topOfRange)) return null;
 
-  const earned = "You reached the top of the range on every set last time. Optional:";
+  const earned = "You reached the top of the range on every set last time.";
   if (choice.loaded) {
-    const weights = last.sets.map((set) => set.weightKg).filter((weight): weight is number => weight !== null);
-    if (weights.length === 0) return null;
-    const step = lowerBodyPatterns.includes(choice.pattern) ? limits.weight_step_kg.lower : limits.weight_step_kg.upper;
-    const target = roundWeight(Math.max(...weights) + step, units);
-    return `${earned} try ${target} ${weightUnit(units)}.`;
+    // Every planned set needs a weight, or there is nothing safe to build on.
+    if (planned.some((set) => set.weightKg === null || set.weightKg <= 0)) return null;
+    const base = Math.min(...planned.map((set) => set.weightKg as number));
+    const target = nextWeight(base, lowerBodyPatterns.includes(choice.pattern), units);
+    return `${earned} Optional: try ${target} ${weightUnit(units)} and start again at the bottom of the rep range.`;
   }
   const lowest = Math.min(...planned.map(amountOf));
-  if (choice.measure === "seconds") return `${earned} hold ${lowest + limits.extra_seconds_hold} seconds per set.`;
-  return `${earned} aim for ${lowest + limits.extra_reps_unloaded} reps per set.`;
+  if (choice.measure === "seconds") {
+    if (lowest >= limits.max_prompt_seconds_hold) return `${earned} ${harderOption}`;
+    return `${earned} Optional: hold ${Math.min(lowest + limits.extra_seconds_hold, limits.max_prompt_seconds_hold)} seconds per set.`;
+  }
+  if (lowest >= limits.max_prompt_reps_unloaded) return `${earned} ${harderOption}`;
+  return `${earned} Optional: aim for ${Math.min(lowest + limits.extra_reps_unloaded, limits.max_prompt_reps_unloaded)} reps per set.`;
 }

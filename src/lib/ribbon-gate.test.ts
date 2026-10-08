@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { RIBBON_KEYFRAMES, RIBBON_MIN_WIDTH, poseAt, shouldRun3D, stopIndex, type RibbonEnv } from "./ribbon-gate";
+import { calmIndex, ribbonRoute, RIBBON_KEYFRAMES, RIBBON_KEYFRAMES_NARROW, RIBBON_MIN_WIDTH, poseAt, ribbonQuality, shouldRun3D, stopIndex, type RibbonEnv } from "./ribbon-gate";
 
 const desktop: RibbonEnv = { width: 1440, reducedMotion: false, saveData: false, webgl2: true };
 
@@ -9,15 +9,66 @@ describe("shouldRun3D", () => {
     expect(shouldRun3D({ ...desktop, width: RIBBON_MIN_WIDTH })).toBe(true);
   });
 
-  it("falls back on phones and small screens", () => {
-    expect(shouldRun3D({ ...desktop, width: RIBBON_MIN_WIDTH - 1 })).toBe(false);
-    expect(shouldRun3D({ ...desktop, width: 375 })).toBe(false);
+  it("also runs on phones and small screens", () => {
+    expect(shouldRun3D({ ...desktop, width: RIBBON_MIN_WIDTH - 1 })).toBe(true);
+    expect(shouldRun3D({ ...desktop, width: 375 })).toBe(true);
   });
 
   it("falls back with reduced motion, data-saver, or no WebGL", () => {
     expect(shouldRun3D({ ...desktop, reducedMotion: true })).toBe(false);
     expect(shouldRun3D({ ...desktop, saveData: true })).toBe(false);
     expect(shouldRun3D({ ...desktop, webgl2: false })).toBe(false);
+  });
+});
+
+describe("ribbonRoute", () => {
+  it("runs the scroll journey on the landing page only", () => {
+    expect(ribbonRoute("/")).toBe("journey");
+  });
+
+  it("holds the hero pose on the auth pages", () => {
+    for (const path of ["/login", "/signup", "/forgot-password", "/reset-password"]) expect(ribbonRoute(path)).toBe("hero");
+  });
+
+  it("is calm on app pages", () => {
+    for (const path of ["/dashboard", "/profile", "/meals/new", "/workouts/log/new", "/results"]) expect(ribbonRoute(path)).toBe("calm");
+  });
+});
+
+describe("calmIndex", () => {
+  it("drifts through the soft stops only", () => {
+    expect(calmIndex(0, 1000)).toBe(1);
+    expect(calmIndex(500, 1000)).toBe(3);
+    expect(calmIndex(1000, 1000)).toBe(5);
+    expect(calmIndex(5000, 1000)).toBe(5);
+    expect(calmIndex(200, 0)).toBe(1);
+    for (const i of [1, 2, 3, 4, 5]) expect(RIBBON_KEYFRAMES[i].soft).toBe(1);
+  });
+});
+
+describe("ribbonQuality", () => {
+  it("is full on wide screens and lite below the breakpoint", () => {
+    expect(ribbonQuality(1440)).toBe("full");
+    expect(ribbonQuality(RIBBON_MIN_WIDTH)).toBe("full");
+    expect(ribbonQuality(RIBBON_MIN_WIDTH - 1)).toBe("lite");
+    expect(ribbonQuality(375)).toBe("lite");
+  });
+});
+
+describe("narrow keyframes", () => {
+  it("follows the same stops, pulled back and closer to the middle", () => {
+    expect(RIBBON_KEYFRAMES_NARROW).toHaveLength(RIBBON_KEYFRAMES.length);
+    RIBBON_KEYFRAMES_NARROW.forEach((frame, i) => {
+      const wide = RIBBON_KEYFRAMES[i];
+      expect(frame.t).toBe(wide.t);
+      expect(frame.soft).toBe(wide.soft);
+      expect(frame.offset[2]).toBeGreaterThan(wide.offset[2]);
+      expect(Math.abs(frame.shift[0])).toBeLessThan(Math.abs(wide.shift[0]));
+    });
+  });
+
+  it("works with poseAt", () => {
+    expect(poseAt(0, RIBBON_KEYFRAMES_NARROW)).toEqual(RIBBON_KEYFRAMES_NARROW[0]);
   });
 });
 

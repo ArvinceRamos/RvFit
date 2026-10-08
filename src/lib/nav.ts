@@ -14,3 +14,8 @@ export const signedInNavItems = [
 export function isActiveNavItem(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
+
+/** The label of the menu item for this page, for the phone menu button. */
+export function activeNavLabel(pathname: string): string | null {
+  return signedInNavItems.find((item) => isActiveNavItem(pathname, item.href))?.label ?? null;
+}

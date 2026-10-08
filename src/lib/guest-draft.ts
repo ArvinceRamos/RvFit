@@ -103,3 +103,17 @@ export function updateGuestDraft(
   writeGuestDraft(storage, draft);
   return draft;
 }
+
+/**
+ * True when the stored draft holds a finished target that can be saved to an account.
+ * A draft with only the age tick or half-filled inputs is not worth saving or warning about.
+ */
+export function storedDraftHasTarget(rawDraft: string | null): boolean {
+  if (!rawDraft) return false;
+  try {
+    const draft = JSON.parse(rawDraft) as Partial<GuestDraft> | null;
+    return Boolean(draft && typeof draft === "object" && draft.target && typeof draft.target.target_kcal === "number");
+  } catch {
+    return false;
+  }
+}

@@ -1,22 +1,31 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { AuthFrame } from "@/components/auth-frame";
-import { authErrorMessage } from "@/lib/auth-errors";
+import Link from "next/link";
+import { FormEvent, Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { AuthField, FormError, SubmitButton } from "@/components/auth-form";
+import { AuthCard, AuthScene } from "@/components/auth-scene";
+import { authErrorMessage, expiredLinkMessage } from "@/lib/auth-errors";
 import { createClient } from "@/lib/supabase/client";
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordForm() {
+  // Set by /auth/callback or /reset-password when a reset link cannot be used.
+  const expired = useSearchParams().get("error") === "expired";
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string>();
+  const [pending, setPending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   async function requestReset(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (pending) return;
+    setPending(true);
     setError(undefined);
     const supabase = createClient();
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback?next=reset-password`,
     });
+    setPending(false);
     if (resetError) {
       setError(authErrorMessage(resetError.message));
       return;
@@ -24,5 +33,35 @@ export default function ForgotPasswordPage() {
     setSubmitted(true);
   }
 
-  return <AuthFrame><h1 className="text-3xl font-bold tracking-tight">Reset your password</h1>{submitted ? <p className="mt-5 text-muted">Check your email to confirm your account</p> : <form className="mt-8 space-y-5" onSubmit={requestReset}><label className="block text-sm font-semibold">Email<input className="mt-2 w-full rounded-lg border border-edge bg-field px-3 py-2 text-base" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} /></label>{error && <p className="rounded-lg bg-danger-bg p-3 text-sm text-danger">{error}</p>}<button className="w-full rounded-lg bg-accent px-4 py-3 font-bold text-on-accent hover:bg-accent-soft" type="submit">Send reset email</button></form>}</AuthFrame>;
+  if (submitted) {
+    // The same message whether or not an account exists, so the page does not reveal who has one.
+    return (
+      <div className="mt-5 space-y-3 text-muted" role="status">
+        <p>If an account exists for {email}, we sent a link to reset your password.</p>
+        <p className="text-sm">Open the link in this browser. It can take a minute to arrive, so check your spam folder too.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form className="mt-8 space-y-5" onSubmit={requestReset}>
+      {expired && !error && <p className="alert-warn" role="status">{expiredLinkMessage}</p>}
+      <AuthField autoComplete="email" label="Email" onChange={setEmail} value={email} />
+      <FormError message={error} />
+      <SubmitButton pending={pending} pendingText="Sending…">Send reset email</SubmitButton>
+    </form>
+  );
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <AuthScene>
+      <AuthCard label="Password help" title="Reset your password">
+        <Suspense>
+          <ForgotPasswordForm />
+        </Suspense>
+        <p className="mt-6 text-sm text-muted">Remembered it? <Link className="font-semibold underline" href="/login">Log in</Link></p>
+      </AuthCard>
+    </AuthScene>
+  );
 }

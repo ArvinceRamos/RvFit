@@ -1,20 +1,24 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { getActionUser } from "@/lib/supabase/auth";
 import { availableAllergyTags, diffAvoidedFoods, validatePreferences } from "@/lib/preferences";
+import { logError } from "@/lib/log";
 
 export type SavePreferencesResult = { ok: true } | { ok: false; error: string };
 
 const saveError = "Your preferences could not be saved. Please try again.";
 
 export async function savePreferencesAction(rawPreferences: unknown): Promise<SavePreferencesResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false, error: "You must be signed in to save preferences." };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: "You must be signed in to save preferences." };
+  const { supabase, user } = auth;
 
   // Check allergy choices against the real catalog, not against what the browser sent.
   const { data: catalogTags, error: catalogError } = await supabase.from("foods").select("diet_tags");
-  if (catalogError) return { ok: false, error: saveError };
+  if (catalogError) {
+    logError("preferences.loadCatalog", catalogError);
+    return { ok: false, error: saveError };
+  }
   const validated = validatePreferences(rawPreferences, availableAllergyTags(catalogTags.map((food) => food.diet_tags)));
   if (!validated.ok) return validated;
   const preferences = validated.data;
@@ -28,13 +32,19 @@ export async function savePreferencesAction(rawPreferences: unknown): Promise<Sa
     training_days: preferences.training_days,
     updated_at: new Date().toISOString(),
   });
-  if (preferencesError) return { ok: false, error: saveError };
+  if (preferencesError) {
+    logError("preferences.save", preferencesError);
+    return { ok: false, error: saveError };
+  }
 
   const { data: currentAvoided, error: currentError } = await supabase
     .from("user_avoided_foods")
     .select("food_id")
     .eq("user_id", user.id);
-  if (currentError) return { ok: false, error: saveError };
+  if (currentError) {
+    logError("preferences.loadAvoided", currentError);
+    return { ok: false, error: saveError };
+  }
 
   const { toAdd, toRemove } = diffAvoidedFoods(
     currentAvoided.map((row) => row.food_id),
@@ -44,7 +54,10 @@ export async function savePreferencesAction(rawPreferences: unknown): Promise<Sa
     const { error } = await supabase
       .from("user_avoided_foods")
       .insert(toAdd.map((foodId) => ({ user_id: user.id, food_id: foodId })));
-    if (error) return { ok: false, error: saveError };
+    if (error) {
+      logError("preferences.addAvoided", error);
+      return { ok: false, error: saveError };
+    }
   }
   if (toRemove.length > 0) {
     const { error } = await supabase
@@ -52,7 +65,10 @@ export async function savePreferencesAction(rawPreferences: unknown): Promise<Sa
       .delete()
       .eq("user_id", user.id)
       .in("food_id", toRemove);
-    if (error) return { ok: false, error: saveError };
+    if (error) {
+      logError("preferences.removeAvoided", error);
+      return { ok: false, error: saveError };
+    }
   }
 
   return { ok: true };

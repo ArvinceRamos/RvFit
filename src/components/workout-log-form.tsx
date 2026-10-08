@@ -19,7 +19,7 @@ export type WorkoutLogInitial = {
 
 type EntryState = { exerciseKey: string; sets: SetFields[] };
 
-const fieldClass = "w-full min-w-0 rounded-lg border border-edge bg-field px-3 py-2 text-base font-normal";
+const fieldClass = "field w-full min-w-0";
 const blankSet: SetFields = { amount: "", weight: "" };
 
 function localToday(): string {
@@ -120,7 +120,7 @@ export function WorkoutLogForm({ initial, slots, units: savedUnits, showHistory 
       setError(result.error);
       return;
     }
-    router.push("/workouts");
+    router.push(initial.logId ? "/workouts?saved=updated" : "/workouts?saved=new");
     router.refresh();
   }
 
@@ -133,11 +133,10 @@ export function WorkoutLogForm({ initial, slots, units: savedUnits, showHistory 
         </label>
         <div className="grid grid-cols-1 gap-1 text-sm font-semibold">
           <span id="weight-units-label">Weight units</span>
-          <div aria-labelledby="weight-units-label" className="inline-flex w-fit rounded-lg border border-edge bg-field p-1" role="group">
+          <div aria-labelledby="weight-units-label" className="segmented w-fit text-base" role="group">
             {(["metric", "imperial"] as const).map((option) => (
               <button
                 aria-pressed={units === option}
-                className={`rounded-md px-4 py-1.5 text-base font-semibold ${units === option ? "bg-accent text-on-accent" : "text-muted hover:bg-line"}`}
                 key={option}
                 onClick={() => switchUnits(option)}
                 type="button"
@@ -150,6 +149,8 @@ export function WorkoutLogForm({ initial, slots, units: savedUnits, showHistory 
       </div>
 
       <p className="text-sm text-muted">Fill in the sets you did. Leave a set empty to skip it.</p>
+      {/* Placeholder effort guidance pending qualified review (docs/PHASE3.md). */}
+      <p className="tile px-3 py-2 text-sm"><span className="font-semibold">How hard?</span> <span className="text-muted">End each set when you could do about 1–3 more good reps. Stop if form breaks down or anything hurts.</span></p>
 
       {slots.map((slot) => {
         const entry = entries[slot.slotKey];
@@ -164,6 +165,7 @@ export function WorkoutLogForm({ initial, slots, units: savedUnits, showHistory 
               </select>
             </label>
             <p className="mt-2 text-sm text-muted">Plan: {slot.planText}</p>
+            {choice.cue && <p className="mt-1 text-sm italic text-muted"><span className="sr-only">Form tip: </span>{choice.cue}</p>}
             {sessions && (() => {
               const last = sessions[entry.exerciseKey];
               const prompt = last ? progressionPrompt(last, choice, slot.plannedSets, units) : null;
@@ -205,8 +207,8 @@ export function WorkoutLogForm({ initial, slots, units: savedUnits, showHistory 
         );
       })}
 
-      {error && <p aria-live="polite" className="text-sm text-danger">{error}</p>}
-      <button className="w-fit rounded-lg bg-accent px-4 py-3 font-bold text-on-accent disabled:cursor-not-allowed disabled:opacity-60" disabled={saving} type="submit">
+      {error && <p className="alert-danger" role="alert">{error}</p>}
+      <button className="btn-primary w-fit" disabled={saving} type="submit">
         {saving ? "Saving…" : "Save workout"}
       </button>
     </form>
