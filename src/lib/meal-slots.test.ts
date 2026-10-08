@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isMealLabel, mapItemsToSlots, mealLabels, slotForRole, takenMealLabels } from "./meal-slots";
+import { firstFreeMealLabel, isMealLabel, mapItemsToSlots, mealLabels, slotForRole, takenMealLabels } from "./meal-slots";
 import type { FoodRole } from "./food-catalog";
 
 const item = (id: string, role: FoodRole | null) => ({ id, role });
@@ -53,5 +53,13 @@ describe("mapItemsToSlots", () => {
 
   it("handles a meal with no items", () => {
     expect(mapItemsToSlots([])).toEqual({ slots: {}, extras: [] });
+  });
+});
+
+describe("firstFreeMealLabel", () => {
+  it("picks the first unused label, or null when all six are used", () => {
+    expect(firstFreeMealLabel([])).toBe("Meal 1");
+    expect(firstFreeMealLabel(["Meal 1", "Meal 3"])).toBe("Meal 2");
+    expect(firstFreeMealLabel(["Meal 1", "Meal 2", "Meal 3", "Meal 4", "Meal 5", "Meal 6"])).toBeNull();
   });
 });

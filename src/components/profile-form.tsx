@@ -6,7 +6,7 @@ import { saveProfileAndTargetAction } from "@/app/profile/actions";
 import { checkMacroMismatch, validateMacroEdit, type DefaultMacros } from "@/lib/calc/calculate";
 import { calculationConfig, type ActivityLevel, type FormulaBranch } from "@/lib/calc/config";
 import { computeProfileTarget, heightFields, weightField, type ComputedTarget, type ProfileFormInput } from "@/lib/profile-save";
-import { activityOptions, goalOptions, paceOptions } from "@/lib/target-options";
+import { activityOptions, goalOptions, goalPaceLabel, paceOptions } from "@/lib/target-options";
 import type { PreferredUnits } from "@/lib/weigh-in";
 
 export type SavedProfile = {
@@ -33,9 +33,8 @@ const macroFields: [keyof DefaultMacros, string][] = [["protein_g", "Protein"], 
 const savedMessage = "New target saved.";
 const { pounds_to_kilograms: lbToKg, inches_to_centimeters: inToCm, inches_per_foot: inPerFoot } = calculationConfig.unit_conversions;
 
-function choiceClass(selected: boolean): string {
-  return `rounded-xl border px-3 py-2 text-left font-semibold ${selected ? "border-selected-edge bg-selected" : "border-edge bg-field"}`;
-}
+// Option buttons. The selected look comes from aria-pressed on each button.
+const choiceClass = "choice py-2 font-semibold";
 
 function toText(macros: DefaultMacros): MacroText {
   return { protein_g: String(macros.protein_g), carbs_g: String(macros.carbs_g), fat_g: String(macros.fat_g), fiber_g: String(macros.fiber_g) };
@@ -49,10 +48,11 @@ function fromText(text: MacroText): DefaultMacros | null {
   return { protein_g, carbs_g, fat_g, fiber_g };
 }
 
-function initialDetails(profile: SavedProfile, current: CurrentTarget | null, latestWeightKg: number | null): ProfileFormInput {
+// suggestedKcal comes from the check-in. It only pre-fills "Enter my own target"; nothing is saved until Save.
+function initialDetails(profile: SavedProfile, current: CurrentTarget | null, latestWeightKg: number | null, suggestedKcal: number | null): ProfileFormInput {
   const height = profile.height_cm === null ? { height: "", feet: "", inches: "" } : heightFields(profile.height_cm, profile.units);
   return {
-    method: current?.source ?? "calculated",
+    method: suggestedKcal ? "manual" : current?.source ?? "calculated",
     units: profile.units,
     age: profile.age_years === null ? "" : String(profile.age_years),
     ...height,
@@ -61,7 +61,7 @@ function initialDetails(profile: SavedProfile, current: CurrentTarget | null, la
     activity: profile.activity ?? "",
     goal: current?.goal ?? "maintain",
     pace: current?.pace ?? "gradual",
-    targetKcal: current ? String(current.kcal) : "",
+    targetKcal: suggestedKcal ? String(suggestedKcal) : current ? String(current.kcal) : "",
   };
 }
 
@@ -75,9 +75,9 @@ function Field({ label, value, onChange, hint }: { label: string; value: string;
   );
 }
 
-export function ProfileForm({ profile, current, latestWeightKg }: { profile: SavedProfile; current: CurrentTarget | null; latestWeightKg: number | null }) {
+export function ProfileForm({ profile, current, latestWeightKg, suggestedKcal = null }: { profile: SavedProfile; current: CurrentTarget | null; latestWeightKg: number | null; suggestedKcal?: number | null }) {
   const router = useRouter();
-  const [details, setDetails] = useState<ProfileFormInput>(() => initialDetails(profile, current, latestWeightKg));
+  const [details, setDetails] = useState<ProfileFormInput>(() => initialDetails(profile, current, latestWeightKg, suggestedKcal));
   const [preview, setPreview] = useState<{ key: string; computed: ComputedTarget }>();
   const [macros, setMacros] = useState<MacroText>();
   const [error, setError] = useState<string>();
@@ -171,9 +171,10 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
               {current.source === "calculated" ? "Calculated from your details" : "Entered by you"} · saved{" "}
               {new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(current.created_at))}
             </p>
+            {goalPaceLabel(current.goal, current.pace) && <p className="mt-1 text-sm font-semibold">Goal: {goalPaceLabel(current.goal, current.pace)}</p>}
             <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {macroFields.map(([name, label]) => (
-                <div className="rounded-xl border border-line bg-page p-3" key={name}>
+                <div className="tile p-3" key={name}>
                   <dt className="text-sm text-muted">{label}</dt>
                   <dd className="mt-1 text-lg font-bold">{current.macros[name]} g</dd>
                 </div>
@@ -187,8 +188,13 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
         {message && <p aria-live="polite" className="mt-3 text-sm font-semibold text-accent-text">{message}</p>}
       </section>
 
-      <div>
+      <div className="scroll-mt-20" id="update-target">
         <h2 className="text-xl font-medium">Update your target</h2>
+        {suggestedKcal && (
+          <p className="alert-success mt-2" role="status">
+            The check-in suggestion ({suggestedKcal.toLocaleString("en-US")} kcal) is filled in under Enter my own target. Review it, then press Save to use it, or recalculate instead.
+          </p>
+        )}
         <p className="mt-1 text-sm text-muted">Change your details, then recalculate. Nothing is saved until you press Save.</p>
 
         {/* A two-column bento on wide screens: setup and details on top, activity beside goal below. One column on smaller screens. */}
@@ -197,18 +203,17 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
             <fieldset>
               <legend className="text-sm font-semibold">How to set the target</legend>
               <div className="mt-2 grid gap-2">
-                <button aria-pressed={details.method === "calculated"} className={choiceClass(details.method === "calculated")} onClick={() => update({ method: "calculated" })} type="button">Calculate from my details</button>
-                <button aria-pressed={details.method === "manual"} className={choiceClass(details.method === "manual")} onClick={() => update({ method: "manual" })} type="button">Enter my own target</button>
+                <button aria-pressed={details.method === "calculated"} className={choiceClass} onClick={() => update({ method: "calculated" })} type="button">Calculate from my details</button>
+                <button aria-pressed={details.method === "manual"} className={choiceClass} onClick={() => update({ method: "manual" })} type="button">Enter my own target</button>
               </div>
             </fieldset>
 
             <fieldset>
               <legend className="text-sm font-semibold">Units</legend>
-              <div className="mt-2 inline-flex rounded-xl border border-edge bg-field p-1">
+              <div className="segmented mt-2 text-sm">
                 {(["metric", "imperial"] as const).map((option) => (
                   <button
                     aria-pressed={details.units === option}
-                    className={`rounded-md px-4 py-1.5 text-sm font-semibold ${details.units === option ? "bg-accent text-on-accent" : "text-muted hover:bg-line"}`}
                     key={option}
                     onClick={() => switchUnits(option)}
                     type="button"
@@ -253,7 +258,7 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
                     <legend className="text-sm font-semibold">Sex (used in the calorie formula): Male / Female</legend>
                     <div className="mt-1 grid grid-cols-2 gap-2">
                       {(["male", "female"] as const).map((option) => (
-                        <button aria-pressed={details.sex === option} className={`${choiceClass(details.sex === option)} capitalize`} key={option} onClick={() => update({ sex: option })} type="button">{option}</button>
+                        <button aria-pressed={details.sex === option} className={`${choiceClass} capitalize`} key={option} onClick={() => update({ sex: option })} type="button">{option}</button>
                       ))}
                     </div>
                   </fieldset>
@@ -283,7 +288,7 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
                   <legend className="text-sm font-semibold">Goal</legend>
                   <div className="mt-2 grid gap-2">
                     {goalOptions.map((option) => (
-                      <button aria-pressed={details.goal === option.value} className={`${choiceClass(details.goal === option.value)} w-full`} key={option.value} onClick={() => update({ goal: option.value })} type="button">
+                      <button aria-pressed={details.goal === option.value} className={`${choiceClass} w-full`} key={option.value} onClick={() => update({ goal: option.value })} type="button">
                         <span className="block">{option.title}</span>
                         <span className="mt-1 block text-sm font-normal text-muted">{option.detail}</span>
                       </button>
@@ -297,7 +302,7 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
                     <p aria-hidden className="text-sm font-semibold">How fast?</p>
                     <div className="mt-2 grid gap-2">
                       {paceOptions[details.goal].map((option) => (
-                        <button aria-pressed={details.pace === option.value} className={`${choiceClass(details.pace === option.value)} w-full`} key={option.value} onClick={() => update({ pace: option.value })} type="button">
+                        <button aria-pressed={details.pace === option.value} className={`${choiceClass} w-full`} key={option.value} onClick={() => update({ pace: option.value })} type="button">
                           <span className="block">{option.title}</span>
                           <span className="mt-1 block text-sm font-normal text-muted">{option.detail}</span>
                         </button>
@@ -311,7 +316,7 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
         </div>
 
         <div className="mt-[30px] grid gap-3">
-          {error && <p aria-live="polite" className="rounded-lg bg-danger-bg p-3 text-sm text-danger">{error}</p>}
+          {error && <p aria-live="polite" className="alert-danger">{error}</p>}
           {preview && preview.key !== detailsKey && <p className="text-sm text-muted">Your details changed. Recalculate to see the new target.</p>}
           <button className="btn-primary w-fit" onClick={recalculate} type="button">Recalculate</button>
         </div>
@@ -322,7 +327,7 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
           <h2 className="text-xl font-medium">New target</h2>
           <p className="mt-3 text-3xl font-medium tracking-tight">{targetKcal.toLocaleString("en-US")} kcal</p>
           <p className="mt-1 text-sm text-muted">Not saved yet. This is a starting estimate, not an exact number.</p>
-          {preview.computed.floor_explanation && <p className="mt-3 rounded-lg bg-warn-bg p-3 text-sm text-warn">{preview.computed.floor_explanation}</p>}
+          {preview.computed.floor_explanation && <p className="mt-3 alert-warn">{preview.computed.floor_explanation}</p>}
           {preview.computed.body_log && <p className="mt-3 text-sm text-muted">Your new weight will be saved as a weigh-in.</p>}
 
           <h3 className="mt-5 font-bold">Daily macros</h3>
@@ -332,9 +337,9 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
               <Field key={name} label={`${label} (g)`} onChange={(value) => setMacros((text) => (text ? { ...text, [name]: value } : text))} value={macros[name]} />
             ))}
           </div>
-          {macroError && <p className="mt-3 rounded-lg bg-danger-bg p-3 text-sm text-danger">{macroError}</p>}
+          {macroError && <p className="mt-3 alert-danger">{macroError}</p>}
           {mismatch?.ok && mismatch.data.warning && (
-            <p className="mt-3 rounded-lg bg-warn-bg p-3 text-sm text-warn">Your macro calories differ from the target by more than 5%. This is a warning only; your calorie target has not changed.</p>
+            <p className="mt-3 alert-warn">Your macro calories differ from the target by more than 5%. This is a warning only; your calorie target has not changed.</p>
           )}
           <p className="mt-3 text-sm text-muted">Fiber is included in carbohydrates.</p>
           <button className="mt-4 btn-primary w-fit disabled:cursor-not-allowed disabled:opacity-60" disabled={saving || Boolean(macroError)} onClick={save} type="button">

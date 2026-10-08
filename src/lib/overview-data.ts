@@ -21,7 +21,7 @@ export function sumMealTotals(totals: readonly MealTotals[]): MealTotals {
   return totals.reduce(addTotals, mealTotals([]));
 }
 
-// from_plan: saved by the meal planner. eaten: counts toward the day's totals (planner meals start unticked).
+// from_plan: saved by the meal planner. eaten: counts toward the day's totals (every new meal starts unticked).
 export type DayMeal = { id: string; label: string; meal_date: string; from_plan: boolean; eaten: boolean; totals: MealTotals };
 
 // Day totals count only meals ticked as eaten. Planned meals not yet eaten are kept apart.
@@ -91,13 +91,19 @@ export async function loadWorkouts(supabase: Client, from: string, to: string): 
   }));
 }
 
-export type SavedTarget = DailyTargets & { source: "calculated" | "manual"; created_at: string };
+// goal and pace are null for a manual target.
+export type SavedTarget = DailyTargets & {
+  source: "calculated" | "manual";
+  created_at: string;
+  goal: "lose" | "maintain" | "gain" | null;
+  pace: "gradual" | "steady" | null;
+};
 
 // The newest target row by created_at. Null when there is none. "error" when it could not be read.
 export async function loadSavedTarget(supabase: Client): Promise<SavedTarget | null | "error"> {
   const { data, error } = await supabase
     .from("calorie_targets")
-    .select("target_kcal, protein_g, carbs_g, fat_g, fiber_g, source, created_at")
+    .select("target_kcal, protein_g, carbs_g, fat_g, fiber_g, source, goal, pace, created_at")
     .order("created_at", { ascending: false })
     .limit(1);
   if (error) return "error";
@@ -111,6 +117,8 @@ export async function loadSavedTarget(supabase: Client): Promise<SavedTarget | n
     fiber_g: Number(row.fiber_g),
     source: row.source as "calculated" | "manual",
     created_at: row.created_at as string,
+    goal: (row.goal as SavedTarget["goal"]) ?? null,
+    pace: (row.pace as SavedTarget["pace"]) ?? null,
   };
 }
 

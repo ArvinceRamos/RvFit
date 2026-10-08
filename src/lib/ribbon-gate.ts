@@ -1,7 +1,10 @@
 // Rules for the landing page 3D ribbon. Kept free of three and the DOM so they can be tested.
 
-// Below this width the static fallback shows instead (phones and tablets).
+// Below this width phones and tablets get the lite scene: fewer pixels, fewer segments, 30 fps,
+// and a camera pulled back so the ribbon fits a narrow screen.
 export const RIBBON_MIN_WIDTH = 1024;
+
+export type RibbonQuality = "full" | "lite";
 
 export type RibbonEnv = {
   width: number;
@@ -10,10 +13,37 @@ export type RibbonEnv = {
   webgl2: boolean;
 };
 
-// 3D is a desktop enhancement. Any one of these turns it off and the static fallback stays.
+// Any one of these turns 3D off and the static fallback stays. Screen width only picks the quality.
 export function shouldRun3D(env: RibbonEnv): boolean {
-  return env.width >= RIBBON_MIN_WIDTH && !env.reducedMotion && !env.saveData && env.webgl2;
+  return !env.reducedMotion && !env.saveData && env.webgl2;
 }
+
+export function ribbonQuality(width: number): RibbonQuality {
+  return width >= RIBBON_MIN_WIDTH ? "full" : "lite";
+}
+
+// The ribbon sits behind every page (root layout). How the camera moves depends on the page:
+// journey: the landing page, one stop per section as you scroll.
+// hero: the auth pages, the sharp hero pose behind the card.
+// calm: everything else, a soft dim glow that drifts slowly as you scroll, so text stays easy to read.
+export type RibbonRoute = "journey" | "hero" | "calm";
+
+const HERO_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password"];
+
+export function ribbonRoute(pathname: string): RibbonRoute {
+  if (pathname === "/") return "journey";
+  return HERO_PATHS.includes(pathname) ? "hero" : "calm";
+}
+
+// Calm pages drift from stop 1 to stop 5, the soft keyframes, as the page scrolls from top to bottom.
+export function calmIndex(scrollY: number, maxScroll: number): number {
+  const progress = maxScroll > 0 ? Math.min(Math.max(scrollY / maxScroll, 0), 1) : 0;
+  return 1 + 4 * progress;
+}
+
+// App pages show the ribbon a little brighter than the landing stages, so it reads through the glass cards,
+// but still blurred enough that text between the cards stays easy to read.
+export const CALM_SOFT = 0.22;
 
 // One keyframe per stop: the hero, the five stages, then the closing.
 // t is the point on the ribbon the camera looks at (0 to 1). offset is where the camera sits from that point.
@@ -35,6 +65,16 @@ export const RIBBON_KEYFRAMES: RibbonKeyframe[] = [
   { t: 0.73, offset: [-3, -3, 11], shift: [-4, 1, 0], soft: 1 },
   { t: 0.86, offset: [0, 2, 12], shift: [-5, 0, 0], soft: 1 },
 ];
+
+// The same path for narrow screens: the camera sits further back and looks closer to the ribbon,
+// so it crosses the middle of a tall screen instead of leaving it.
+export const RIBBON_KEYFRAMES_NARROW: RibbonKeyframe[] = RIBBON_KEYFRAMES.map((frame) => ({
+  t: frame.t,
+  offset: [frame.offset[0] * 0.5, frame.offset[1] * 0.5, frame.offset[2] + 6],
+  // Looking a little above the ribbon puts it lower on screen, under the hero text on a phone.
+  shift: [frame.shift[0] * 0.25, frame.shift[1] * 0.5 + 1.8, frame.shift[2]],
+  soft: frame.soft,
+}));
 
 function ease(x: number): number {
   return x * x * (3 - 2 * x);

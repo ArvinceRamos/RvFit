@@ -45,7 +45,7 @@ export function WeighInForm({ preferredUnits, onSaved }: { preferredUnits: Prefe
           <Field label={`Chest (${measurementUnit})`} name="chest" value={fields.chest} onChange={updateField} />
           <Field label={`Hips (${measurementUnit})`} name="hips" value={fields.hips} onChange={updateField} />
         </div>
-        {message && <p aria-live="polite" className={message === "Weigh-in saved." ? "text-sm text-muted" : "text-sm text-danger"}>{message}</p>}
+        <div aria-live="polite">{message && <p className={message === "Weigh-in saved." ? "alert-success" : "alert-danger"}>{message}</p>}</div>
         <button className="btn-primary w-fit disabled:cursor-not-allowed disabled:opacity-60" disabled={saving} type="submit">
           {saving ? "Saving…" : "Save weigh-in"}
         </button>

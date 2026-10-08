@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isActiveNavItem, signedInNavItems } from "./nav";
+import { activeNavLabel, isActiveNavItem, signedInNavItems } from "./nav";
 
 describe("isActiveNavItem", () => {
   it("is active on the exact path", () => {
@@ -21,5 +21,13 @@ describe("signedInNavItems", () => {
   it("has a unique path and label for every link", () => {
     expect(new Set(signedInNavItems.map((item) => item.href)).size).toBe(signedInNavItems.length);
     expect(new Set(signedInNavItems.map((item) => item.label)).size).toBe(signedInNavItems.length);
+  });
+});
+
+describe("activeNavLabel", () => {
+  it("names the current section, including pages below it", () => {
+    expect(activeNavLabel("/workouts/log/new")).toBe("Workouts");
+    expect(activeNavLabel("/dashboard")).toBe("Dashboard");
+    expect(activeNavLabel("/start")).toBeNull();
   });
 });

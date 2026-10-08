@@ -1,45 +1,34 @@
-import { redirect } from "next/navigation";
 import { AuthFrame } from "@/components/auth-frame";
 import { PreferencesForm, type AvoidableFood } from "@/components/preferences-form";
-import { createClient } from "@/lib/supabase/server";
-import { availableAllergyTags, dietTags, equipmentOptions, experiences, trainingDayOptions } from "@/lib/preferences";
+import { requireUser } from "@/lib/supabase/auth";
+import { preferencesPageData } from "@/lib/preferences";
 
 export default async function PreferencesPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { supabase } = await requireUser();
 
-  const { data: catalog } = await supabase
-    .from("foods")
-    .select("id, name, role, preparation_state, diet_tags")
-    .order("name");
-  const foods = catalog ?? [];
-
-  const { data: saved } = await supabase
-    .from("user_preferences")
-    .select("allergy_tags, experience, equipment, training_days")
-    .maybeSingle();
-  const { data: avoided } = await supabase.from("user_avoided_foods").select("food_id");
-
-  const experience = experiences.find((value) => value === saved?.experience) ?? "beginner";
-  const equipment = equipmentOptions.find((value) => value === saved?.equipment) ?? "bodyweight";
-  const trainingDays = trainingDayOptions(experience).includes(saved?.training_days ?? 0) ? saved!.training_days : 3;
-  const offeredTags = availableAllergyTags(foods.map((food) => food.diet_tags));
+  const [catalog, saved, avoided] = await Promise.all([
+    supabase.from("foods").select("id, name, role, preparation_state, diet_tags").order("name"),
+    supabase.from("user_preferences").select("allergy_tags, experience, equipment, training_days").maybeSingle(),
+    supabase.from("user_avoided_foods").select("food_id"),
+  ]);
+  const data = preferencesPageData(catalog, saved, avoided);
 
   return (
     <AuthFrame showNav>
       <h1 className="text-4xl font-medium tracking-tight">Preferences</h1>
-      <PreferencesForm
-        foods={foods as AvoidableFood[]}
-        initial={{
-          allergyTags: dietTags.filter((tag) => offeredTags.includes(tag) && saved?.allergy_tags?.includes(tag)),
-          avoidedFoodIds: avoided?.map((row) => row.food_id) ?? [],
-          experience,
-          equipment,
-          trainingDays,
-        }}
-        offeredTags={offeredTags}
-      />
+      {data ? (
+        <PreferencesForm
+          foods={data.foods as AvoidableFood[]}
+          initial={data.initial}
+          isSaved={data.isSaved}
+          offeredTags={data.offeredTags}
+        />
+      ) : (
+        // No form after a failed read, so Save cannot overwrite real allergy data with blanks.
+        <p className="mt-6 text-sm text-danger" role="alert">
+          Your preferences could not be loaded. Nothing was changed. Please reload the page to try again.
+        </p>
+      )}
     </AuthFrame>
   );
 }

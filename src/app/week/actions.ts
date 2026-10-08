@@ -12,7 +12,7 @@ import {
   type SavedTarget,
 } from "@/lib/overview-data";
 import type { MealTotals } from "@/lib/meal";
-import { createClient } from "@/lib/supabase/server";
+import { getActionUser } from "@/lib/supabase/auth";
 import { weekDates } from "@/lib/week";
 
 // totals: meals ticked as eaten. planned_kcal: meals saved but not eaten yet.
@@ -38,9 +38,9 @@ export type WeekResult =
 
 // The week that contains the browser's local date, Monday to Sunday. Read-only.
 export async function loadWeekAction(today: unknown): Promise<WeekResult> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return { ok: false, error: "You must be signed in." };
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: "You must be signed in." };
+  const { supabase } = auth;
   if (typeof today !== "string" || !isCalendarDate(today)) return { ok: false, error: "Choose a valid date." };
 
   const dates = weekDates(today);

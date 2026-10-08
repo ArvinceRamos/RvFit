@@ -1,12 +1,9 @@
-import { redirect } from "next/navigation";
 import { AuthFrame } from "@/components/auth-frame";
 import { WeekView } from "@/components/week-view";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/auth";
 
 export default async function WeekPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  await requireUser();
 
   return (
     <AuthFrame showNav>

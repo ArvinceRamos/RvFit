@@ -70,6 +70,27 @@ describe("convertAndValidateInputs", () => {
   });
 });
 
+describe("input edge cases", () => {
+  const base = { age_years: 30, weight: { unit: "kg", value: 80 } } as const;
+
+  it("rejects inches outside 0 to under 12, even when the total height looks valid", () => {
+    const tooMany = convertAndValidateInputs({ ...base, height: { unit: "ft-in", feet: 5, inches: 30 } });
+    const negative = convertAndValidateInputs({ ...base, height: { unit: "ft-in", feet: 7, inches: -20 } });
+    expect(tooMany).toEqual({ ok: false, error: "Inches must be at least 0 and less than 12." });
+    expect(negative).toEqual({ ok: false, error: "Inches must be at least 0 and less than 12." });
+    expect(convertAndValidateInputs({ ...base, height: { unit: "ft-in", feet: 5, inches: 11.5 } }).ok).toBe(true);
+  });
+
+  it("rejects fractional feet", () => {
+    expect(convertAndValidateInputs({ ...base, height: { unit: "ft-in", feet: 5.5, inches: 0 } }).ok).toBe(false);
+  });
+
+  it("rejects fractional ages, matching the save rules", () => {
+    const result = convertAndValidateInputs({ ...base, age_years: 18.7, height: { unit: "cm", value: 175 } });
+    expect(result).toEqual({ ok: false, error: "Enter your age in whole years." });
+  });
+});
+
 describe("calculateTarget", () => {
   it("calculates the male maintenance estimate and returns its config version", () => {
     expect(
@@ -111,6 +132,39 @@ describe("calculateTarget", () => {
         formula_branch: "female",
       },
     });
+  });
+
+  it("says loss will be slower when the floor shrinks the deficit", () => {
+    const result = calculateTarget({
+      age_years: 25,
+      height: { unit: "cm", value: 165 },
+      weight: { unit: "kg", value: 60 },
+      sex: "female",
+      activity_level: "sedentary",
+      goal: "lose",
+      pace: "steady",
+    });
+    // Maintenance is about 1,614 kcal, so the 1,200 floor is still about 414 kcal below it.
+    expect(result.ok && result.data.floor_explanation).toContain("only about 414 kcal below your estimated maintenance of about 1,614 kcal");
+    expect(result.ok && result.data.floor_explanation).toContain("expect slower loss");
+  });
+
+  it("never promises loss when the floor is at or above maintenance", () => {
+    const small = {
+      age_years: 70,
+      height: { unit: "cm", value: 150 },
+      weight: { unit: "kg", value: 45 },
+      sex: "female",
+      activity_level: "sedentary",
+    } as const;
+    const lose = calculateTarget({ ...small, goal: "lose", pace: "steady" });
+    const maintain = calculateTarget({ ...small, goal: "maintain" });
+    // Maintenance is about 1,052 kcal, below the 1,200 floor.
+    expect(lose.ok && lose.data.target_kcal).toBe(1200);
+    expect(lose.ok && lose.data.floor_explanation).toContain("not expected to cause weight loss");
+    expect(lose.ok && lose.data.floor_explanation).toContain("weekly estimate for your pace does not apply");
+    expect(lose.ok && lose.data.floor_explanation).toContain("about 1,052 kcal");
+    expect(maintain.ok && maintain.data.floor_explanation).toContain("you may gain weight slowly");
   });
 
   it("supports configured gain pace options", () => {

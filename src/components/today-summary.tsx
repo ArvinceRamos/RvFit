@@ -26,7 +26,7 @@ export function Bar({ percent, over }: { percent: number; over: boolean }) {
 }
 
 // Eaten, target, and left for one day. With no saved target it links to set one.
-// plannedKcal: planner meals saved for the day but not ticked as eaten yet. They are not in the totals.
+// plannedKcal: meals saved for the day but not ticked as eaten yet. They are not in the totals.
 export function DayTotals({ target, totals, plannedKcal = 0 }: { target: DailyTargets | null; totals: MealTotals; plannedKcal?: number }) {
   if (!target) {
     return (

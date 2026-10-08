@@ -11,7 +11,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { poseAt } from "@/lib/ribbon-gate";
+import { RIBBON_KEYFRAMES, RIBBON_KEYFRAMES_NARROW, poseAt, type RibbonQuality } from "@/lib/ribbon-gate";
 
 // The landing page light ribbon. Only RibbonBackground loads this file, with a dynamic import,
 // so three stays out of every other page's bundle.
@@ -36,7 +36,11 @@ const STRANDS = [
   { width: 3.6, twist: 0.7, phase: 3.1, drift: 0.7, opacity: 0.35 },
 ];
 
-const SEGMENTS = 600;
+// Lite (phones and tablets) uses fewer segments, 1x pixels and about 30 fps to save battery.
+const SETTINGS = {
+  full: { segments: 600, maxPixelRatio: 1.5, antialias: true, frameMs: 0, keyframes: RIBBON_KEYFRAMES },
+  lite: { segments: 240, maxPixelRatio: 1, antialias: false, frameMs: 1000 / 30, keyframes: RIBBON_KEYFRAMES_NARROW },
+};
 
 // Fit Green and pale Fit Green, as sRGB 0 to 1.
 const GREEN = [175 / 255, 250 / 255, 0];
@@ -76,9 +80,9 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
-function strandGeometry(curve: CatmullRomCurve3, strand: (typeof STRANDS)[number]): BufferGeometry {
-  const frames = curve.computeFrenetFrames(SEGMENTS, false);
-  const count = (SEGMENTS + 1) * 2;
+function strandGeometry(curve: CatmullRomCurve3, strand: (typeof STRANDS)[number], segments: number): BufferGeometry {
+  const frames = curve.computeFrenetFrames(segments, false);
+  const count = (segments + 1) * 2;
   const positions = new Float32Array(count * 3);
   const sides = new Float32Array(count * 3);
   const uvs = new Float32Array(count * 2);
@@ -86,8 +90,8 @@ function strandGeometry(curve: CatmullRomCurve3, strand: (typeof STRANDS)[number
   const side = new Vector3();
   const center = new Vector3();
 
-  for (let i = 0; i <= SEGMENTS; i++) {
-    const u = i / SEGMENTS;
+  for (let i = 0; i <= segments; i++) {
+    const u = i / segments;
     curve.getPointAt(u, center);
     const angle = strand.phase + strand.twist * Math.PI * 2 * u;
     const normal = frames.normals[i];
@@ -108,7 +112,7 @@ function strandGeometry(curve: CatmullRomCurve3, strand: (typeof STRANDS)[number
       uvs[k * 2] = u;
       uvs[k * 2 + 1] = s;
     }
-    if (i < SEGMENTS) {
+    if (i < segments) {
       const a = i * 2;
       indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
     }
@@ -129,13 +133,25 @@ type Callbacks = {
   onReady: () => void;
   // WebGL went away; go back to the static fallback.
   onLost: () => void;
+  quality: RibbonQuality;
+  // Softness for this frame (0 sharp, 1 dim glow). Defaults to the keyframe value.
+  getSoft?: (keyframeSoft: number) => number;
 };
 
-// Starts the scene on the canvas and returns a function that stops it and frees the GPU memory.
-// Throws if WebGL cannot start; the caller keeps the static fallback.
-export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLost }: Callbacks): () => void {
-  const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "low-power" });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+export type RibbonHandle = {
+  // Stops the scene and frees the GPU memory.
+  stop: () => void;
+  // Restarts the frame loop if the browser stopped it.
+  wake: () => void;
+};
+
+// Starts the scene on the canvas. Throws if WebGL cannot start; the caller keeps the static fallback.
+// It animates continuously (the user's choice; see docs/UI-REFRESH.md). Reduced motion, data saver and
+// no WebGL 2 still get the static ribbon instead.
+export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLost, quality, getSoft }: Callbacks): RibbonHandle {
+  const settings = SETTINGS[quality];
+  const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: settings.antialias, powerPreference: "low-power" });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, settings.maxPixelRatio));
   renderer.setClearColor(0x000000, 0);
 
   const scene = new Scene();
@@ -162,7 +178,7 @@ export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLo
         side: DoubleSide,
       }),
   );
-  const geometries = STRANDS.map((strand) => strandGeometry(curve, strand));
+  const geometries = STRANDS.map((strand) => strandGeometry(curve, strand, settings.segments));
   geometries.forEach((geometry, i) => scene.add(new Mesh(geometry, materials[i])));
 
   const resize = () => {
@@ -173,7 +189,6 @@ export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLo
     camera.updateProjectionMatrix();
   };
   resize();
-  window.addEventListener("resize", resize);
 
   const handleLost = (event: Event) => {
     event.preventDefault();
@@ -185,34 +200,48 @@ export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLo
   const look = new Vector3();
   let index = getIndex();
   let last = performance.now();
+  let clock = 0;
   let frame = 0;
+  let running = false;
   let ready = false;
 
   const draw = (now: number) => {
+    frame = requestAnimationFrame(draw);
+    // Lite mode skips frames to stay near 30 fps.
+    if (settings.frameMs && ready && now - last < settings.frameMs - 1) return;
     const dt = Math.min((now - last) / 1000, 0.1);
     last = now;
+    clock += dt;
     // Glide toward the scroll position instead of jumping.
     index += (getIndex() - index) * (1 - Math.exp(-dt * 4));
-    const pose = poseAt(index);
+    const pose = poseAt(index, settings.keyframes);
     curve.getPointAt(pose.t, point);
     look.set(point.x + pose.shift[0], point.y + pose.shift[1], point.z + pose.shift[2]);
     camera.position.set(point.x + pose.offset[0], point.y + pose.offset[1], point.z + pose.offset[2]);
     camera.lookAt(look);
+    const soft = getSoft ? getSoft(pose.soft) : pose.soft;
     for (const material of materials) {
-      material.uniforms.uTime.value = now / 1000;
-      material.uniforms.uSoft.value = pose.soft;
+      material.uniforms.uTime.value = clock;
+      material.uniforms.uSoft.value = soft;
     }
     renderer.render(scene, camera);
     if (!ready) {
       ready = true;
       onReady();
     }
+  };
+  const wake = () => {
+    if (running) return;
+    running = true;
+    last = performance.now();
     frame = requestAnimationFrame(draw);
   };
-  frame = requestAnimationFrame(draw);
+  window.addEventListener("resize", resize);
+  wake();
 
-  return () => {
+  const stop = () => {
     cancelAnimationFrame(frame);
+    running = false;
     window.removeEventListener("resize", resize);
     canvas.removeEventListener("webglcontextlost", handleLost);
     geometries.forEach((geometry) => geometry.dispose());
@@ -220,4 +249,5 @@ export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLo
     renderer.dispose();
     renderer.forceContextLoss();
   };
+  return { stop, wake };
 }

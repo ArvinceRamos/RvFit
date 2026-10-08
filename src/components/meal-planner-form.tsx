@@ -72,7 +72,7 @@ function Choice({ name, checked, onChange, children }: {
   children: React.ReactNode;
 }) {
   return (
-    <label className={`cursor-pointer rounded-full border px-4 py-2 text-sm font-semibold ${checked ? "border-accent bg-accent text-on-accent" : "border-edge bg-field"}`}>
+    <label className={`chip cursor-pointer px-4 py-2 ${checked ? "!border-accent !bg-accent text-on-accent" : ""}`}>
       <input checked={checked} className="sr-only" name={name} onChange={onChange} type="radio" />
       {children}
     </label>
@@ -217,7 +217,7 @@ export function MealPlannerForm({ foods, target, exclusions }: {
       setSaveError(result.error);
       return;
     }
-    router.push("/meals");
+    router.push("/meals?saved=plan");
   }
 
   return (
@@ -308,7 +308,7 @@ export function MealPlannerForm({ foods, target, exclusions }: {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs text-muted">Common:</span>
                     {quick.map((food) => (
-                      <button className="rounded-full border border-edge bg-field px-3 py-1 text-xs font-semibold" key={food.id} onClick={() => addPick(group, food)} type="button">
+                      <button className="chip !py-1 text-xs" key={food.id} onClick={() => addPick(group, food)} type="button">
                         + {food.name}
                       </button>
                     ))}

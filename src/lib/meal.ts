@@ -5,6 +5,7 @@ import { isMealLabel } from "@/lib/meal-slots";
 
 // Placeholder limit pending qualified review. Amounts above it are rejected, never clamped.
 export const maxMealItemGrams = calculationConfig.meal_limits.max_item_grams;
+export const maxMealItems = calculationConfig.meal_limits.max_items;
 export const maxMealLabelLength = 100;
 
 export type NutritionPer100g = {
@@ -151,6 +152,7 @@ export function validateMeal(raw: unknown): Result<ValidMeal> {
 
   if (!Array.isArray(input.items)) return failure("Meal details are invalid.");
   if (input.items.length === 0) return failure("Add at least one food.");
+  if (input.items.length > maxMealItems) return failure(`A meal can have at most ${maxMealItems} foods.`);
 
   const items: ValidMeal["items"] = [];
   for (const [index, rawItem] of input.items.entries()) {

@@ -26,3 +26,14 @@ minimum_password_length = 8
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
+# A password change needs a recent login (the reset link counts) or a reauthentication code,
+# so a stolen or shared session cannot quietly change the password. Set the same in the hosted project.
+secure_password_change = true
+
+# Google sign-in (optional). Off until you add credentials; see README "Google sign-in".
+# The client ID and secret come from supabase/.env (ignored by git), never from this file.
+[auth.external.google]
+enabled = false
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+skip_nonce_check = true

@@ -18,6 +18,8 @@ export type LogChoice = {
   pattern: MovementPattern;
   /** Top of the planned rep range, or top seconds for a hold. */
   topOfRange: number;
+  /** A one-line form cue, when the exercise has one. */
+  cue?: string;
 };
 
 export type LogSlot = {
@@ -69,6 +71,7 @@ function toChoice(exercise: Exercise, slot: TemplateSlot, template: Template): L
     loaded: exercise.loaded,
     pattern: exercise.pattern,
     topOfRange: schemeFor(slot.baseScheme, exercise, template.level).reps.max,
+    cue: exercise.cue,
   };
 }
 

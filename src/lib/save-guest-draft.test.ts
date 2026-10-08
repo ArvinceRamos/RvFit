@@ -35,6 +35,13 @@ function clientWith(status: "saved" | "already_saved" | "saved_target_exists") {
 }
 
 describe("saveInitialGuestDraft", () => {
+  it("does not show raw database errors to the user", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: { message: 'duplicate key value violates unique constraint "x"' } });
+    const result = await saveInitialGuestDraft({ rpc } as unknown as GuestDraftRpcClient, userId, calculatedDraft());
+    expect(result).toEqual({ ok: false, error: expect.stringContaining("still in this browser") });
+    expect(JSON.stringify(result)).not.toContain("constraint");
+  });
+
   it("recalculates and saves a calculated draft with the signed-in user ID", async () => {
     const { client, rpc } = clientWith("saved");
     await expect(saveInitialGuestDraft(client, userId, calculatedDraft())).resolves.toEqual({ ok: true, status: "saved" });

@@ -1,11 +1,15 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { RIBBON_MIN_WIDTH, shouldRun3D, stopIndex } from "@/lib/ribbon-gate";
+import type { RibbonHandle } from "./ribbon-scene";
+import { CALM_SOFT, calmIndex, RIBBON_MIN_WIDTH, ribbonQuality, ribbonRoute, shouldRun3D, stopIndex, type RibbonQuality } from "@/lib/ribbon-gate";
 
-// Decorative light ribbon behind the landing page. The page never waits for it.
-// Everyone first gets the static CSS ribbon. On a wide screen with motion allowed, WebGL 2 and no data-saver,
-// the three scene loads after first paint and fades in over it. If it fails, the static ribbon stays.
+// Decorative light ribbon behind every page (root layout), so it is not restarted on each navigation.
+// The landing page scrolls through its stops; other pages use the hero or calm pose (see ribbonRoute).
+// No page ever waits for it.
+// Everyone first gets the static CSS ribbon. With motion allowed, WebGL 2 and no data-saver, the three scene
+// loads after first paint and fades in over it. Phones and tablets get the lite scene. If it fails, the static ribbon stays.
 
 const WIDE = `(min-width: ${RIBBON_MIN_WIDTH}px)`;
 const CALM = "(prefers-reduced-motion: reduce)";
@@ -15,6 +19,11 @@ function subscribe(onChange: () => void) {
   const queries = [WIDE, CALM, LIGHT_DATA].map((query) => matchMedia(query));
   queries.forEach((query) => query.addEventListener("change", onChange));
   return () => queries.forEach((query) => query.removeEventListener("change", onChange));
+}
+
+// "full", "lite", or "off". One string, so React re-renders only when it really changes.
+function ribbonMode(): RibbonQuality | "off" {
+  return canRun3D() ? ribbonQuality(window.innerWidth) : "off";
 }
 
 function canRun3D() {
@@ -28,8 +37,12 @@ function canRun3D() {
 }
 
 // Scroll positions where the hero, each stage preview, and the closing sit in the middle of the screen.
+function maxScroll(): number {
+  return Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
+}
+
 function measureStops(): number[] {
-  const max = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
+  const max = maxScroll();
   const stages = Array.from(document.querySelectorAll<HTMLElement>("[data-preview-slot]"), (el) => {
     const rect = el.getBoundingClientRect();
     return rect.top + window.scrollY + rect.height / 2 - window.innerHeight / 2;
@@ -42,19 +55,24 @@ function measureStops(): number[] {
 
 export function RibbonBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const allowed = useSyncExternalStore(subscribe, canRun3D, () => false);
+  const route = ribbonRoute(usePathname());
+  const routeRef = useRef(route);
+  const stopsRef = useRef<number[]>([0]);
+  const handleRef = useRef<RibbonHandle | undefined>(undefined);
+  const mode = useSyncExternalStore(subscribe, ribbonMode, () => "off" as const);
   const [failed, setFailed] = useState(false);
   const [live, setLive] = useState(false);
-  const run = allowed && !failed;
+  const quality = mode === "off" || failed ? null : mode;
+  const run = quality !== null;
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!run || !canvas) return;
+    if (!quality || !canvas) return;
     let cancelled = false;
-    let stop: (() => void) | undefined;
-    let stops = measureStops();
+    let handle: RibbonHandle | undefined;
+    stopsRef.current = measureStops();
     const observer = new ResizeObserver(() => {
-      stops = measureStops();
+      stopsRef.current = measureStops();
     });
     observer.observe(document.body);
 
@@ -63,11 +81,18 @@ export function RibbonBackground() {
       import("./ribbon-scene")
         .then(({ startRibbon }) => {
           if (cancelled) return;
-          stop = startRibbon(canvas, {
-            getIndex: () => stopIndex(window.scrollY, stops),
+          handle = startRibbon(canvas, {
+            getIndex: () => {
+              if (routeRef.current === "hero") return 0;
+              if (routeRef.current === "calm") return calmIndex(window.scrollY, maxScroll());
+              return stopIndex(window.scrollY, stopsRef.current);
+            },
             onReady: () => setLive(true),
             onLost: () => setFailed(true),
+            quality,
+            getSoft: (soft) => (routeRef.current === "calm" ? CALM_SOFT : soft),
           });
+          handleRef.current = handle;
         })
         .catch(() => {
           if (!cancelled) setFailed(true);
@@ -81,20 +106,34 @@ export function RibbonBackground() {
       if (idle !== undefined) cancelIdleCallback(idle);
       if (timer !== undefined) clearTimeout(timer);
       observer.disconnect();
-      stop?.();
+      handle?.stop();
+      handleRef.current = undefined;
       setLive(false);
     };
-  }, [run]);
+  }, [quality]);
+
+  // A new page: switch the camera mode and measure its stops once it has painted.
+  useEffect(() => {
+    routeRef.current = route;
+    const frame = requestAnimationFrame(() => {
+      stopsRef.current = measureStops();
+      // A paused ribbon moves to the new page's pose.
+      handleRef.current?.wake();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [route]);
 
   // The static ribbon sits behind the hero only. The canvas stays fixed behind the whole page.
   return (
     <>
       <div aria-hidden="true" className={`ribbon-static transition-opacity duration-1000 ${live ? "opacity-0" : "opacity-100"}`} />
       {run && (
+        // A new canvas per quality: the old one lost its WebGL context when its scene stopped.
         <canvas
+          key={quality}
           ref={canvasRef}
           aria-hidden="true"
-          className={`pointer-events-none fixed inset-0 -z-10 h-full w-full transition-opacity duration-1000 ${live ? "opacity-100" : "opacity-0"}`}
+          className={`ribbon-canvas pointer-events-none fixed inset-0 -z-10 h-full w-full transition-opacity duration-1000 ${live ? "opacity-100" : "opacity-0"}`}
         />
       )}
     </>

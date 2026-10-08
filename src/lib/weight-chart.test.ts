@@ -70,22 +70,28 @@ describe("weightChange", () => {
   const day = 24 * 60 * 60 * 1000;
   const now = 100 * day;
 
-  it("needs two points in the window", () => {
+  it("needs a weigh-in in the first week and the last week of the window", () => {
     expect(weightChange([], 30, now)).toBeNull();
     expect(weightChange([{ time: now - day, value: 80 }], 30, now)).toBeNull();
+    expect(weightChange([{ time: now - 28 * day, value: 80 }, { time: now - 15 * day, value: 79 }], 30, now)).toBeNull();
   });
 
-  it("returns latest minus earliest, by time not by order", () => {
-    const points = [{ time: now - day, value: 77.4 }, { time: now - 20 * day, value: 80 }];
-    expect(weightChange(points, 30, now)).toBeCloseTo(-2.6, 5);
+  it("compares weekly averages, so one heavy day does not swing the result", () => {
+    // First week: 80, 80.4, 79.6 (avg 80). Last week: 78.5, 80.5 (a salty-dinner spike), 78.5 (avg 79.17).
+    const points = [
+      { time: now - 29 * day, value: 80 },
+      { time: now - 27 * day, value: 80.4 },
+      { time: now - 25 * day, value: 79.6 },
+      { time: now - 5 * day, value: 78.5 },
+      { time: now - 3 * day, value: 80.5 },
+      { time: now - day, value: 78.5 },
+    ];
+    expect(weightChange(points, 30, now)).toBeCloseTo(79.1667 - 80, 3);
+    // First-vs-last would have said -1.5; the averages say about -0.8.
   });
 
-  it("can be positive", () => {
-    expect(weightChange([{ time: now - 5 * day, value: 60 }, { time: now, value: 61.5 }], 30, now)).toBeCloseTo(1.5, 5);
-  });
-
-  it("ignores points outside the window", () => {
-    const points = [{ time: now - 40 * day, value: 90 }, { time: now - 10 * day, value: 80 }, { time: now, value: 79 }];
-    expect(weightChange(points, 30, now)).toBeCloseTo(-1, 5);
+  it("can be positive and ignores order and points outside the window", () => {
+    const points = [{ time: now, value: 61.5 }, { time: now - 40 * day, value: 90 }, { time: now - 26 * day, value: 60 }];
+    expect(weightChange(points, 30, now)).toBeCloseTo(1.5, 5);
   });
 });

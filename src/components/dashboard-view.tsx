@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { loadDashboardAction, type DashboardResult } from "@/app/dashboard/actions";
 import { MealEatenToggle } from "@/components/meal-eaten-toggle";
+import { SetupCard } from "@/components/setup-card";
 import { DayTotals, localToday } from "@/components/today-summary";
 import { calculationConfig } from "@/lib/calc/config";
+import { goalPaceLabel } from "@/lib/target-options";
 import { formatWeightKg } from "@/lib/weigh-in";
 
 // Today at a glance. "Today" is the browser's local date. refreshKey changes when the saved
@@ -44,11 +46,19 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
     );
   }
 
-  const { target, totals, planned_kcal, meals, workouts, trend, units } = state.result;
+  const { target, totals, planned_kcal, meals, workouts, trend, units, setup, nextUp } = state.result;
   return (
     <div className="mt-8 grid gap-[30px] md:grid-cols-2 lg:grid-cols-3">
+      <SetupCard flags={setup} />
       <section className="card md:col-span-2 lg:col-span-3">
-        <h2 className="text-xl font-medium">Today</h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-xl font-medium">Today</h2>
+          {target && goalPaceLabel(target.goal, target.pace) && (
+            <p className="text-sm text-muted">
+              Goal: <span className="font-semibold text-ink">{goalPaceLabel(target.goal, target.pace)}</span>
+            </p>
+          )}
+        </div>
         <DayTotals plannedKcal={planned_kcal} target={target} totals={totals} />
       </section>
 
@@ -61,10 +71,8 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
             {meals.map((meal) => (
               <li className="flex items-center justify-between gap-3 text-sm" key={meal.id}>
                 <span className="flex items-center gap-2">
-                  {meal.from_plan && (
-                    <MealEatenToggle eaten={meal.eaten} future={false} label={meal.label} mealId={meal.id} onChanged={() => setReloads((count) => count + 1)} />
-                  )}
-                  <span><span className="font-bold">{meal.label}</span> <span className="text-muted">· {Math.round(meal.totals.kcal)} kcal{meal.from_plan && !meal.eaten ? " · planned" : ""}</span></span>
+                  <MealEatenToggle eaten={meal.eaten} future={false} label={meal.label} mealId={meal.id} onChanged={() => setReloads((count) => count + 1)} />
+                  <span><span className="font-bold">{meal.label}</span> <span className="text-muted">· {Math.round(meal.totals.kcal)} kcal{meal.eaten ? "" : " · planned"}</span></span>
                 </span>
                 <Link className="font-semibold underline" href={`/meals/${meal.id}`}>Edit</Link>
               </li>
@@ -76,7 +84,18 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
       <section className="card">
         <h2 className="text-xl font-medium">Workout</h2>
         {workouts.length === 0 ? (
-          <p className="mt-3 text-sm text-muted">No workout logged today. <Link className="font-semibold text-ink underline" href="/workouts">Go to Workouts</Link></p>
+          nextUp?.status === "next" ? (
+            <div className="mt-3">
+              <p className="text-sm text-muted">Next up · {nextUp.done} of {nextUp.planned} done this week</p>
+              <Link className="btn-primary btn-sm mt-2" href={`/workouts/log/new?day=${nextUp.dayKey}`}>Log {nextUp.dayName}</Link>
+            </div>
+          ) : nextUp?.status === "done" ? (
+            <p className="mt-3 text-sm text-muted">All {nextUp.planned} planned workouts are done this week. Rest well. <Link className="font-semibold text-ink underline" href="/workouts">See your plan</Link></p>
+          ) : setup.hasPreferences ? (
+            <p className="mt-3 text-sm text-muted">No workout logged today. <Link className="font-semibold text-ink underline" href="/workouts">Go to Workouts</Link></p>
+          ) : (
+            <p className="mt-3 text-sm text-muted">Save your training preferences to get a workout plan. <Link className="font-semibold text-ink underline" href="/preferences">Set preferences</Link></p>
+          )
         ) : (
           <ul className="mt-3 grid gap-2">
             {workouts.map((workout) => (
@@ -97,7 +116,10 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
             <p className="mt-1 text-sm text-muted">Average of {trend.count} weigh-ins in the last {calculationConfig.progress.trend_window_days} days.</p>
           </>
         ) : (
-          <p className="mt-3 text-sm text-muted">Not enough data yet.</p>
+          <p className="mt-3 text-sm text-muted">
+            Needs {calculationConfig.progress.trend_min_weigh_ins} weigh-ins in {calculationConfig.progress.trend_window_days} days (you have {trend.count}).{" "}
+            <Link className="font-semibold text-ink underline" href="/progress">Log a weigh-in</Link>
+          </p>
         )}
       </section>
 

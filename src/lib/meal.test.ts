@@ -170,6 +170,12 @@ describe("validateMeal", () => {
     expect(validateMeal({ ...validMeal, items: [] })).toEqual({ ok: false, error: "Add at least one food." });
   });
 
+  it("allows up to 30 foods and rejects more (same cap as save_meal)", () => {
+    const item = { foodId, grams: 10 };
+    expect(validateMeal({ ...validMeal, items: Array(30).fill(item) })).toMatchObject({ ok: true });
+    expect(validateMeal({ ...validMeal, items: Array(31).fill(item) })).toEqual({ ok: false, error: "A meal can have at most 30 foods." });
+  });
+
   it("rejects a blank or too-long label", () => {
     expect(validateMeal({ ...validMeal, label: "   " })).toMatchObject({ ok: false });
     expect(validateMeal({ ...validMeal, label: "a".repeat(101) })).toMatchObject({ ok: false });

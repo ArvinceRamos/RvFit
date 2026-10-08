@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { setMealEatenAction } from "@/app/meals/actions";
 
-// "I ate this" for a planner meal. Future days cannot be ticked. onChanged reloads the totals.
+// "I ate this" for any saved meal. Future days cannot be ticked. onChanged reloads the totals.
 export function MealEatenToggle({ mealId, label, eaten, future, onChanged }: {
   mealId: string;
   label: string;

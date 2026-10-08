@@ -77,6 +77,14 @@ function convertHeightToCm(height: HeightInput): Result<number> {
   if (!isFiniteNumber(height.feet) || !isFiniteNumber(height.inches)) {
     return failure("Height must use finite feet and inches values.");
   }
+  // 5 ft 30 in or 7 ft -20 in would otherwise pass once converted to centimeters.
+  if (!Number.isInteger(height.feet) || height.feet < 0) {
+    return failure("Enter feet as a whole number, such as 5.");
+  }
+  const inchesPerFoot = calculationConfig.unit_conversions.inches_per_foot;
+  if (height.inches < 0 || height.inches >= inchesPerFoot) {
+    return failure(`Inches must be at least 0 and less than ${inchesPerFoot}.`);
+  }
 
   const totalInches =
     height.feet * calculationConfig.unit_conversions.inches_per_foot + height.inches;
@@ -86,6 +94,10 @@ function convertHeightToCm(height: HeightInput): Result<number> {
 export function convertAndValidateInputs(inputs: CalculatorInputs): Result<ValidatedInputs> {
   if (!isFiniteNumber(inputs.age_years)) {
     return failure("Age must be a finite number.");
+  }
+  // Saving requires whole years, so the calculator asks for them too.
+  if (!Number.isInteger(inputs.age_years)) {
+    return failure("Enter your age in whole years.");
   }
 
   if (inputs.age_years < calculationConfig.input_ranges.age_years.min) {
@@ -134,6 +146,22 @@ export type CalculatedTarget = {
   config_version: string;
 };
 
+// When the floor is used, the goal's weekly estimate no longer holds. Say what the floor
+// actually means compared with estimated maintenance, so a "lose" target never silently
+// becomes a surplus.
+function floorExplanation(branch: FormulaBranch, floor: number, maintenanceEstimate: number, goal: GoalInput): string {
+  const maintenance = Math.round(maintenanceEstimate);
+  const base = `The estimate was below the ${branch} formula floor of ${floor} kcal, so the target is set to ${floor} kcal.`;
+  const gap = maintenance - floor;
+  if (goal === "lose") {
+    if (gap <= 0) {
+      return `${base} That is at or above your estimated maintenance of about ${maintenance.toLocaleString("en-US")} kcal, so this target is not expected to cause weight loss, and the weekly estimate for your pace does not apply. Eating less than this floor is not recommended without a doctor or dietitian.`;
+    }
+    return `${base} That is only about ${gap} kcal below your estimated maintenance of about ${maintenance.toLocaleString("en-US")} kcal, so expect slower loss than the weekly estimate for your pace.`;
+  }
+  return `${base} That is above your estimated maintenance of about ${maintenance.toLocaleString("en-US")} kcal, so you may gain weight slowly.`;
+}
+
 export function calculateTarget(input: CalculateTargetInput): Result<CalculatedTarget> {
   const validated = convertAndValidateInputs(input);
   if (!validated.ok) return validated;
@@ -181,9 +209,7 @@ export function calculateTarget(input: CalculateTargetInput): Result<CalculatedT
   return success({
     target_kcal: Math.round(floorApplied ? floor : adjustedEstimate),
     floor_applied: floorApplied,
-    floor_explanation: floorApplied
-      ? `The estimate was below the ${branch} formula floor, so the target is set to ${floor} kcal.`
-      : null,
+    floor_explanation: floorApplied ? floorExplanation(branch, floor, maintenanceEstimate, input.goal) : null,
     formula_branch: branch,
     config_version: calculationConfig.config_version,
   });

@@ -16,6 +16,18 @@ export const DEMO_RESULT = {
   ],
 } as const;
 
+// Stage 1 panel, "My own target" side of the toggle: a target the person typed in, and its starting macros.
+export const DEMO_OWN_TARGET = {
+  heading: "Sample own target",
+  calories: 2000,
+  macros: [
+    { label: "Protein", grams: 140 },
+    { label: "Carbs", grams: 215 },
+    { label: "Fat", grams: 65 },
+    { label: "Fiber", grams: 28 },
+  ],
+} as const;
+
 // Stage 2 panel: meal builder slots and the day's calories bar.
 // The meal starts ticked as eaten. Unticking it takes its calories off the day: eatenBefore + mealCalories = dayCalories.
 export const DEMO_MEAL = {
@@ -31,20 +43,17 @@ export const DEMO_MEAL = {
   dayCalories: 1380,
 } as const;
 
-// Stage 3 panel: one workout day. The first exercise has a Swap button that cycles through these exercise keys.
-// The names come from the real exercise library, so they cannot drift from the Workouts page.
+// Stage 3 panel: one workout day as the Workouts page shows it. The first exercise has a Swap button
+// that cycles through these exercise keys. Names and form cues come from the real exercise library,
+// so they cannot drift from the Workouts page.
 export const DEMO_SWAP_KEYS = ["goblet-squat", "dumbbell-front-squat", "bodyweight-squat"] as const;
 
+// A beginner scheme, the same shape the plan uses. Text is built with the real formatters.
 export const DEMO_WORKOUT = {
-  day: "Day 1",
-  name: "Full body",
-  exercises: [
-    { name: "Goblet squat", sets: "3 × 8–12" },
-    { name: "Dumbbell bench press", sets: "3 × 8–12" },
-    { name: "One-arm dumbbell row", sets: "3 × 8–12" },
-    { name: "Romanian deadlift", sets: "3 × 8–12" },
-    { name: "Plank", sets: "3 × 30 s" },
-  ],
+  day: "Full body A",
+  scheme: { sets: 3, reps: { min: 8, max: 12 }, restSeconds: 90 },
+  holdScheme: { sets: 3, reps: { min: 20, max: 40 }, restSeconds: 60 },
+  exerciseKeys: ["goblet-squat", "dumbbell-bench-press", "one-arm-dumbbell-row", "dumbbell-romanian-deadlift", "plank"],
 } as const;
 
 // Width of a bar from 0 to 100, for fake values only.

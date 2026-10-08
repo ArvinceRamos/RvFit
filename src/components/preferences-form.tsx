@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { savePreferencesAction } from "@/app/preferences/actions";
 import { foodRoles, roleLabels, stateLabels, type FoodRole, type PreparationState } from "@/lib/food-catalog";
@@ -29,8 +30,9 @@ export type PreferencesFormValues = {
 
 const savedMessage = "Preferences saved.";
 
-export function PreferencesForm({ initial, offeredTags, foods }: {
+export function PreferencesForm({ initial, isSaved, offeredTags, foods }: {
   initial: PreferencesFormValues;
+  isSaved: boolean;
   offeredTags: DietTag[];
   foods: AvoidableFood[];
 }) {
@@ -74,7 +76,7 @@ export function PreferencesForm({ initial, offeredTags, foods }: {
         ) : (
           <div className="mt-3 grid grid-cols-2 gap-2">
             {offeredTags.map((tag) => (
-              <label className="flex items-center gap-2 rounded-xl border border-line bg-page px-3 py-2 text-sm" key={tag}>
+              <label className="choice flex items-center gap-2 py-2 text-sm" key={tag}>
                 <input
                   checked={values.allergyTags.includes(tag)}
                   onChange={() => setValues((current) => ({ ...current, allergyTags: toggle(current.allergyTags, tag) }))}
@@ -96,7 +98,7 @@ export function PreferencesForm({ initial, offeredTags, foods }: {
             if (roleFoods.length === 0) return null;
             const selectedCount = roleFoods.filter((food) => values.avoidedFoodIds.includes(food.id)).length;
             return (
-              <details className="rounded-xl border border-line bg-page" key={role}>
+              <details className="tile" key={role}>
                 <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">
                   {roleLabels[role]} ({selectedCount} selected)
                 </summary>
@@ -150,7 +152,18 @@ export function PreferencesForm({ initial, offeredTags, foods }: {
       </section>
 
       <div className="grid gap-3 lg:col-start-1">
-        {message && <p aria-live="polite" className={message === savedMessage ? "text-sm text-muted" : "text-sm text-danger"}>{message}</p>}
+        {!isSaved && !message && (
+          <p className="text-sm text-warn">Not saved yet. These are suggested starting choices. Check them and press Save to unlock your workout plan.</p>
+        )}
+        <div aria-live="polite">
+          {message === savedMessage ? (
+            <p className="text-sm text-muted">
+              {savedMessage} <Link className="font-semibold text-ink underline" href="/workouts">See your workout plan</Link>
+            </p>
+          ) : (
+            message && <p className="text-sm text-danger" role="alert">{message}</p>
+          )}
+        </div>
         <button className="btn-primary w-fit disabled:cursor-not-allowed disabled:opacity-60" disabled={saving} type="submit">
           {saving ? "Saving…" : "Save preferences"}
         </button>

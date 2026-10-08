@@ -3,6 +3,7 @@ import {
   allergenNotice,
   availableAllergyTags,
   diffAvoidedFoods,
+  preferencesPageData,
   trainingDayOptions,
   validatePreferences,
 } from "./preferences";
@@ -121,5 +122,44 @@ describe("diffAvoidedFoods", () => {
 
   it("finds nothing to change when the lists match", () => {
     expect(diffAvoidedFoods([foodId, otherFoodId], [otherFoodId, foodId])).toEqual({ toAdd: [], toRemove: [] });
+  });
+});
+
+describe("preferencesPageData", () => {
+  const foods = [
+    { id: "f1", name: "Peanut butter", role: "fat", preparation_state: "raw", diet_tags: ["peanuts"] },
+    { id: "f2", name: "Rice", role: "carb", preparation_state: "cooked", diet_tags: [] },
+  ];
+  const ok = <T,>(data: T) => ({ data, error: null });
+  const failed = { data: null, error: { message: "network" } };
+
+  it("returns null when any read fails so blanks can never be saved", () => {
+    const saved = ok({ allergy_tags: ["peanuts"], experience: "beginner", equipment: "gym", training_days: 3 });
+    expect(preferencesPageData(failed, saved, ok([]))).toBeNull();
+    expect(preferencesPageData(ok(foods), failed, ok([]))).toBeNull();
+    expect(preferencesPageData(ok(foods), saved, failed)).toBeNull();
+  });
+
+  it("keeps saved allergy tags and avoided foods", () => {
+    const data = preferencesPageData(
+      ok(foods),
+      ok({ allergy_tags: ["peanuts"], experience: "intermediate", equipment: "gym", training_days: 4 }),
+      ok([{ food_id: "f2" }]),
+    );
+    expect(data?.isSaved).toBe(true);
+    expect(data?.initial).toEqual({
+      allergyTags: ["peanuts"],
+      avoidedFoodIds: ["f2"],
+      experience: "intermediate",
+      equipment: "gym",
+      trainingDays: 4,
+    });
+  });
+
+  it("marks defaults as unsaved when no row exists", () => {
+    const data = preferencesPageData(ok(foods), ok(null), ok([]));
+    expect(data?.isSaved).toBe(false);
+    expect(data?.initial.experience).toBe("beginner");
+    expect(data?.initial.trainingDays).toBe(3);
   });
 });

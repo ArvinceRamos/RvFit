@@ -40,7 +40,8 @@ export const calculationConfig = {
   formula_branch_floors_kcal: { male: 1500, female: 1200 },
   database_target_bounds_kcal: { min: 800, max: 6000 },
   // Placeholder per-item limit. Keep in step with meal_items_grams_max_placeholder_check in the database.
-  meal_limits: { max_item_grams: 2000 },
+  // max_items is a safety cap, not a nutrition value. Keep in step with save_meal in the database.
+  meal_limits: { max_item_grams: 2000, max_items: 30 },
   // Placeholder: how many foods to suggest for each of protein, carb, and fat.
   suggestions: { foods_per_role: 5 },
   // Placeholder meal planner limits and portion ranges (docs/MEAL-PLANNER.md "Realistic portions").
@@ -71,6 +72,16 @@ export const calculationConfig = {
     },
   },
   // Placeholder progress rules pending qualified review. The trend is a plain average, not medical advice.
+  // Placeholder target check-in rules pending qualified review (src/lib/check-in.ts). It only suggests;
+  // it never changes a target. 7,700 kcal per kg is a rough rule of thumb, and real change slows over time.
+  check_in: {
+    window_days: 7,
+    compare_gap_days: 14,
+    min_weigh_ins_per_window: 3,
+    on_track_tolerance_kg_per_week: 0.15,
+    kcal_per_kg: 7700,
+    change_kcal: { min: 100, max: 200, step: 50 },
+  },
   progress: { trend_window_days: 7, trend_min_weigh_ins: 3, history_weigh_ins: 20, workout_weeks: 8 },
   // Placeholder workout limits and schemes. Keep limits in step with the workout_log_sets_*_placeholder_check constraints.
   workouts: {
@@ -78,9 +89,17 @@ export const calculationConfig = {
     max_reps: 100,
     max_seconds: 600,
     max_weight_kg: 500,
-    weight_step_kg: { upper: 2.5, lower: 5 },
+    // Progression steps. Loads below small_load_kg (light dumbbells, isolation moves) use the small step.
+    weight_step_kg: { upper: 2.5, lower: 5, small: 1 },
+    weight_step_lb: { upper: 5, lower: 10, small: 2.5 },
+    small_load_kg: 20,
+    // Suggested weights are rounded to these steps.
+    weight_rounding: { kg: 0.5, lb: 2.5 },
     extra_reps_unloaded: 2,
     extra_seconds_hold: 5,
+    // Above these, more reps or seconds add little; suggest a harder variation instead.
+    max_prompt_reps_unloaded: 20,
+    max_prompt_seconds_hold: 60,
     schemes: {
       beginner: {
         sets: { min: 2, max: 3 },

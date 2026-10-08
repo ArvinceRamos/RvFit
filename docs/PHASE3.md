@@ -82,10 +82,10 @@ Beginner and intermediate both support 2–6 days (changed from the original pla
 - It uses the most recent earlier log that contains the same exercise.
 - A prompt shows only when that log has at least the planned number of sets and every planned set reached the top of the rep range (or the top seconds for a hold).
 - What it suggests:
-  - Loaded exercise: add a small weight to the heaviest weight used. Lower-body patterns (squat, hinge, single_leg) use the larger step.
-  - Bodyweight reps: aim for a few more reps per set.
-  - Hold: add a few seconds.
-- Suggested weights are rounded to a practical step (0.5 kg or 1 lb) in the user's units.
+  - Loaded exercise: add a small step to the lowest weight across the planned sets. Extra sets beyond the plan never change the suggestion. Lower-body patterns (squat, hinge, single_leg) use the larger step; loads under 20 kg use a small step (1 kg or 2.5 lb). The prompt also says to start again at the bottom of the rep range. No prompt if a planned set has no weight.
+  - Bodyweight reps: aim for a few more reps per set, up to 20. At 20 or more, suggest a harder exercise with Swap instead.
+  - Hold: add a few seconds, up to 60. At 60 or more, suggest a harder exercise with Swap instead.
+- Suggested weights are rounded to a loadable step (0.5 kg or 2.5 lb) in the user's units and are always above the current weight. (Updated after the audit: the old rule used the heaviest set and whole pounds.)
 - Prompts show on the new-workout screen only, using logs from before the chosen date. They do not show on the edit screen.
 
 ## Database outline

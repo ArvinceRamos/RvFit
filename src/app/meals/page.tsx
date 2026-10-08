@@ -1,16 +1,16 @@
-import { redirect } from "next/navigation";
 import { AuthFrame } from "@/components/auth-frame";
 import { MealDaysView } from "@/components/meal-days-view";
 import { readMealDayView } from "@/lib/meal-days";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/auth";
 
 export default async function MealsPage({ searchParams }: PageProps<"/meals">) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { supabase } = await requireUser();
 
   // Today, Upcoming, or Past. The tab is in the address so it survives a reload.
-  const view = readMealDayView((await searchParams).view);
+  const params = await searchParams;
+  const view = readMealDayView(params.view);
+  // Set by the meal planner after it saves.
+  const planSaved = params.saved === "plan";
 
   const { data: targetRows } = await supabase
     .from("calorie_targets")
@@ -25,6 +25,11 @@ export default async function MealsPage({ searchParams }: PageProps<"/meals">) {
   return (
     <AuthFrame showNav>
       <h1 className="text-3xl font-bold tracking-tight">Meals</h1>
+      {planSaved && (
+        <p className="alert-success mt-4" role="status">
+          Your plan is saved. Tick each planned meal when you eat it; only ticked meals count toward the day&apos;s totals.
+        </p>
+      )}
       <MealDaysView target={target} view={view} />
     </AuthFrame>
   );
