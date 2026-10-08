@@ -33,7 +33,7 @@ export default async function MealPlanPage() {
   return (
     <AuthFrame showNav>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl font-bold tracking-tight">Plan meals</h1>
+        <h1 className="text-4xl font-medium tracking-tight">Plan meals</h1>
         <Link className="text-sm font-semibold underline" href="/meals">Back to Meals</Link>
       </div>
       <p className="mt-2 max-w-prose text-sm text-muted">
