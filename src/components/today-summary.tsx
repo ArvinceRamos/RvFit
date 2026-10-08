@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { loadDayTotalsAction, type DayTotalsResult } from "@/app/meals/actions";
+import { useAnimatedNumber } from "@/lib/animated-number";
 import type { MealTotals } from "@/lib/meal";
 import { describeRemaining, progressPercent } from "@/lib/remaining-format";
 import { remainingTargets, type DailyTargets } from "@/lib/suggestions";
@@ -20,7 +21,11 @@ const number = (value: number) => Math.round(value).toLocaleString("en-US");
 export function Bar({ percent, over }: { percent: number; over: boolean }) {
   return (
     <div aria-hidden className="mt-2 h-2 overflow-hidden rounded-full bg-track">
-      <div className={`h-full rounded-full ${over ? "bg-warn" : "bg-accent"}`} style={{ width: `${percent}%` }} />
+      {/* The curve and 800 ms match useAnimatedNumber, so the bar and the number arrive together. */}
+      <div
+        className={`h-full rounded-full transition-[width] duration-[800ms] ease-[cubic-bezier(0.215,0.61,0.355,1)] motion-reduce:transition-none ${over ? "bg-warn" : "bg-accent"}`}
+        style={{ width: `${percent}%` }}
+      />
     </div>
   );
 }
@@ -35,26 +40,34 @@ export function DayTotals({ target, totals, plannedKcal = 0 }: { target: DailyTa
       </p>
     );
   }
+  return <DayTotalsBody plannedKcal={plannedKcal} target={target} totals={totals} />;
+}
+
+// The numbers count to their new value when a meal is ticked (useAnimatedNumber). The bars slide by CSS.
+// "Over" is decided from the real totals, so a colour never flickers while a number is counting.
+function DayTotalsBody({ target, totals, plannedKcal }: { target: DailyTargets; totals: MealTotals; plannedKcal: number }) {
   const left = remainingTargets(target, totals);
+  const kcalShown = useAnimatedNumber(totals.kcal);
+  const kcalLeftShown = target.kcal - kcalShown;
+  const caloriesOver = left.kcal < 0;
+  // Fiber is null when any food that day has no fiber value, so a partial total is never shown.
   const tiles = [
     { name: "Protein", eaten: totals.protein_g as number | null, goal: target.protein_g, left: left.protein_g as number | null },
     { name: "Carbs", eaten: totals.carbs_g as number | null, goal: target.carbs_g, left: left.carbs_g as number | null },
     { name: "Fat", eaten: totals.fat_g as number | null, goal: target.fat_g, left: left.fat_g as number | null },
-    // Fiber is null when any food that day has no fiber value, so a partial total is never shown.
     { name: "Fiber", eaten: totals.fiber_incomplete ? null : totals.fiber_g, goal: target.fiber_g, left: left.fiber_g },
   ];
-  const caloriesOver = left.kcal < 0;
 
   return (
     <>
       <div className="mt-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <p>
-            <span className="text-3xl font-bold tracking-tight">{number(totals.kcal)}</span>
+            <span className="text-3xl font-bold tracking-tight">{number(kcalShown)}</span>
             <span className="ml-2 text-base text-muted">of {number(target.kcal)} kcal</span>
           </p>
           <p className={`text-base font-semibold ${caloriesOver ? "text-warn" : "text-ink"}`}>
-            {describeRemaining(left.kcal, "kcal")}
+            {describeRemaining(kcalLeftShown, "kcal")}
           </p>
         </div>
         <Bar over={caloriesOver} percent={progressPercent(totals.kcal, target.kcal)} />
@@ -62,27 +75,33 @@ export function DayTotals({ target, totals, plannedKcal = 0 }: { target: DailyTa
       </div>
 
       <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {tiles.map((tile) => {
-          const over = tile.left !== null && tile.left < 0;
-          return (
-            <div className="rounded-lg border border-line bg-page p-3" key={tile.name}>
-              <dt className="text-sm text-muted">{tile.name}</dt>
-              <dd className={`mt-1 font-bold ${tile.eaten === null ? "text-base" : "text-lg"}`}>{tile.eaten === null ? "Incomplete" : `${tile.eaten.toFixed(1)} g`}</dd>
-              <dd className="text-sm text-muted">of {tile.goal} g</dd>
-              {tile.eaten !== null && (
-                <>
-                  <dd><Bar over={over} percent={progressPercent(tile.eaten, tile.goal)} /></dd>
-                  <dd className={`mt-2 text-sm font-semibold ${over ? "text-warn" : "text-ink"}`}>
-                    {describeRemaining(tile.left ?? 0, "g")}
-                  </dd>
-                </>
-              )}
-            </div>
-          );
-        })}
+        {tiles.map((tile) => (
+          <MacroTile eaten={tile.eaten} goal={tile.goal} key={tile.name} left={tile.left} name={tile.name} />
+        ))}
       </dl>
       {totals.fiber_incomplete && <p className="mt-3 text-sm text-muted">Some foods have no fiber listed, so fiber is not totalled.</p>}
     </>
+  );
+}
+
+// One macro tile. Its own component because each animated number needs its own hook.
+function MacroTile({ name, eaten, goal, left }: { name: string; eaten: number | null; goal: number; left: number | null }) {
+  const eatenShown = useAnimatedNumber(eaten ?? 0);
+  const over = left !== null && left < 0;
+  return (
+    <div className="rounded-lg border border-line bg-page p-3">
+      <dt className="text-sm text-muted">{name}</dt>
+      <dd className={`mt-1 font-bold ${eaten === null ? "text-base" : "text-lg"}`}>{eaten === null ? "Incomplete" : `${eatenShown.toFixed(1)} g`}</dd>
+      <dd className="text-sm text-muted">of {goal} g</dd>
+      {eaten !== null && (
+        <>
+          <dd><Bar over={over} percent={progressPercent(eaten, goal)} /></dd>
+          <dd className={`mt-2 text-sm font-semibold ${over ? "text-warn" : "text-ink"}`}>
+            {describeRemaining(goal - eatenShown, "g")}
+          </dd>
+        </>
+      )}
+    </div>
   );
 }
 
