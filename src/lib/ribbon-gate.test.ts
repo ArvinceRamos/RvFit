@@ -38,11 +38,11 @@ describe("ribbonRoute", () => {
 describe("calmIndex", () => {
   it("drifts through the soft stops only", () => {
     expect(calmIndex(0, 1000)).toBe(1);
-    expect(calmIndex(500, 1000)).toBe(3);
-    expect(calmIndex(1000, 1000)).toBe(5);
-    expect(calmIndex(5000, 1000)).toBe(5);
+    expect(calmIndex(500, 1000)).toBe(1.5);
+    expect(calmIndex(1000, 1000)).toBe(2);
+    expect(calmIndex(5000, 1000)).toBe(2);
     expect(calmIndex(200, 0)).toBe(1);
-    for (const i of [1, 2, 3, 4, 5]) expect(RIBBON_KEYFRAMES[i].soft).toBe(1);
+    for (const i of [1, 2]) expect(RIBBON_KEYFRAMES[i].soft).toBe(1);
   });
 });
 

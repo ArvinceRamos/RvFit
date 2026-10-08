@@ -35,10 +35,17 @@ export function ribbonRoute(pathname: string): RibbonRoute {
   return HERO_PATHS.includes(pathname) ? "hero" : "calm";
 }
 
-// Calm pages drift from stop 1 to stop 5, the soft keyframes, as the page scrolls from top to bottom.
+// Calm pages drift only one pose (stop 1 to stop 2, both soft) from the top to the bottom of the page,
+// so a short scroll never sweeps the ribbon across the screen.
+export const CALM_DRIFT = 1;
+
+// How fast the camera glides toward the scroll position. Calm pages use a slow glide.
+export const GLIDE_DEFAULT = 4;
+export const GLIDE_CALM = 1.5;
+
 export function calmIndex(scrollY: number, maxScroll: number): number {
   const progress = maxScroll > 0 ? Math.min(Math.max(scrollY / maxScroll, 0), 1) : 0;
-  return 1 + 4 * progress;
+  return 1 + CALM_DRIFT * progress;
 }
 
 // App pages show the ribbon a little brighter than the landing stages, so it reads through the glass cards,

@@ -11,7 +11,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { RIBBON_KEYFRAMES, RIBBON_KEYFRAMES_NARROW, poseAt, type RibbonQuality } from "@/lib/ribbon-gate";
+import { GLIDE_DEFAULT, RIBBON_KEYFRAMES,RIBBON_KEYFRAMES_NARROW, poseAt, type RibbonQuality } from "@/lib/ribbon-gate";
 
 // The landing page light ribbon. Only RibbonBackground loads this file, with a dynamic import,
 // so three stays out of every other page's bundle.
@@ -136,6 +136,8 @@ type Callbacks = {
   quality: RibbonQuality;
   // Softness for this frame (0 sharp, 1 dim glow). Defaults to the keyframe value.
   getSoft?: (keyframeSoft: number) => number;
+  // How fast the camera glides toward the scroll position. Defaults to GLIDE_DEFAULT.
+  getGlide?: () => number;
 };
 
 export type RibbonHandle = {
@@ -148,7 +150,7 @@ export type RibbonHandle = {
 // Starts the scene on the canvas. Throws if WebGL cannot start; the caller keeps the static fallback.
 // It animates continuously (the user's choice; see docs/UI-REFRESH.md). Reduced motion, data saver and
 // no WebGL 2 still get the static ribbon instead.
-export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLost, quality, getSoft }: Callbacks): RibbonHandle {
+export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLost, quality, getSoft, getGlide }: Callbacks): RibbonHandle {
   const settings = SETTINGS[quality];
   const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: settings.antialias, powerPreference: "low-power" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, settings.maxPixelRatio));
@@ -213,7 +215,7 @@ export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLo
     last = now;
     clock += dt;
     // Glide toward the scroll position instead of jumping.
-    index += (getIndex() - index) * (1 - Math.exp(-dt * 4));
+    index += (getIndex() - index) * (1 - Math.exp(-dt * (getGlide ? getGlide() : GLIDE_DEFAULT)));
     const pose = poseAt(index, settings.keyframes);
     curve.getPointAt(pose.t, point);
     look.set(point.x + pose.shift[0], point.y + pose.shift[1], point.z + pose.shift[2]);

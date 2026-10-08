@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { RibbonHandle } from "./ribbon-scene";
-import { CALM_SOFT, calmIndex, RIBBON_MIN_WIDTH, ribbonQuality, ribbonRoute, shouldRun3D, stopIndex, type RibbonQuality } from "@/lib/ribbon-gate";
+import { CALM_SOFT, calmIndex, GLIDE_CALM, GLIDE_DEFAULT,RIBBON_MIN_WIDTH, ribbonQuality, ribbonRoute, shouldRun3D, stopIndex, type RibbonQuality } from "@/lib/ribbon-gate";
 
 // Decorative light ribbon behind every page (root layout), so it is not restarted on each navigation.
 // The landing page scrolls through its stops; other pages use the hero or calm pose (see ribbonRoute).
@@ -91,6 +91,7 @@ export function RibbonBackground() {
             onLost: () => setFailed(true),
             quality,
             getSoft: (soft) => (routeRef.current === "calm" ? CALM_SOFT : soft),
+            getGlide: () => (routeRef.current === "calm" ? GLIDE_CALM : GLIDE_DEFAULT),
           });
           handleRef.current = handle;
         })
