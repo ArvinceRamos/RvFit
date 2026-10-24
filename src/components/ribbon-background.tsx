@@ -3,10 +3,11 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { RibbonHandle } from "./ribbon-scene";
-import { CALM_SOFT, calmIndex, GLIDE_CALM, GLIDE_DEFAULT,RIBBON_MIN_WIDTH, ribbonQuality, ribbonRoute, shouldRun3D, stopIndex, type RibbonQuality } from "@/lib/ribbon-gate";
+import { CALM_SOFT, calmIndex, GLIDE_CALM, GLIDE_DEFAULT, RIBBON_MIN_WIDTH, ribbonMoves, ribbonQuality, ribbonRoute, shouldRun3D, stopIndex, type RibbonQuality } from "@/lib/ribbon-gate";
 
 // Decorative light ribbon behind every page (root layout), so it is not restarted on each navigation.
 // The landing page scrolls through its stops; other pages use the hero or calm pose (see ribbonRoute).
+// App (calm) pages hold still and draw only on scroll, resize or page change (see ribbonMoves).
 // No page ever waits for it.
 // Everyone first gets the static CSS ribbon. With motion allowed, WebGL 2 and no data-saver, the three scene
 // loads after first paint and fades in over it. Phones and tablets get the lite scene. If it fails, the static ribbon stays.
@@ -92,6 +93,7 @@ export function RibbonBackground() {
             quality,
             getSoft: (soft) => (routeRef.current === "calm" ? CALM_SOFT : soft),
             getGlide: () => (routeRef.current === "calm" ? GLIDE_CALM : GLIDE_DEFAULT),
+            getStill: () => !ribbonMoves(routeRef.current),
           });
           handleRef.current = handle;
         })
@@ -118,7 +120,7 @@ export function RibbonBackground() {
     routeRef.current = route;
     const frame = requestAnimationFrame(() => {
       stopsRef.current = measureStops();
-      // A paused ribbon moves to the new page's pose.
+      // A settled ribbon moves to the new page's pose.
       handleRef.current?.wake();
     });
     return () => cancelAnimationFrame(frame);

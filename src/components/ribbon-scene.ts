@@ -11,7 +11,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { GLIDE_DEFAULT, RIBBON_KEYFRAMES,RIBBON_KEYFRAMES_NARROW, poseAt, type RibbonQuality } from "@/lib/ribbon-gate";
+import { GLIDE_DEFAULT, RIBBON_KEYFRAMES, RIBBON_KEYFRAMES_NARROW, poseAt, ribbonSettled, type RibbonQuality } from "@/lib/ribbon-gate";
 
 // The landing page light ribbon. Only RibbonBackground loads this file, with a dynamic import,
 // so three stays out of every other page's bundle.
@@ -138,19 +138,22 @@ type Callbacks = {
   getSoft?: (keyframeSoft: number) => number;
   // How fast the camera glides toward the scroll position. Defaults to GLIDE_DEFAULT.
   getGlide?: () => number;
+  // True on pages where the ribbon holds still (see ribbonMoves). Defaults to animating.
+  getStill?: () => boolean;
 };
 
 export type RibbonHandle = {
   // Stops the scene and frees the GPU memory.
   stop: () => void;
-  // Restarts the frame loop if the browser stopped it.
+  // Restarts the frame loop if it stopped (a still ribbon settled, or the browser stopped it).
   wake: () => void;
 };
 
 // Starts the scene on the canvas. Throws if WebGL cannot start; the caller keeps the static fallback.
-// It animates continuously (the user's choice; see docs/UI-REFRESH.md). Reduced motion, data saver and
-// no WebGL 2 still get the static ribbon instead.
-export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLost, quality, getSoft, getGlide }: Callbacks): RibbonHandle {
+// It animates continuously on the landing and auth pages (the user's choice; see docs/UI-REFRESH.md). On still
+// pages it stops drawing once the camera settles, and a scroll, resize or wake() draws again.
+// Reduced motion, data saver and no WebGL 2 still get the static ribbon instead.
+export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLost, quality, getSoft, getGlide, getStill }: Callbacks): RibbonHandle {
   const settings = SETTINGS[quality];
   const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: settings.antialias, powerPreference: "low-power" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, settings.maxPixelRatio));
@@ -191,6 +194,11 @@ export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLo
     camera.updateProjectionMatrix();
   };
   resize();
+  // A resize clears the canvas, so a settled ribbon draws again.
+  const handleResize = () => {
+    resize();
+    wake();
+  };
 
   const handleLost = (event: Event) => {
     event.preventDefault();
@@ -213,9 +221,14 @@ export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLo
     if (settings.frameMs && ready && now - last < settings.frameMs - 1) return;
     const dt = Math.min((now - last) / 1000, 0.1);
     last = now;
-    clock += dt;
+    const still = getStill ? getStill() : false;
+    // A still ribbon keeps its waves where they are.
+    if (!still) clock += dt;
     // Glide toward the scroll position instead of jumping.
-    index += (getIndex() - index) * (1 - Math.exp(-dt * (getGlide ? getGlide() : GLIDE_DEFAULT)));
+    const target = getIndex();
+    index += (target - index) * (1 - Math.exp(-dt * (getGlide ? getGlide() : GLIDE_DEFAULT)));
+    const settled = still && ribbonSettled(index, target);
+    if (settled) index = target;
     const pose = poseAt(index, settings.keyframes);
     curve.getPointAt(pose.t, point);
     look.set(point.x + pose.shift[0], point.y + pose.shift[1], point.z + pose.shift[2]);
@@ -231,6 +244,11 @@ export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLo
       ready = true;
       onReady();
     }
+    // Nothing left to move: stop until the next scroll, resize or page change.
+    if (settled) {
+      cancelAnimationFrame(frame);
+      running = false;
+    }
   };
   const wake = () => {
     if (running) return;
@@ -238,13 +256,15 @@ export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLo
     last = performance.now();
     frame = requestAnimationFrame(draw);
   };
-  window.addEventListener("resize", resize);
+  window.addEventListener("resize", handleResize);
+  window.addEventListener("scroll", wake, { passive: true });
   wake();
 
   const stop = () => {
     cancelAnimationFrame(frame);
     running = false;
-    window.removeEventListener("resize", resize);
+    window.removeEventListener("resize", handleResize);
+    window.removeEventListener("scroll", wake);
     canvas.removeEventListener("webglcontextlost", handleLost);
     geometries.forEach((geometry) => geometry.dispose());
     materials.forEach((material) => material.dispose());

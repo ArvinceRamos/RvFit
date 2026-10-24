@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calmIndex, ribbonRoute, RIBBON_KEYFRAMES, RIBBON_KEYFRAMES_NARROW, RIBBON_MIN_WIDTH, poseAt, ribbonQuality, shouldRun3D, stopIndex, type RibbonEnv } from "./ribbon-gate";
+import { calmIndex, ribbonMoves, ribbonRoute, ribbonSettled, RIBBON_KEYFRAMES, RIBBON_KEYFRAMES_NARROW, RIBBON_MIN_WIDTH, poseAt, ribbonQuality, SETTLE_EPSILON, shouldRun3D, stopIndex, type RibbonEnv } from "./ribbon-gate";
 
 const desktop: RibbonEnv = { width: 1440, reducedMotion: false, saveData: false, webgl2: true };
 
@@ -32,6 +32,24 @@ describe("ribbonRoute", () => {
 
   it("is calm on app pages", () => {
     for (const path of ["/dashboard", "/profile", "/meals/new", "/workouts/log/new", "/results"]) expect(ribbonRoute(path)).toBe("calm");
+  });
+});
+
+describe("ribbonMoves", () => {
+  it("animates on the landing and auth pages and holds still on app pages", () => {
+    expect(ribbonMoves("journey")).toBe(true);
+    expect(ribbonMoves("hero")).toBe(true);
+    expect(ribbonMoves("calm")).toBe(false);
+    expect(ribbonMoves(ribbonRoute("/dashboard"))).toBe(false);
+  });
+});
+
+describe("ribbonSettled", () => {
+  it("settles only once the camera has reached its target", () => {
+    expect(ribbonSettled(1.5, 1.5)).toBe(true);
+    expect(ribbonSettled(1.5, 1.5 + SETTLE_EPSILON / 2)).toBe(true);
+    expect(ribbonSettled(1.5, 1.5 + SETTLE_EPSILON * 2)).toBe(false);
+    expect(ribbonSettled(2, 1)).toBe(false);
   });
 });
 

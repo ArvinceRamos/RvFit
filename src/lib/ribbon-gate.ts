@@ -35,6 +35,20 @@ export function ribbonRoute(pathname: string): RibbonRoute {
   return HERO_PATHS.includes(pathname) ? "hero" : "calm";
 }
 
+// The landing and auth pages animate nonstop (AU-37). App pages hold still (H9, the user's choice on 2026-10-25):
+// the waves stop and the scene draws only until the camera has glided to the scroll position, then waits
+// for the next scroll, resize or page change. That saves the GPU and battery under the frosted cards.
+export function ribbonMoves(route: RibbonRoute): boolean {
+  return route !== "calm";
+}
+
+// How close the camera must be to its target (in stop index units) before a still ribbon stops drawing.
+export const SETTLE_EPSILON = 0.001;
+
+export function ribbonSettled(index: number, target: number): boolean {
+  return Math.abs(target - index) < SETTLE_EPSILON;
+}
+
 // Calm pages drift only one pose (stop 1 to stop 2, both soft) from the top to the bottom of the page,
 // so a short scroll never sweeps the ribbon across the screen.
 export const CALM_DRIFT = 1;
