@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { loadCheckInData } from "@/lib/check-in-data";
 import { buildCheckInTarget } from "@/lib/check-in-save";
 import { buildProfileSave } from "@/lib/profile-save";
@@ -40,6 +41,7 @@ export async function saveProfileAndTargetAction(raw: unknown): Promise<SaveProf
     logError("profile.saveTarget", error);
     return { ok: false, error: "Your target could not be saved. Please try again." };
   }
+  refresh();
   return { ok: true };
 }
 
@@ -85,5 +87,6 @@ export async function acceptCheckInAction(shownKcal: unknown): Promise<AcceptChe
     logError("profile.acceptCheckIn", error);
     return { ok: false, error: "Your target could not be saved. Please try again." };
   }
+  refresh();
   return { ok: true, kcal: built.data.target_kcal };
 }

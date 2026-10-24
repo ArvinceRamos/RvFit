@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { savePreferencesAction } from "@/app/preferences/actions";
 import { foodRoles, roleLabels, stateLabels, type FoodRole, type PreparationState } from "@/lib/food-catalog";
 import {
@@ -36,7 +35,6 @@ export function PreferencesForm({ initial, isSaved, offeredTags, foods }: {
   offeredTags: DietTag[];
   foods: AvoidableFood[];
 }) {
-  const router = useRouter();
   const [values, setValues] = useState<PreferencesFormValues>(initial);
   const [message, setMessage] = useState<string>();
   const [saving, setSaving] = useState(false);
@@ -62,7 +60,6 @@ export function PreferencesForm({ initial, isSaved, offeredTags, foods }: {
       return;
     }
     setMessage(savedMessage);
-    router.refresh();
   }
 
   return (

@@ -28,7 +28,7 @@ import {
 import { formatGrams, formatKcal, formatWeeklyRate } from "@/lib/remaining-format";
 import { createClient } from "@/lib/supabase/client";
 import { activityOptions, goalOptions, paceOptions } from "@/lib/target-options";
-import { AuthFrame } from "./auth-frame";
+import { PlainFrame } from "./frame-shell";
 
 type Screen = "start" | "calculate" | "manual" | "results";
 type Units = "metric" | "imperial";
@@ -62,7 +62,7 @@ function useGuestDraft() {
 
 // The guest pages share the app frame: same header, theme toggle, and floating card as log-in.
 function Frame({ children }: { children: React.ReactNode }) {
-  return <AuthFrame>{children}</AuthFrame>;
+  return <PlainFrame>{children}</PlainFrame>;
 }
 
 function ErrorMessage({ message }: { message?: string }) {

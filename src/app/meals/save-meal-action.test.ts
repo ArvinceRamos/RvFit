@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mocked client only. These tests never touch a real account.
 type Response = { data: unknown; error: unknown };
-const getUser = vi.fn();
+const getClaims = vi.fn();
 const rpc = vi.fn();
 const update = vi.fn();
 let updateResponse: Response;
@@ -20,7 +20,7 @@ function query() {
 }
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser }, from: () => query(), rpc }),
+  createClient: async () => ({ auth: { getClaims }, from: () => query(), rpc }),
 }));
 
 const { saveMealAction } = await import("./actions");
@@ -31,7 +31,7 @@ const meal = { mealId: null, date: "2026-10-24", label: "Meal 1", items: [{ food
 
 beforeEach(() => {
   vi.clearAllMocks();
-  getUser.mockResolvedValue({ data: { user: { id: userId } }, error: null });
+  getClaims.mockResolvedValue({ data: { claims: { sub: userId } }, error: null });
   rpc.mockResolvedValue({ data: "new-meal-id", error: null });
   updateResponse = { data: null, error: null };
 });

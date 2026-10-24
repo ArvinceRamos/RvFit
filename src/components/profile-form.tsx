@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { saveProfileAndTargetAction } from "@/app/profile/actions";
 import { checkMacroMismatch, UNDERWEIGHT_LOSS_MESSAGE, validateMacroEdit, type DefaultMacros } from "@/lib/calc/calculate";
 import { calculationConfig, type ActivityLevel, type FormulaBranch } from "@/lib/calc/config";
@@ -77,7 +76,6 @@ function Field({ label, value, onChange, hint }: { label: string; value: string;
 }
 
 export function ProfileForm({ profile, current, latestWeightKg }: { profile: SavedProfile; current: CurrentTarget | null; latestWeightKg: number | null }) {
-  const router = useRouter();
   const [enteredDetails, setDetails] = useState<ProfileFormInput>(() => initialDetails(profile, current, latestWeightKg));
   // Under the BMI guard, Lose weight is hidden and a saved "lose" goal falls back to Maintain.
   const noLoss = enteredDetails.method === "calculated" && profileLossBlocked(enteredDetails);
@@ -161,7 +159,6 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
     // The saved target becomes the starting value for "Enter my own target".
     setDetails((currentDetails) => ({ ...currentDetails, targetKcal: String(targetKcal) }));
     setMessage(savedMessage);
-    router.refresh();
   }
 
   return (

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mocked client only. These tests never touch a real account.
 type Response = { data: unknown; error: unknown };
-const getUser = vi.fn();
+const getClaims = vi.fn();
 const rpc = vi.fn();
 let fromResponse: Response;
 let toResponse: Response;
@@ -23,7 +23,7 @@ function query() {
 }
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser }, from: () => query(), rpc }),
+  createClient: async () => ({ auth: { getClaims }, from: () => query(), rpc }),
 }));
 
 const { copyMealDayAction } = await import("./actions");
@@ -33,7 +33,7 @@ const rice = "0b8b8f3e-6f0a-4a43-9d3e-2f6f3c1f9a11";
 const egg = "1c9c9f4f-7a1b-4b54-8e4f-3a7a4d2a0b22";
 
 beforeEach(() => {
-  getUser.mockReset().mockResolvedValue({ data: { user: { id: userId } }, error: null });
+  getClaims.mockReset().mockResolvedValue({ data: { claims: { sub: userId } }, error: null });
   rpc.mockReset().mockResolvedValue({ data: ["a", "b"], error: null });
   fromResponse = {
     data: [
@@ -75,7 +75,7 @@ describe("copyMealDayAction", () => {
     await expect(copyMealDayAction("2026-10-24", "2026-10-24")).resolves.toMatchObject({ ok: false });
     fromResponse = { data: null, error: { message: "boom" } };
     await expect(copyMealDayAction("2026-10-23", "2026-10-24")).resolves.toMatchObject({ ok: false });
-    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    getClaims.mockResolvedValue({ data: null, error: null });
     await expect(copyMealDayAction("2026-10-23", "2026-10-24")).resolves.toMatchObject({ ok: false, error: expect.stringContaining("signed in") });
     expect(rpc).not.toHaveBeenCalled();
   });

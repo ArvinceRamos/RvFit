@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mocked client only. These tests never touch a real account.
 type Response = { data: unknown; error: unknown };
-const getUser = vi.fn();
+const getClaims = vi.fn();
 const rpc = vi.fn();
 let tables: Record<string, Response> = {};
 
@@ -22,7 +22,7 @@ function query(table: string) {
 }
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser }, from: (table: string) => query(table), rpc }),
+  createClient: async () => ({ auth: { getClaims }, from: (table: string) => query(table), rpc }),
 }));
 
 const { loadPlanDaysAction, saveMealPlanAction } = await import("./actions");
@@ -41,7 +41,7 @@ const plan = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  getUser.mockResolvedValue({ data: { user: { id: userId } }, error: null });
+  getClaims.mockResolvedValue({ data: { claims: { sub: userId } }, error: null });
   tables = {
     foods: {
       data: [
@@ -60,7 +60,7 @@ beforeEach(() => {
 
 describe("saveMealPlanAction", () => {
   it("refuses a signed-out caller", async () => {
-    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    getClaims.mockResolvedValue({ data: null, error: null });
     expect(await saveMealPlanAction(plan)).toEqual({ ok: false, error: "You must be signed in to save a meal plan." });
     expect(rpc).not.toHaveBeenCalled();
   });
@@ -131,9 +131,9 @@ describe("loadPlanDaysAction", () => {
   });
 
   it("refuses a signed-out caller and bad inputs", async () => {
-    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    getClaims.mockResolvedValue({ data: null, error: null });
     expect(await loadPlanDaysAction("2026-10-08", 7)).toEqual({ ok: false });
-    getUser.mockResolvedValue({ data: { user: { id: userId } }, error: null });
+    getClaims.mockResolvedValue({ data: { claims: { sub: userId } }, error: null });
     expect(await loadPlanDaysAction("2026-02-30", 1)).toEqual({ ok: false });
     expect(await loadPlanDaysAction("2026-10-08", 8)).toEqual({ ok: false });
     expect(await loadPlanDaysAction("2026-10-08", 1.5)).toEqual({ ok: false });

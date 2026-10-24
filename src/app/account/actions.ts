@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { saveInitialGuestDraft, type SaveGuestDraftResult } from "@/lib/save-guest-draft";
 import { getActionUser } from "@/lib/supabase/auth";
 import { readWeighInFields, validateWeighIn } from "@/lib/weigh-in";
@@ -8,7 +9,10 @@ import { logError } from "@/lib/log";
 export async function saveGuestDraftAction(rawDraft: unknown): Promise<SaveGuestDraftResult> {
   const auth = await getActionUser();
   if (!auth) return { ok: false, error: "You must be signed in to save your draft." };
-  return saveInitialGuestDraft(auth.supabase, auth.user.id, rawDraft);
+  const result = await saveInitialGuestDraft(auth.supabase, auth.user.id, rawDraft);
+  // Only a new save changes what the Dashboard shows.
+  if (result.ok && result.status === "saved") refresh();
+  return result;
 }
 
 export type SaveWeighInResult = { ok: true } | { ok: false; error: string };
@@ -39,5 +43,6 @@ export async function saveWeighInAction(
     return { ok: false, error: "Your weigh-in could not be saved. Please try again." };
   }
 
+  refresh();
   return { ok: true };
 }

@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { loadDayTotalsAction, saveMealAction, type DayTotalsResult } from "@/app/meals/actions";
 import { FoodAutocomplete } from "@/components/food-autocomplete";
 import { SuggestionsPanel, type SuggestionsView } from "@/components/suggestions-panel";
@@ -121,7 +120,6 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
   recentFoodIds?: string[];
   suggestionContext: SuggestionContext;
 }) {
-  const router = useRouter();
   const nextKey = useRef(initial.items.length);
   const foodsById = new Map(foods.map((food) => [food.id, food]));
   const [label, setLabel] = useState(initial.label);
@@ -259,11 +257,8 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
       setMessage(result.error);
       return;
     }
-    if (initial.mealId === null) {
-      resetForm();
-    } else {
-      router.refresh();
-    }
+    // The action refreshes an edited meal's page; a new meal's form starts again.
+    if (initial.mealId === null) resetForm();
     setMessage(savedMessage);
   }
 

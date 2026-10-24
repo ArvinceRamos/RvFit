@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/components/auth-frame", () => ({ AuthFrame: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
+vi.mock("@/components/frame-shell", () => ({ PlainFrame: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
 
 import PrivacyPage from "./privacy/page";
 import TermsPage from "./terms/page";

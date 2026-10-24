@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { getActionUser } from "@/lib/supabase/auth";
 import { availableAllergyTags, diffAvoidedFoods, validatePreferences } from "@/lib/preferences";
 import { logError } from "@/lib/log";
@@ -71,5 +72,6 @@ export async function savePreferencesAction(rawPreferences: unknown): Promise<Sa
     }
   }
 
+  refresh();
   return { ok: true };
 }

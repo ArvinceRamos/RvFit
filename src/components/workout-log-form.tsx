@@ -170,8 +170,8 @@ function LogForm({ initial, slots, units: savedUnits, showHistory, inBrowser }: 
     } catch {
       // Nothing to clear when storage is blocked.
     }
+    // Workouts reads its data on the server, so it shows the new log when it opens.
     router.push(initial.logId ? "/workouts?saved=updated" : "/workouts?saved=new");
-    router.refresh();
   }
 
   return (

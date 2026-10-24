@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { saveWeighInAction } from "@/app/account/actions";
 import type { PreferredUnits, WeighInFields } from "@/lib/weigh-in";
 
 const emptyFields: WeighInFields = { weight: "", waist: "", chest: "", hips: "" };
 
 export function WeighInForm({ preferredUnits, onSaved }: { preferredUnits: PreferredUnits; onSaved?: () => void }) {
-  const router = useRouter();
   const [fields, setFields] = useState<WeighInFields>(emptyFields);
   const [message, setMessage] = useState<string>();
   const [saving, setSaving] = useState(false);
@@ -31,7 +29,6 @@ export function WeighInForm({ preferredUnits, onSaved }: { preferredUnits: Prefe
     }
     setFields(emptyFields);
     setMessage("Weigh-in saved.");
-    router.refresh();
     onSaved?.();
   }
 

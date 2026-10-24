@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { saveDisplayNameAction } from "@/app/profile/name-action";
 import { maxDisplayNameLength } from "@/lib/display-name";
 
 // Account details: the email (read only) and an optional name used in the Dashboard greeting.
 export function AccountCard({ email, name }: { email: string; name: string }) {
-  const router = useRouter();
   const [value, setValue] = useState(name);
   const [message, setMessage] = useState<{ ok: boolean; text: string }>();
   const [saving, setSaving] = useState(false);
@@ -24,7 +22,6 @@ export function AccountCard({ email, name }: { email: string; name: string }) {
       return;
     }
     setMessage({ ok: true, text: "Name saved." });
-    router.refresh();
   }
 
   return (

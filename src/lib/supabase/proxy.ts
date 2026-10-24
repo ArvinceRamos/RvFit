@@ -27,11 +27,13 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // getUser() validates the token with Supabase and refreshes it when needed.
-  const { data: { user } } = await supabase.auth.getUser();
+  // getClaims() refreshes an expired token and checks its signature. With the project's published
+  // signing keys that needs no call to Supabase Auth on each request, unlike getUser().
+  const { data } = await supabase.auth.getClaims();
+  const signedIn = Boolean(data?.claims?.sub);
 
   // A signed-in user has no reason to see the log-in or sign-up forms.
-  if (user && signedOutOnly.includes(request.nextUrl.pathname)) {
+  if (signedIn && signedOutOnly.includes(request.nextUrl.pathname)) {
     const redirect = NextResponse.redirect(new URL("/dashboard", request.url));
     response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
     return redirect;

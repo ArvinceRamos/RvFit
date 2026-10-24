@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { deleteWorkoutLogAction } from "@/app/workouts/actions";
 
 export function DeleteWorkoutButton({ logId }: { logId: string }) {
-  const router = useRouter();
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -20,7 +18,6 @@ export function DeleteWorkoutButton({ logId }: { logId: string }) {
       setError(result.error);
       return;
     }
-    router.refresh();
   }
 
   if (!asking) {

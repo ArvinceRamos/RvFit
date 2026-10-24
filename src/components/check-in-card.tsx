@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { acceptCheckInAction } from "@/app/profile/actions";
 import { calculationConfig } from "@/lib/calc/config";
 import type { CheckIn } from "@/lib/check-in";
@@ -43,7 +42,6 @@ function AcceptSuggestion({ kcal, onSaved }: { kcal: number; onSaved: (kcal: num
 }
 
 export function CheckInCard({ checkIn, units, className = "mt-8", onSaved }: { checkIn: CheckIn; units: PreferredUnits; className?: string; onSaved?: () => void }) {
-  const router = useRouter();
   // Kept after the save, so the confirmation stays while the page loads the new target.
   const [savedKcal, setSavedKcal] = useState<number>();
   if (checkIn.status === "no_goal" && savedKcal === undefined) return null;
@@ -51,7 +49,6 @@ export function CheckInCard({ checkIn, units, className = "mt-8", onSaved }: { c
 
   function saved(kcal: number) {
     setSavedKcal(kcal);
-    router.refresh();
     onSaved?.();
   }
 

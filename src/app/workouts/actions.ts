@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { isCalendarDate, isUuid } from "@/lib/meal";
 import { getActionUser } from "@/lib/supabase/auth";
 import type { createClient } from "@/lib/supabase/server";
@@ -28,6 +29,7 @@ export async function deleteWorkoutLogAction(logId: unknown): Promise<DeleteWork
     return { ok: false, error: "The workout could not be deleted. Please try again." };
   }
   if (!data || data.length === 0) return { ok: false, error: "Workout not found." };
+  refresh();
   return { ok: true };
 }
 
@@ -78,6 +80,7 @@ export async function saveSwapAction(rawSwap: unknown): Promise<SwapActionResult
     logError("workouts.saveSwap", error);
     return { ok: false, error: "Your swap could not be saved. Please try again." };
   }
+  refresh();
   return { ok: true };
 }
 
@@ -99,6 +102,7 @@ export async function resetSwapAction(rawReset: unknown): Promise<SwapActionResu
     logError("workouts.resetSwap", error);
     return { ok: false, error: "Your swap could not be reset. Please try again." };
   }
+  refresh();
   return { ok: true };
 }
 

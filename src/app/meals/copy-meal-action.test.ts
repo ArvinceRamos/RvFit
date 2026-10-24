@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mocked client only. These tests never touch a real account.
 type Response = { data: unknown; error: unknown };
-const getUser = vi.fn();
+const getClaims = vi.fn();
 const rpc = vi.fn();
 let mealResponse: Response;
 let labelsResponse: Response;
@@ -19,7 +19,7 @@ function query() {
 }
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser }, from: () => query(), rpc }),
+  createClient: async () => ({ auth: { getClaims }, from: () => query(), rpc }),
 }));
 
 const { copyMealToDateAction } = await import("./actions");
@@ -29,7 +29,7 @@ const mealId = "66666666-7777-4888-8999-000000000000";
 const foodId = "0b8b8f3e-6f0a-4a43-9d3e-2f6f3c1f9a11";
 
 beforeEach(() => {
-  getUser.mockReset().mockResolvedValue({ data: { user: { id: userId } }, error: null });
+  getClaims.mockReset().mockResolvedValue({ data: { claims: { sub: userId } }, error: null });
   rpc.mockReset().mockResolvedValue({ data: "new-meal-id", error: null });
   mealResponse = { data: { meal_items: [{ food_id: foodId, grams: "150.00" }] }, error: null };
   labelsResponse = { data: [{ label: "Meal 1" }], error: null };
@@ -57,7 +57,7 @@ describe("copyMealToDateAction", () => {
     await expect(copyMealToDateAction(mealId, "2026-10-07")).resolves.toMatchObject({ ok: false, error: "That meal was not found." });
     await expect(copyMealToDateAction("not-a-uuid", "2026-10-07")).resolves.toMatchObject({ ok: false });
     await expect(copyMealToDateAction(mealId, "2026-02-30")).resolves.toMatchObject({ ok: false });
-    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    getClaims.mockResolvedValue({ data: null, error: null });
     await expect(copyMealToDateAction(mealId, "2026-10-07")).resolves.toMatchObject({ ok: false, error: expect.stringContaining("signed in") });
     expect(rpc).not.toHaveBeenCalled();
   });

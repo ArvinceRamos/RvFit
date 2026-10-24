@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { deleteMealAction } from "@/app/meals/actions";
 
 // onDeleted lets a client list reload itself; the page is refreshed either way.
 export function DeleteMealButton({ mealId, onDeleted }: { mealId: string; onDeleted?: () => void }) {
-  const router = useRouter();
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -21,7 +19,6 @@ export function DeleteMealButton({ mealId, onDeleted }: { mealId: string; onDele
       setError(result.error);
       return;
     }
-    router.refresh();
     onDeleted?.();
   }
 

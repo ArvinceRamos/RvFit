@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { validateDisplayName } from "@/lib/display-name";
 import { logError } from "@/lib/log";
 import { getActionUser } from "@/lib/supabase/auth";
@@ -18,5 +19,10 @@ export async function saveDisplayNameAction(raw: unknown): Promise<SaveNameResul
     logError("profile.saveName", error);
     return { ok: false, error: "Your name could not be saved. Please try again." };
   }
+  // Pages read the name from the session token, so get a new token that carries it. If this fails,
+  // the name is still saved and shows once the token is next refreshed (within the hour).
+  const { error: refreshError } = await auth.supabase.auth.refreshSession();
+  if (refreshError) logError("profile.refreshName", refreshError);
+  refresh();
   return { ok: true };
 }

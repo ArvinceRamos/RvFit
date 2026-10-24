@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { calculationConfig } from "@/lib/calc/config";
 import { getActionUser } from "@/lib/supabase/auth";
 import { addTotals, isCalendarDate, isUuid, mealTotals, validateMeal, type MealTotals } from "@/lib/meal";
@@ -51,6 +52,8 @@ export async function saveMealAction(rawMeal: unknown): Promise<SaveMealResult> 
     }
   }
 
+  // An edited meal's page shows the saved meal again. A new meal's form is simply cleared.
+  if (meal.meal_id !== null) refresh();
   return { ok: true, mealId };
 }
 
@@ -207,6 +210,7 @@ export async function deleteMealAction(mealId: unknown): Promise<DeleteMealResul
     return { ok: false, error: "The meal could not be deleted. Please try again." };
   }
   if (!data || data.length === 0) return { ok: false, error: "Meal not found." };
+  refresh();
   return { ok: true };
 }
 

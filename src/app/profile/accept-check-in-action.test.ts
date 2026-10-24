@@ -2,8 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mocked client only. These tests never touch a real account.
 type Response = { data: unknown; error: unknown };
-const getUser = vi.fn();
+const getClaims = vi.fn();
 const rpc = vi.fn();
+const refresh = vi.fn();
 let responses: Record<string, Response>;
 
 const day = 24 * 60 * 60 * 1000;
@@ -23,8 +24,11 @@ function query(table: string) {
 }
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser }, from: (table: string) => query(table), rpc }),
+  createClient: async () => ({ auth: { getClaims }, from: (table: string) => query(table), rpc }),
 }));
+
+// The real refresh only works inside a running Server Action.
+vi.mock("next/cache", () => ({ refresh: () => refresh() }));
 
 const { acceptCheckInAction } = await import("./actions");
 
@@ -37,8 +41,9 @@ function flatWeighIns() {
 }
 
 beforeEach(() => {
-  getUser.mockReset().mockResolvedValue({ data: { user: { id: userId } }, error: null });
+  getClaims.mockReset().mockResolvedValue({ data: { claims: { sub: userId } }, error: null });
   rpc.mockReset().mockResolvedValue({ data: "new-id", error: null });
+  refresh.mockReset();
   responses = {
     profiles: { data: { sex_formula_branch: "male", preferred_units: "imperial" }, error: null },
     calorie_targets: {
@@ -56,6 +61,8 @@ describe("acceptCheckInAction", () => {
   it("saves the suggestion as a new target row with the same goal, pace and macro split", async () => {
     await expect(acceptCheckInAction(2050)).resolves.toEqual({ ok: true, kcal: 2050 });
     expect(rpc).toHaveBeenCalledTimes(1);
+    // The page is re-rendered in the same response, so the client needs no router.refresh().
+    expect(refresh).toHaveBeenCalledTimes(1);
     expect(rpc).toHaveBeenCalledWith("save_profile_and_target", {
       p_profile: { preferred_units: "imperial" },
       p_target: expect.objectContaining({
@@ -72,13 +79,14 @@ describe("acceptCheckInAction", () => {
     responses.body_logs = { data: flatWeighIns().slice(0, 5), error: null };
     await expect(acceptCheckInAction(2050)).resolves.toMatchObject({ ok: false });
     expect(rpc).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it("refuses bad input, signed-out users and read errors without saving", async () => {
     await expect(acceptCheckInAction("2050")).resolves.toMatchObject({ ok: false });
     responses.calorie_targets = { data: null, error: { message: "boom" } };
     await expect(acceptCheckInAction(2050)).resolves.toEqual({ ok: false, error: "Your target could not be saved. Please try again." });
-    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    getClaims.mockResolvedValue({ data: null, error: null });
     await expect(acceptCheckInAction(2050)).resolves.toMatchObject({ ok: false, error: expect.stringContaining("signed in") });
     expect(rpc).not.toHaveBeenCalled();
   });

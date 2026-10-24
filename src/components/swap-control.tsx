@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { resetSwapAction, saveSwapAction } from "@/app/workouts/actions";
 
 export type SwapChoice = { key: string; label: string };
@@ -12,7 +11,6 @@ export function SwapControl({ templateKey, slotKey, choices, isSwapped }: {
   choices: SwapChoice[];
   isSwapped: boolean;
 }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -27,7 +25,6 @@ export function SwapControl({ templateKey, slotKey, choices, isSwapped }: {
       return;
     }
     setOpen(false);
-    router.refresh();
   }
 
   if (choices.length === 0 && !isSwapped) return null;

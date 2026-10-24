@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Icon } from "@/components/icon";
 import { GUEST_DRAFT_STORAGE_KEY } from "@/lib/guest-draft";
-import { createClient } from "@/lib/supabase/client";
 import { WORKOUT_DRAFTS_STORAGE_KEY } from "@/lib/workout-draft";
 
 const defaultClassName = "mt-6 rounded-lg border border-edge bg-field px-4 py-3 font-semibold hover:bg-line";
@@ -16,8 +15,14 @@ export function LogoutButton({ className = defaultClassName }: { className?: str
     if (pending) return;
     setPending(true);
     setFailed(false);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signOut();
+    // supabase-js is loaded only when someone logs out, so it stays out of every page's first download.
+    let error: unknown;
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      ({ error } = await createClient().auth.signOut());
+    } catch (loadError) {
+      error = loadError;
+    }
     if (error) {
       // The session is still active, so say so instead of pretending the user is logged out.
       setPending(false);

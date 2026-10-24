@@ -6,8 +6,19 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Skip static files and images so they never wait on Supabase.
+  // Only the pages that read the session on the server, plus log in and sign up (signed-in users are sent
+  // on to the Dashboard). Public pages, /api/health and static files never wait on Supabase.
+  // Keep this list in step with the pages that call requireUser (checked in src/proxy.test.ts).
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
+    "/dashboard",
+    "/foods",
+    "/meals/:path*",
+    "/preferences",
+    "/profile",
+    "/progress",
+    "/week",
+    "/workouts/:path*",
+    "/login",
+    "/signup",
   ],
 };

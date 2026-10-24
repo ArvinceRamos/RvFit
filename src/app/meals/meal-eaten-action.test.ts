@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mocked client only. These tests never touch a real account.
 type Response = { data: unknown; error: unknown; count?: number };
-const getUser = vi.fn();
+const getClaims = vi.fn();
 const update = vi.fn();
 let response: Response = { data: null, error: null };
 
@@ -24,7 +24,7 @@ function query() {
   return builder;
 }
 
-vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser }, from: () => query() }) }));
+vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getClaims }, from: () => query() }) }));
 
 const { loadDayTotalsAction, loadMealDaysAction, setMealEatenAction } = await import("./actions");
 
@@ -34,12 +34,12 @@ const food = { kcal_per_100g: "100", protein_g_per_100g: "10", carbs_g_per_100g:
 
 beforeEach(() => {
   vi.clearAllMocks();
-  getUser.mockResolvedValue({ data: { user: { id: userId } }, error: null });
+  getClaims.mockResolvedValue({ data: { claims: { sub: userId } }, error: null });
 });
 
 describe("setMealEatenAction", () => {
   it("refuses a signed-out caller", async () => {
-    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    getClaims.mockResolvedValue({ data: null, error: null });
     expect(await setMealEatenAction(mealId, true)).toEqual({ ok: false, error: "You must be signed in to update a meal." });
     expect(update).not.toHaveBeenCalled();
   });
@@ -88,9 +88,9 @@ describe("loadDayTotalsAction", () => {
 
 describe("loadMealDaysAction", () => {
   it("refuses a signed-out caller or a bad date", async () => {
-    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    getClaims.mockResolvedValue({ data: null, error: null });
     expect(await loadMealDaysAction("today", "2026-10-07")).toEqual({ ok: false });
-    getUser.mockResolvedValue({ data: { user: { id: userId } }, error: null });
+    getClaims.mockResolvedValue({ data: { claims: { sub: userId } }, error: null });
     expect(await loadMealDaysAction("today", "2026-02-30")).toEqual({ ok: false });
   });
 

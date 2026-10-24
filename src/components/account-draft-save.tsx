@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { saveGuestDraftAction } from "@/app/account/actions";
 import { GUEST_DRAFT_EVENT, GUEST_DRAFT_STORAGE_KEY, storedDraftHasTarget } from "@/lib/guest-draft";
 
@@ -17,7 +16,6 @@ function clearDraft() {
 // It says nothing when there is nothing to save, so returning users never see a stale message.
 // A user without a target is guided by the dashboard's setup steps instead.
 export function AccountDraftSave() {
-  const router = useRouter();
   const sent = useRef(false);
   const [message, setMessage] = useState<Message>();
 
@@ -36,7 +34,6 @@ export function AccountDraftSave() {
       clearDraft();
       if (result.status === "saved") {
         setMessage({ text: "Your targets are saved to your account.", tone: "success" });
-        router.refresh();
       } else if (result.status === "saved_target_exists") {
         // Shown once: the draft is cleared so this does not repeat on every visit.
         setMessage({
@@ -48,7 +45,7 @@ export function AccountDraftSave() {
     }).catch(() => {
       setMessage({ text: "Your targets could not be saved right now. They are still in this browser, so reload the page to try again.", tone: "error" });
     });
-  }, [router]);
+  }, []);
 
   if (!message) return null;
   const style = message.tone === "error"
