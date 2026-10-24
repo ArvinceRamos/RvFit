@@ -18,6 +18,8 @@ import type { SetupFlags } from "@/lib/setup-steps";
 import { weekStart } from "@/lib/week";
 import { nextWorkout, type NextUp } from "@/lib/workouts/next-up";
 import { resolveTemplate } from "@/lib/workouts/templates";
+import type { CheckIn } from "@/lib/check-in";
+import { loadCheckInData } from "@/lib/check-in-data";
 import { getActionUser } from "@/lib/supabase/auth";
 import type { PreferredUnits } from "@/lib/weigh-in";
 import { logError } from "@/lib/log";
@@ -36,6 +38,8 @@ export type DashboardResult =
       setup: SetupFlags;
       // The first plan day not logged this week; null without saved Preferences.
       nextUp: NextUp | null;
+      // The target check-in; null without a saved target.
+      checkIn: CheckIn | null;
     }
   | { ok: false; error: string };
 
@@ -48,7 +52,7 @@ export async function loadDashboardAction(today: unknown): Promise<DashboardResu
 
   const now = new Date();
   const since = new Date(now.getTime() - calculationConfig.progress.trend_window_days * 24 * 60 * 60 * 1000);
-  const [target, meals, workouts, weighIns, units, anyPreferences, anyMeal, anyWeighIn, weekWorkouts] = await Promise.all([
+  const [target, meals, workouts, weighIns, units, anyPreferences, anyMeal, anyWeighIn, weekWorkouts, checkInData] = await Promise.all([
     loadSavedTarget(supabase),
     loadMeals(supabase, today, today),
     loadWorkouts(supabase, today, today),
@@ -59,8 +63,9 @@ export async function loadDashboardAction(today: unknown): Promise<DashboardResu
     supabase.from("meals").select("id").limit(1),
     supabase.from("body_logs").select("id").not("weight_kg", "is", null).limit(1),
     loadWorkouts(supabase, weekStart(today), today),
+    loadCheckInData(supabase, now.getTime()),
   ]);
-  if (target === "error" || !meals || !workouts || !weighIns || !units || anyPreferences.error || anyMeal.error || anyWeighIn.error || !weekWorkouts) {
+  if (target === "error" || checkInData === "error" || !meals || !workouts || !weighIns || !units || anyPreferences.error || anyMeal.error || anyWeighIn.error || !weekWorkouts) {
     logError("dashboard.load", anyPreferences.error, anyMeal.error, anyWeighIn.error);
     return { ok: false, error: "Your dashboard could not be loaded. Please try again." };
   }
@@ -92,5 +97,6 @@ export async function loadDashboardAction(today: unknown): Promise<DashboardResu
       hasWeighIn: (anyWeighIn.data ?? []).length > 0,
     },
     nextUp,
+    checkIn: checkInData?.checkIn ?? null,
   };
 }

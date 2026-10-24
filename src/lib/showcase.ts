@@ -55,7 +55,7 @@ export const ESTIMATE_STEPS: readonly EstimateStep[] = [
     object: "sliders",
     label: "You decide",
     title: "Nothing changes on its own",
-    caption: "A check-in may suggest a small change, never below the minimum. Nothing saves until you press Save.",
+    caption: "A check-in may suggest a small change, never below the minimum. It saves only when you accept it.",
     facts: [
       { label: "Suggestion", value: `${change_kcal.min}–${change_kcal.max} kcal` },
       { label: "Applied by", value: "You" },

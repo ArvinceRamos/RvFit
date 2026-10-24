@@ -19,6 +19,8 @@ export type SavedProfile = {
 
 export type CurrentTarget = {
   source: "calculated" | "manual";
+  /** Saved by accepting a target check-in. */
+  fromCheckIn: boolean;
   kcal: number;
   goal: "lose" | "maintain" | "gain" | null;
   pace: "gradual" | "steady" | null;
@@ -48,11 +50,10 @@ function fromText(text: MacroText): DefaultMacros | null {
   return { protein_g, carbs_g, fat_g, fiber_g };
 }
 
-// suggestedKcal comes from the check-in. It only pre-fills "Enter my own target"; nothing is saved until Save.
-function initialDetails(profile: SavedProfile, current: CurrentTarget | null, latestWeightKg: number | null, suggestedKcal: number | null): ProfileFormInput {
+function initialDetails(profile: SavedProfile, current: CurrentTarget | null, latestWeightKg: number | null): ProfileFormInput {
   const height = profile.height_cm === null ? { height: "", feet: "", inches: "" } : heightFields(profile.height_cm, profile.units);
   return {
-    method: suggestedKcal ? "manual" : current?.source ?? "calculated",
+    method: current?.source ?? "calculated",
     units: profile.units,
     age: profile.age_years === null ? "" : String(profile.age_years),
     ...height,
@@ -61,7 +62,7 @@ function initialDetails(profile: SavedProfile, current: CurrentTarget | null, la
     activity: profile.activity ?? "",
     goal: current?.goal ?? "maintain",
     pace: current?.pace ?? "gradual",
-    targetKcal: suggestedKcal ? String(suggestedKcal) : current ? String(current.kcal) : "",
+    targetKcal: current ? String(current.kcal) : "",
   };
 }
 
@@ -75,9 +76,9 @@ function Field({ label, value, onChange, hint }: { label: string; value: string;
   );
 }
 
-export function ProfileForm({ profile, current, latestWeightKg, suggestedKcal = null }: { profile: SavedProfile; current: CurrentTarget | null; latestWeightKg: number | null; suggestedKcal?: number | null }) {
+export function ProfileForm({ profile, current, latestWeightKg }: { profile: SavedProfile; current: CurrentTarget | null; latestWeightKg: number | null }) {
   const router = useRouter();
-  const [enteredDetails, setDetails] = useState<ProfileFormInput>(() => initialDetails(profile, current, latestWeightKg, suggestedKcal));
+  const [enteredDetails, setDetails] = useState<ProfileFormInput>(() => initialDetails(profile, current, latestWeightKg));
   // Under the BMI guard, Lose weight is hidden and a saved "lose" goal falls back to Maintain.
   const noLoss = enteredDetails.method === "calculated" && profileLossBlocked(enteredDetails);
   const details: ProfileFormInput = noLoss && enteredDetails.goal === "lose" ? { ...enteredDetails, goal: "maintain" } : enteredDetails;
@@ -171,7 +172,7 @@ export function ProfileForm({ profile, current, latestWeightKg, suggestedKcal = 
           <>
             <p className="mt-3 metric">{current.kcal.toLocaleString("en-US")} kcal</p>
             <p className="mt-1 text-sm text-muted">
-              {current.source === "calculated" ? "Calculated from your details" : "Entered by you"} · saved{" "}
+              {current.fromCheckIn ? "Adjusted by a check-in" : current.source === "calculated" ? "Calculated from your details" : "Entered by you"} · saved{" "}
               {new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(current.created_at))}
             </p>
             {goalPaceLabel(current.goal, current.pace) && <p className="mt-1 text-sm font-semibold">Goal: {goalPaceLabel(current.goal, current.pace)}</p>}
@@ -193,11 +194,6 @@ export function ProfileForm({ profile, current, latestWeightKg, suggestedKcal = 
 
       <div className="scroll-mt-20" id="update-target">
         <h2 className="section-title">Update your target</h2>
-        {suggestedKcal && (
-          <p className="alert-success mt-2" role="status">
-            The check-in suggestion ({suggestedKcal.toLocaleString("en-US")} kcal) is filled in under Enter my own target. Review it, then press Save to use it, or recalculate instead.
-          </p>
-        )}
         <p className="mt-1 text-sm text-muted">Change your details, then recalculate. Nothing is saved until you press Save.</p>
 
         {/* A two-column bento on wide screens: setup and details on top, activity beside goal below. One column on smaller screens. */}

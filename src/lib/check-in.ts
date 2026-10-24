@@ -40,6 +40,11 @@ const dayMs = 24 * 60 * 60 * 1000;
 /** How many days of weigh-ins a check-in reads. Pages load this much history. */
 export const checkInHistoryDays = rules.window_days;
 
+/** True when the check-in has a result to show: not waiting for data and not without a goal. */
+export function checkInReady(checkIn: CheckIn): boolean {
+  return checkIn.status !== "no_goal" && checkIn.status !== "not_enough_data";
+}
+
 /** The weekly change the chosen pace aims for, in kg (negative = loss). A rough estimate. */
 export function expectedKgPerWeek(goal: CheckInGoal, pace: CheckInPace | null): number {
   const { loss_paces_kcal, gain_paces_kcal } = calculationConfig.goal_adjustments;

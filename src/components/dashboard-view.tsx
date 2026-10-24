@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { loadDashboardAction, type DashboardResult } from "@/app/dashboard/actions";
+import { CheckInCard } from "@/components/check-in-card";
 import { Icon } from "@/components/icon";
 import { MealEatenToggle } from "@/components/meal-eaten-toggle";
 import { SetupCard } from "@/components/setup-card";
 import { DayTotals, localToday } from "@/components/today-summary";
 import { calculationConfig } from "@/lib/calc/config";
+import { checkInReady } from "@/lib/check-in";
 import { formatKcal } from "@/lib/remaining-format";
 import { goalPaceLabel } from "@/lib/target-options";
 import { formatWeightKg } from "@/lib/weigh-in";
@@ -18,6 +20,8 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
   const [state, setState] = useState<{ key: string; result: DashboardResult }>();
   // Bumped after a meal is ticked, so the totals load again.
   const [reloads, setReloads] = useState(0);
+  // After a check-in is accepted, its card stays to show the confirmation while today reloads.
+  const [keepCheckIn, setKeepCheckIn] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,7 +52,7 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
     );
   }
 
-  const { target, totals, planned_kcal, meals, workouts, trend, units, setup, nextUp } = state.result;
+  const { target, totals, planned_kcal, meals, workouts, trend, units, setup, nextUp, checkIn } = state.result;
   return (
     <div className="mt-8 grid gap-[30px] md:grid-cols-2 lg:grid-cols-3">
       <SetupCard flags={setup} />
@@ -63,6 +67,16 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
         </div>
         <DayTotals plannedKcal={planned_kcal} target={target} totals={totals} />
       </section>
+
+      {/* Shown only when the check-in has a result; Profile shows it while it waits for weigh-ins. */}
+      {checkIn && (keepCheckIn || checkInReady(checkIn)) && (
+        <CheckInCard
+          checkIn={checkIn}
+          className="md:col-span-2 lg:col-span-3"
+          onSaved={() => { setKeepCheckIn(true); setReloads((count) => count + 1); }}
+          units={units}
+        />
+      )}
 
       <section className="card">
         <h2 className="section-title flex items-center gap-2"><Icon className="size-5 text-accent-text" name="meals" />Meals</h2>

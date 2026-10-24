@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { deleteWeighInAction, loadProgressAction, loadWeightChartAction, type ProgressResult, type WeightChartResult } from "@/app/progress/actions";
+import { CheckInCard } from "@/components/check-in-card";
 import { localToday } from "@/components/today-summary";
 import { WeighInForm } from "@/components/weigh-in-form";
 import { calculationConfig } from "@/lib/calc/config";
+import { checkInReady } from "@/lib/check-in";
 import type { WeighInRow } from "@/lib/overview-data";
 import type { WeekCount } from "@/lib/progress";
 import { goalPaceLabel } from "@/lib/target-options";
@@ -278,6 +280,8 @@ function DeleteWeighInButton({ weighInId, onDeleted }: { weighInId: string; onDe
 export function ProgressView() {
   const [result, setResult] = useState<ProgressResult>();
   const [reload, setReload] = useState(0);
+  // After a check-in is accepted, its card stays to show the confirmation while progress reloads.
+  const [keepCheckIn, setKeepCheckIn] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -292,7 +296,7 @@ export function ProgressView() {
   if (!result) return <p className="mt-6 text-sm text-muted" role="status">Loading your progress…</p>;
   if (!result.ok) return <p className="alert-danger mt-6" role="alert">{result.error}</p>;
 
-  const { units, trend, history, weeks, plannedDays, goal, pace } = result;
+  const { units, trend, history, weeks, plannedDays, goal, pace, checkIn } = result;
   const goalLabel = goalPaceLabel(goal, pace);
   return (
     <div className="mt-8 grid gap-[30px]">
@@ -301,6 +305,9 @@ export function ProgressView() {
           Goal: <span className="font-semibold text-ink">{goalLabel}</span> ·{" "}
           <Link className="font-semibold text-ink underline" href="/profile">Target check-in</Link>
         </p>
+      )}
+      {checkIn && (keepCheckIn || checkInReady(checkIn)) && (
+        <CheckInCard checkIn={checkIn} className="" onSaved={() => { setKeepCheckIn(true); onSaved(); }} units={units} />
       )}
       <div className="grid gap-[30px] sm:grid-cols-3">
         <LatestWeightTile history={history} units={units} />

@@ -13,6 +13,8 @@ import {
   type WeighInRow,
 } from "@/lib/overview-data";
 import { weightTrend, workoutsPerWeek, type WeekCount, type WeightTrend } from "@/lib/progress";
+import type { CheckIn } from "@/lib/check-in";
+import { loadCheckInData } from "@/lib/check-in-data";
 import { getActionUser } from "@/lib/supabase/auth";
 import type { PreferredUnits } from "@/lib/weigh-in";
 import { addDays, recentWeekStarts } from "@/lib/week";
@@ -30,6 +32,8 @@ export type ProgressResult =
       // The current goal and pace, shown as context next to the trend. Null for a manual target.
       goal: SavedTarget["goal"];
       pace: SavedTarget["pace"];
+      // The target check-in; null without a saved target.
+      checkIn: CheckIn | null;
     }
   | { ok: false; error: string };
 
@@ -45,7 +49,7 @@ export async function loadProgressAction(today: unknown): Promise<ProgressResult
   const now = new Date();
   const since = new Date(now.getTime() - trend_window_days * 24 * 60 * 60 * 1000);
   const oldestWeek = recentWeekStarts(today, workout_weeks)[workout_weeks - 1];
-  const [units, history, recent, workouts, preferences, target] = await Promise.all([
+  const [units, history, recent, workouts, preferences, target, checkInData] = await Promise.all([
     loadUnits(supabase),
     loadLatestWeighIns(supabase, history_weigh_ins),
     loadWeighInsSince(supabase, since),
@@ -53,8 +57,9 @@ export async function loadProgressAction(today: unknown): Promise<ProgressResult
     // Training days from Preferences, for the workouts ring. No row means no plan yet.
     supabase.from("user_preferences").select("training_days").maybeSingle(),
     loadSavedTarget(supabase),
+    loadCheckInData(supabase, now.getTime()),
   ]);
-  if (!units || !history || !recent || !workouts || preferences.error || target === "error") {
+  if (checkInData === "error" || !units || !history || !recent || !workouts || preferences.error || target === "error") {
     logError("progress.load", preferences.error);
     return { ok: false, error: "Your progress could not be loaded. Please try again." };
   }
@@ -68,6 +73,7 @@ export async function loadProgressAction(today: unknown): Promise<ProgressResult
     plannedDays: preferences.data?.training_days ?? null,
     goal: target?.goal ?? null,
     pace: target?.pace ?? null,
+    checkIn: checkInData?.checkIn ?? null,
   };
 }
 
