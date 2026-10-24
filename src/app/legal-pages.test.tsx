@@ -22,6 +22,7 @@ describe("legal pages", () => {
   it("covers on-device storage, Vercel, backups and retention", () => {
     const html = renderToStaticMarkup(<PrivacyPage />);
     expect(html).toContain("local storage");
+    expect(html).toContain("While you log a workout");
     expect(html).toContain("Vercel hosts the website");
     expect(html).toContain("backups");
     expect(html).toContain("How long we keep it");

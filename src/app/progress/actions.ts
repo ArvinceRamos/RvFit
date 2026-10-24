@@ -1,7 +1,7 @@
 "use server";
 
 import { calculationConfig } from "@/lib/calc/config";
-import { isCalendarDate } from "@/lib/meal";
+import { isCalendarDate, isUuid } from "@/lib/meal";
 import {
   loadLatestWeighIns,
   loadSavedTarget,
@@ -67,4 +67,22 @@ export async function loadProgressAction(today: unknown): Promise<ProgressResult
     goal: target?.goal ?? null,
     pace: target?.pace ?? null,
   };
+}
+
+export type DeleteWeighInResult = { ok: true } | { ok: false; error: string };
+
+// Row-level security limits the delete to the user's own weigh-ins.
+export async function deleteWeighInAction(weighInId: unknown): Promise<DeleteWeighInResult> {
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: "You must be signed in to delete a weigh-in." };
+  const { supabase } = auth;
+  if (!isUuid(weighInId)) return { ok: false, error: "Weigh-in details are invalid." };
+
+  const { data, error } = await supabase.from("body_logs").delete().eq("id", weighInId).select("id");
+  if (error) {
+    logError("progress.deleteWeighIn", error);
+    return { ok: false, error: "The weigh-in could not be deleted. Please try again." };
+  }
+  if (!data || data.length === 0) return { ok: false, error: "Weigh-in not found." };
+  return { ok: true };
 }

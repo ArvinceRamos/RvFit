@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import Link from "next/link";
-import { loadProgressAction, type ProgressResult } from "@/app/progress/actions";
+import { deleteWeighInAction, loadProgressAction, type ProgressResult } from "@/app/progress/actions";
 import { localToday } from "@/components/today-summary";
 import { WeighInForm } from "@/components/weigh-in-form";
 import { calculationConfig } from "@/lib/calc/config";
@@ -228,6 +228,40 @@ function WorkoutBars({ weeks }: { weeks: WeekCount[] }) {
   );
 }
 
+// Asks once inline before deleting. There is no undo.
+function DeleteWeighInButton({ weighInId, onDeleted }: { weighInId: string; onDeleted: () => void }) {
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+
+  async function confirmDelete() {
+    if (busy) return;
+    setBusy(true);
+    setError(undefined);
+    const result = await deleteWeighInAction(weighInId).catch(() => ({ ok: false as const, error: "The weigh-in could not be deleted. Please try again." }));
+    if (!result.ok) {
+      setBusy(false);
+      setError(result.error);
+      return;
+    }
+    onDeleted();
+  }
+
+  if (!asking) {
+    return <button className="mt-1 text-sm font-semibold text-danger underline" onClick={() => setAsking(true)} type="button">Delete</button>;
+  }
+  return (
+    <div aria-label="Confirm delete" className="mt-2 grid gap-1" role="group">
+      <p className="font-semibold">Delete this weigh-in?</p>
+      <div className="flex gap-3">
+        <button className="font-semibold text-danger underline disabled:opacity-60" disabled={busy} onClick={confirmDelete} type="button">{busy ? "Deleting…" : "Delete"}</button>
+        <button className="font-semibold underline disabled:opacity-60" disabled={busy} onClick={() => { setAsking(false); setError(undefined); }} type="button">Cancel</button>
+      </div>
+      {error && <p className="text-danger" role="alert">{error}</p>}
+    </div>
+  );
+}
+
 // Weigh-ins, the weight trend, and workouts per week. "Today" is the browser's local date.
 export function ProgressView() {
   const [result, setResult] = useState<ProgressResult>();
@@ -297,6 +331,7 @@ export function ProgressView() {
                       <span className="font-semibold">{row.weight_kg === null ? "No weight" : formatWeightKg(row.weight_kg, units)}</span>
                     </div>
                     {measurements.length > 0 && <p className="mt-1 text-muted">{measurements.join(" · ")}</p>}
+                    <DeleteWeighInButton onDeleted={onSaved} weighInId={row.id} />
                   </li>
                 );
               })}

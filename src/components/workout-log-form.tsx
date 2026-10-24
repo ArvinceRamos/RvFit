@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { loadLastSessionsAction, saveWorkoutLogAction, type LastSessionsResult } from "@/app/workouts/actions";
 import { isCalendarDate } from "@/lib/meal";
 import type { PreferredUnits } from "@/lib/weigh-in";
+import { clearWorkoutDraft, readWorkoutDraft, workoutDraftKey, writeWorkoutDraft, type WorkoutDraft } from "@/lib/workout-draft";
 import { convertWeightText, maxSetsPerExercise, weightUnit, type LogSlot, type SetFields } from "@/lib/workouts/log";
 import { lastTimeText, progressionPrompt } from "@/lib/workouts/progression";
 
@@ -29,18 +30,40 @@ function localToday(): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
-export function WorkoutLogForm({ initial, slots, units: savedUnits, showHistory }: {
+type WorkoutLogFormProps = {
   initial: WorkoutLogInitial;
   slots: LogSlot[];
   /** The user's saved units. The kg/lb switch starts here. */
   units: PreferredUnits;
   /** New workouts show the last session and an optional progression prompt. Edits do not. */
   showHistory: boolean;
-}) {
+};
+
+const subscribeNever = () => () => {};
+
+// The server cannot see the browser's saved draft, so the form renders from the plan first
+// and starts again from the draft (if any) once it is running in the browser.
+export function WorkoutLogForm(props: WorkoutLogFormProps) {
+  const inBrowser = useSyncExternalStore(subscribeNever, () => true, () => false);
+  return <LogForm key={inBrowser ? "browser" : "server"} {...props} inBrowser={inBrowser} />;
+}
+
+function readDraft(key: string, slots: LogSlot[]): WorkoutDraft | null {
+  try {
+    return readWorkoutDraft(window.localStorage, key, slots);
+  } catch {
+    return null;
+  }
+}
+
+function LogForm({ initial, slots, units: savedUnits, showHistory, inBrowser }: WorkoutLogFormProps & { inBrowser: boolean }) {
   const router = useRouter();
-  const [date, setDate] = useState(initial.date || localToday());
-  const [entries, setEntries] = useState<Record<string, EntryState>>(() =>
-    Object.fromEntries(
+  const draftKey = workoutDraftKey(initial.logId, initial.templateKey, initial.dayKey);
+  // What the form shows with no draft: the saved log when editing, otherwise the plan.
+  const [baseline] = useState<WorkoutDraft>(() => ({
+    date: initial.date || localToday(),
+    units: savedUnits,
+    entries: Object.fromEntries(
       slots.map((slot) => [
         slot.slotKey,
         initial.entries[slot.slotKey] ?? {
@@ -49,10 +72,32 @@ export function WorkoutLogForm({ initial, slots, units: savedUnits, showHistory 
         },
       ]),
     ),
-  );
+  }));
+  const [restored, setRestored] = useState(() => (inBrowser ? readDraft(draftKey, slots) : null));
+  const [date, setDate] = useState((restored ?? baseline).date);
+  const [entries, setEntries] = useState<Record<string, EntryState>>((restored ?? baseline).entries);
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
-  const [units, setUnits] = useState<PreferredUnits>(savedUnits);
+  const [units, setUnits] = useState<PreferredUnits>((restored ?? baseline).units);
+
+  // Keep the draft in step with the form. A form that matches its starting point keeps no draft.
+  useEffect(() => {
+    if (!inBrowser) return;
+    const current: WorkoutDraft = { date, units, entries };
+    try {
+      if (JSON.stringify(current) === JSON.stringify(baseline)) clearWorkoutDraft(window.localStorage, draftKey);
+      else writeWorkoutDraft(window.localStorage, draftKey, current);
+    } catch {
+      // Storage can be blocked or full; the form still works without a draft.
+    }
+  }, [inBrowser, date, units, entries, baseline, draftKey]);
+
+  function discardDraft() {
+    setDate(baseline.date);
+    setUnits(baseline.units);
+    setEntries(baseline.entries);
+    setRestored(null);
+  }
 
   // Earlier sessions before the chosen date, fetched again whenever the date changes.
   const [history, setHistory] = useState<{ date: string; result: LastSessionsResult }>();
@@ -120,12 +165,23 @@ export function WorkoutLogForm({ initial, slots, units: savedUnits, showHistory 
       setError(result.error);
       return;
     }
+    try {
+      clearWorkoutDraft(window.localStorage, draftKey);
+    } catch {
+      // Nothing to clear when storage is blocked.
+    }
     router.push(initial.logId ? "/workouts?saved=updated" : "/workouts?saved=new");
     router.refresh();
   }
 
   return (
     <form className="mt-6 grid grid-cols-1 gap-6" onSubmit={submit}>
+      {restored && (
+        <div className="alert-warn flex flex-wrap items-center justify-between gap-3" role="status">
+          <span>Restored your unsaved workout.</span>
+          <button className="btn-secondary btn-sm" onClick={discardDraft} type="button">Discard draft</button>
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="grid grid-cols-1 gap-1 text-sm font-semibold">
           Date

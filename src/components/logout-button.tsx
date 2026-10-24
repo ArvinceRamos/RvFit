@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Icon } from "@/components/icon";
 import { GUEST_DRAFT_STORAGE_KEY } from "@/lib/guest-draft";
 import { createClient } from "@/lib/supabase/client";
+import { WORKOUT_DRAFTS_STORAGE_KEY } from "@/lib/workout-draft";
 
 const defaultClassName = "mt-6 rounded-lg border border-edge bg-field px-4 py-3 font-semibold hover:bg-line";
 
@@ -23,9 +24,10 @@ export function LogoutButton({ className = defaultClassName }: { className?: str
       setFailed(true);
       return;
     }
-    // Any unsaved guest calculation (age, height, weight) should not stay behind on a shared device.
+    // Any unsaved guest calculation (age, height, weight) or workout should not stay behind on a shared device.
     try {
       window.localStorage.removeItem(GUEST_DRAFT_STORAGE_KEY);
+      window.localStorage.removeItem(WORKOUT_DRAFTS_STORAGE_KEY);
     } catch {
       // Storage can be blocked; nothing else to clear.
     }
