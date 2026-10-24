@@ -13,10 +13,19 @@ How to deploy, watch, back up and recover RvFit. Planned hosting: Vercel (app) a
    - Vercel Hobby is for non-commercial use only. Any public or commercial launch needs Vercel Pro.
 4. **Hosted Auth settings** (Supabase dashboard → Authentication), for each project:
    - Site URL is the real domain. Redirect URLs are exactly `https://<domain>/auth/callback` (and the preview domain for staging).
-   - **Custom SMTP** (for example Resend or Postmark). Supabase's built-in email cannot reach real users, so sign-up confirmation and password reset fail without it. Then raise the email rate limit.
+   - **Custom SMTP** (for example Resend or Postmark). Supabase's built-in email cannot reach real users, so sign-up confirmation and password reset fail without it. Then raise the email rate limit. Steps are in "Email provider" below.
    - Turn on **Secure password change**, leaked-password protection, and minimum password length 8 (same as `supabase/config.toml`).
    - Optional: CAPTCHA on sign-up and password reset if bots appear.
    - Google sign-in: see README. Add the hosted callback URL to the Google OAuth client.
+   - **Email provider** (AU-69). Sign-up needs a confirmed email, so this blocks every new family member until it is done.
+     1. **You need a domain you own** (for example `rvfit.app`). A `*.vercel.app` address cannot send email. The same domain can serve the site.
+     2. Create an account with a transactional email provider. Resend is the simplest here: its free plan covers a family test (check the current daily and monthly limits on its pricing page). Postmark or Amazon SES work the same way.
+     3. In the provider, add the domain and copy the DNS records it shows (SPF, DKIM, and usually a return-path or MX record) into your DNS host. Wait until the provider shows the domain as verified.
+     4. Create an API key that can only send email. Keep it in the provider and Supabase only; never in this repo or `.env.local`.
+     5. Supabase → Authentication → Emails → SMTP Settings → enable custom SMTP. Sender email `no-reply@<domain>`, sender name `RvFit`. For Resend: host `smtp.resend.com`, port `465`, username `resend`, password = the API key. Other providers list their own host, port and username.
+     6. Supabase → Authentication → Rate Limits → raise "emails sent per hour" from the built-in default (for example to 30). Keep it low; it caps abuse too.
+     7. On staging: sign up with a real address, confirm it from the email, log out, then use "Forgot password" and finish the reset. Check that the links open `https://<domain>/auth/callback`, not localhost, and look for the emails in the provider's log. Then repeat steps 5–6 on production.
+     - Local Supabase never sends real email. Every email lands in Mailpit at http://127.0.0.1:54324. SMTP stays out of `supabase/config.toml` on purpose: the CLI is linked to production, and `supabase config push` would send local settings there.
 5. **Uptime monitor.** Point a free monitor (for example UptimeRobot or Better Stack) at `https://<domain>/api/health` every 5 minutes, with email alerts. 200 means the app and Supabase Auth answer; 503 means Supabase is down or slow.
 
 ## 2. Deploying a change
