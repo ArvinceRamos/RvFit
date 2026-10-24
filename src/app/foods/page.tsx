@@ -10,6 +10,7 @@ import {
   formatMeasures,
   preparationStates,
   readFoodFilters,
+  searchStem,
   roleLabels,
   stateLabels,
 } from "@/lib/food-catalog";
@@ -28,7 +29,8 @@ export default async function FoodsPage({ searchParams }: PageProps<"/foods">) {
     )
     .order("name")
     .range(0, filters.limit - 1);
-  if (filters.q) query = query.ilike("name", `%${escapeLikePattern(filters.q)}%`);
+  // Same plural handling as the type-ahead, so "eggs" finds "Egg".
+  if (filters.q) query = query.ilike("name", `%${escapeLikePattern(searchStem(filters.q))}%`);
   if (filters.role) query = query.eq("role", filters.role);
   if (filters.state) query = query.eq("preparation_state", filters.state);
   // The filtered list, and every name for the search box's type-ahead, load together.

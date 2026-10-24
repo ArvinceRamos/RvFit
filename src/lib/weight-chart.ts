@@ -50,6 +50,16 @@ export const chartRanges = [
 
 export type ChartRangeKey = (typeof chartRanges)[number]["key"];
 
+export function isChartRangeKey(value: unknown): value is ChartRangeKey {
+  return chartRanges.some((option) => option.key === value);
+}
+
+// The first moment a range covers. null for "All".
+export function rangeStart(key: ChartRangeKey, now: number): Date | null {
+  const days = chartRanges.find((option) => option.key === key)?.days ?? null;
+  return days === null ? null : new Date(now - days * 24 * 60 * 60 * 1000);
+}
+
 // Keeps the points from the last `days` days. null keeps every point. There is no upper limit, so a weigh-in
 // saved after the page opened still shows.
 export function filterByRange(points: readonly ChartPoint[], days: number | null, now: number): ChartPoint[] {

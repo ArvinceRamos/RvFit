@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { escapeLikePattern, foodsHref, formatFiber, formatMeasures, readFoodFilters, suggestFoods } from "./food-catalog";
+import { escapeLikePattern, foodsHref, formatFiber, formatMeasures, readFoodFilters, searchStem, suggestFoods } from "./food-catalog";
 
 describe("readFoodFilters", () => {
   it("reads a valid search, role, and state", () => {
@@ -81,6 +81,35 @@ describe("suggestFoods", () => {
 
   it("limits the number of suggestions", () => {
     expect(suggestFoods(foods, "o", 2)).toHaveLength(2);
+  });
+
+  it("ignores plural endings", () => {
+    const more = [{ name: "Egg, whole" }, { name: "Tomato, raw" }, { name: "Strawberries" }, { name: "Blueberry" }];
+    expect(suggestFoods(more, "eggs").map((food) => food.name)).toEqual(["Egg, whole"]);
+    expect(suggestFoods(more, "Tomatoes").map((food) => food.name)).toEqual(["Tomato, raw"]);
+    expect(suggestFoods(more, "berries").map((food) => food.name)).toEqual(["Blueberry", "Strawberries"]);
+    expect(suggestFoods(more, "berry").map((food) => food.name)).toEqual(["Blueberry", "Strawberries"]);
+  });
+});
+
+describe("searchStem", () => {
+  it("drops simple plural endings from the last word", () => {
+    expect(searchStem("eggs")).toBe("egg");
+    expect(searchStem("potatoes")).toBe("potato");
+    expect(searchStem("peaches")).toBe("peach");
+    expect(searchStem("grapes")).toBe("grape");
+    expect(searchStem("cherries")).toBe("cherr");
+    expect(searchStem("chicken breasts")).toBe("chicken breast");
+  });
+
+  it("leaves short words and non-plurals alone", () => {
+    expect(searchStem(" Rice ")).toBe("rice");
+    expect(searchStem("oats")).toBe("oat");
+    expect(searchStem("soy")).toBe("soy");
+    expect(searchStem("hummus")).toBe("hummus");
+    expect(searchStem("glass")).toBe("glass");
+    expect(searchStem("turkey")).toBe("turkey");
+    expect(searchStem("tato, b")).toBe("tato, b");
   });
 });
 

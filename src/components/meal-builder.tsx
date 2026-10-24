@@ -289,7 +289,16 @@ export function MealBuilder({ foods, initial, suggestionContext }: {
                         const found = foodsById.get(food.id);
                         if (found) updateSlot(slot.key, { item: newItem(found), search: "" });
                       }}
+                      onSelectOther={(food) => {
+                        const found = foodsById.get(food.id);
+                        if (!found) return;
+                        const item = newItem(found);
+                        setExtras((current) => [...current, item]);
+                        updateSlot(slot.key, { search: "" });
+                      }}
                       onValueChange={(value) => updateSlot(slot.key, { search: value })}
+                      otherFoods={foods.filter((food) => !roles.includes(food.role))}
+                      otherNote={`Nothing under ${slot.label} matches. These are from all foods and go under Other foods.`}
                       placeholder="Start typing a food name (optional)"
                       value={state.search}
                     />

@@ -61,9 +61,25 @@ export function foodsHref(filters: FoodFilters, limit: number): string {
   return `/foods?${params.toString()}`;
 }
 
-// Type-ahead matches: names starting with the text first, then words starting with it, then any match.
-export function suggestFoods<T extends { name: string }>(foods: T[], query: string, limit = 8): T[] {
+// Search text without a simple plural ending on its last word, so "eggs" finds "Egg" and "berry" finds
+// "Strawberries" ("berr" is in both). Only shortens the text, so anything the full text matched still matches.
+export function searchStem(query: string): string {
   const text = query.trim().toLowerCase();
+  const word = text.match(/[a-z]+$/)?.[0] ?? "";
+  if (word.length < 4) return text;
+  const head = text.slice(0, text.length - word.length);
+  let stem = word;
+  if (word.endsWith("ies")) stem = word.slice(0, -3);
+  else if (/[^aeiou]y$/.test(word)) stem = word.slice(0, -1);
+  else if (/(oes|ches|shes|sses|xes)$/.test(word)) stem = word.slice(0, -2);
+  else if (/[^su]s$/.test(word) && !word.endsWith("is")) stem = word.slice(0, -1);
+  return head + stem;
+}
+
+// Type-ahead matches: names starting with the text first, then words starting with it, then any match.
+// Plural endings are ignored (see searchStem).
+export function suggestFoods<T extends { name: string }>(foods: T[], query: string, limit = 8): T[] {
+  const text = searchStem(query);
   if (!text) return [];
   const ranked: { food: T; rank: number }[] = [];
   for (const food of foods) {

@@ -7,11 +7,15 @@ export type SuggestableFood = { id: string; name: string; role: FoodRole; prepar
 
 const inputClass = "field w-full";
 
-export function FoodAutocomplete({ foods, value, onValueChange, onSelect, label, name, placeholder, maxLength }: {
+// otherFoods are searched only when nothing in foods matches. They show under otherNote and are picked with onSelectOther.
+export function FoodAutocomplete({ foods, value, onValueChange, onSelect, otherFoods, otherNote, onSelectOther, label, name, placeholder, maxLength }: {
   foods: SuggestableFood[];
   value: string;
   onValueChange: (value: string) => void;
   onSelect: (food: SuggestableFood, input: HTMLInputElement | null) => void;
+  otherFoods?: SuggestableFood[];
+  otherNote?: string;
+  onSelectOther?: (food: SuggestableFood) => void;
   label: string;
   name?: string;
   placeholder?: string;
@@ -22,13 +26,17 @@ export function FoodAutocomplete({ foods, value, onValueChange, onSelect, label,
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
-  const suggestions = suggestFoods(foods, value);
+  const ownMatches = suggestFoods(foods, value);
+  const fromOthers = ownMatches.length === 0 && otherFoods !== undefined && onSelectOther !== undefined;
+  const suggestions = fromOthers ? suggestFoods(otherFoods, value) : ownMatches;
   const showList = open && suggestions.length > 0;
+  const showEmpty = open && suggestions.length === 0 && value.trim() !== "";
 
   function choose(food: SuggestableFood) {
     setOpen(false);
     setActive(-1);
-    onSelect(food, inputRef.current);
+    if (fromOthers) onSelectOther!(food);
+    else onSelect(food, inputRef.current);
   }
 
   function onKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -76,6 +84,7 @@ export function FoodAutocomplete({ foods, value, onValueChange, onSelect, label,
       />
       {showList && (
         <ul className="surface-float absolute left-0 right-0 top-full z-10 mt-1 max-h-72 overflow-auto rounded-xl" id={listId} role="listbox">
+          {fromOthers && otherNote && <li className="px-3 py-2 text-xs text-muted" role="presentation">{otherNote}</li>}
           {suggestions.map((food, index) => (
             <li
               aria-selected={index === active}
@@ -94,6 +103,11 @@ export function FoodAutocomplete({ foods, value, onValueChange, onSelect, label,
             </li>
           ))}
         </ul>
+      )}
+      {showEmpty && (
+        <p className="surface-float absolute left-0 right-0 top-full z-10 mt-1 rounded-xl px-3 py-2 text-sm text-muted" role="status">
+          No foods match &ldquo;{value.trim()}&rdquo;. Try a shorter or different word.
+        </p>
       )}
     </div>
   );

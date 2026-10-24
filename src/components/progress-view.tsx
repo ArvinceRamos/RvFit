@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import Link from "next/link";
-import { deleteWeighInAction, loadProgressAction, type ProgressResult } from "@/app/progress/actions";
+import { deleteWeighInAction, loadProgressAction, loadWeightChartAction, type ProgressResult, type WeightChartResult } from "@/app/progress/actions";
 import { localToday } from "@/components/today-summary";
 import { WeighInForm } from "@/components/weigh-in-form";
 import { calculationConfig } from "@/lib/calc/config";
@@ -109,15 +109,25 @@ const chartHeight = 300;
 const chartBox = { width: chartWidth, height: chartHeight, left: 56, right: 20, top: 24, bottom: 44 };
 
 // A line chart of the recorded weigh-ins, drawn as inline SVG. Only recorded points: no smoothing, no goal line.
-function WeightChartCard({ history, units }: { history: WeighInRow[]; units: PreferredUnits }) {
+// Each range loads its own weigh-ins, so longer ranges are not limited to the History list. reload changes after a save or delete.
+function WeightChartCard({ hasWeighIns, reload, units }: { hasWeighIns: boolean; reload: number; units: PreferredUnits }) {
   const gradientId = useId();
   const [range, setRange] = useState<ChartRangeKey>("30");
   const [now] = useState(() => Date.now());
+  const [loaded, setLoaded] = useState<{ range: ChartRangeKey; reload: number; result: WeightChartResult }>();
 
-  // History arrives newest first. The chart runs oldest to newest.
-  const recorded = history
-    .filter((row) => row.weight_kg !== null)
-    .map((row) => ({ time: new Date(row.logged_at).getTime(), value: inUnits(row.weight_kg as number, units) }))
+  useEffect(() => {
+    let cancelled = false;
+    loadWeightChartAction(range)
+      .catch((): WeightChartResult => ({ ok: false, error: "Your weight chart could not be loaded. Please try again." }))
+      .then((result) => { if (!cancelled) setLoaded({ range, reload, result }); });
+    return () => { cancelled = true; };
+  }, [range, reload]);
+
+  const loading = !loaded || loaded.range !== range || loaded.reload !== reload;
+  // Weigh-ins arrive newest first. The chart runs oldest to newest.
+  const recorded = (loaded?.result.ok ? loaded.result.points : [])
+    .map((row) => ({ time: new Date(row.logged_at).getTime(), value: inUnits(row.weight_kg, units) }))
     .sort((a, b) => a.time - b.time);
   const days = chartRanges.find((option) => option.key === range)?.days ?? null;
   const shown = filterByRange(recorded, days, now);
@@ -129,7 +139,9 @@ function WeightChartCard({ history, units }: { history: WeighInRow[]; units: Pre
   const plotRight = chartWidth - chartBox.right;
 
   let body: React.ReactNode;
-  if (!layout) {
+  if (loaded && !loaded.result.ok && !loading) {
+    body = <p className="alert-danger mt-4" role="alert">{loaded.result.error}</p>;
+  } else if (!layout) {
     body = (
       <div className="relative mt-4">
         <svg aria-hidden className="h-auto w-full opacity-40" viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
@@ -139,7 +151,7 @@ function WeightChartCard({ history, units }: { history: WeighInRow[]; units: Pre
           <polyline className="stroke-muted" fill="none" points="56,200 150,170 240,185 330,130 420,150 510,90 620,70" strokeDasharray="6 8" strokeLinecap="round" strokeWidth="3" />
         </svg>
         <p className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-muted">
-          {recorded.length === 0 ? "Add your first weigh-in to start your chart." : "No weigh-ins in this range. Try a longer one."}
+          {loading ? "Loading your chart…" : hasWeighIns ? "No weigh-ins in this range. Try a longer one." : "Add your first weigh-in to start your chart."}
         </p>
       </div>
     );
@@ -303,7 +315,7 @@ export function ProgressView() {
       {/* One 3-column rhythm: the chart and the bars take two columns, the form and History one, so edges line up. */}
       <div className="grid gap-[30px] md:grid-cols-3">
         <div className="md:col-span-2">
-          <WeightChartCard history={history} units={units} />
+          <WeightChartCard hasWeighIns={history.some((row) => row.weight_kg !== null)} reload={reload} units={units} />
         </div>
         <WeighInForm onSaved={onSaved} preferredUnits={units} />
       </div>

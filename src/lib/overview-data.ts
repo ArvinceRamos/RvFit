@@ -170,6 +170,14 @@ export async function loadLatestWeighIns(supabase: Client, limit: number): Promi
   return error || !data ? null : data.map(toWeighIn);
 }
 
+// Weigh-ins with a weight, newest first, for the weight chart. A null since loads every one, up to the limit.
+export async function loadChartWeighIns(supabase: Client, since: Date | null, limit: number): Promise<{ logged_at: string; weight_kg: number }[] | null> {
+  let query = supabase.from("body_logs").select("logged_at, weight_kg").not("weight_kg", "is", null);
+  if (since) query = query.gte("logged_at", since.toISOString());
+  const { data, error } = await query.order("logged_at", { ascending: false }).limit(limit);
+  return error || !data ? null : data.map((row) => ({ logged_at: row.logged_at as string, weight_kg: Number(row.weight_kg) }));
+}
+
 export type PlanDay = { key: string; name: string };
 
 // The user's workout days from saved Preferences. Never guessed: null when preferences are not set.

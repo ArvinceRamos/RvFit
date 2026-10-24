@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chartLayout, filterByRange, weightChange } from "./weight-chart";
+import { chartLayout, filterByRange, isChartRangeKey, rangeStart, weightChange } from "./weight-chart";
 
 const box = { width: 100, height: 60, left: 10, right: 10, top: 10, bottom: 10 };
 
@@ -93,5 +93,21 @@ describe("weightChange", () => {
   it("can be positive and ignores order and points outside the window", () => {
     const points = [{ time: now, value: 61.5 }, { time: now - 40 * day, value: 90 }, { time: now - 26 * day, value: 60 }];
     expect(weightChange(points, 30, now)).toBeCloseTo(1.5, 5);
+  });
+});
+
+describe("chart ranges", () => {
+  const now = Date.UTC(2026, 9, 24, 12);
+
+  it("accepts only the listed range keys", () => {
+    expect(["7", "30", "90", "all"].every(isChartRangeKey)).toBe(true);
+    expect(isChartRangeKey("365")).toBe(false);
+    expect(isChartRangeKey(30)).toBe(false);
+  });
+
+  it("starts a range that many days back, and All has no start", () => {
+    expect(rangeStart("7", now)?.toISOString()).toBe("2026-10-17T12:00:00.000Z");
+    expect(rangeStart("90", now)?.toISOString()).toBe("2026-07-26T12:00:00.000Z");
+    expect(rangeStart("all", now)).toBeNull();
   });
 });
