@@ -131,6 +131,25 @@ export function convertAndValidateInputs(inputs: CalculatorInputs): Result<Valid
   return success({ age_years: inputs.age_years, height_cm, weight_kg });
 }
 
+// Body mass index from metric values: kg / m².
+export function bodyMassIndex(heightCm: number, weightKg: number): number {
+  const meters = heightCm / 100;
+  return weightKg / (meters * meters);
+}
+
+export const UNDERWEIGHT_LOSS_MESSAGE = `Your BMI is under ${calculationConfig.underweight_guard.min_bmi_for_loss}, so Lose weight is not offered. Talk to a doctor before trying to lose weight.`;
+
+// True when height and weight give a BMI under the guard, so Lose weight is not offered.
+// Unfinished or invalid inputs return false; the normal range checks report those.
+export function lossBlocked(height: HeightInput, weight: WeightInput): boolean {
+  const heightCm = convertHeightToCm(height);
+  const weightKg = convertWeightToKg(weight);
+  if (!heightCm.ok || !weightKg.ok || heightCm.data <= 0 || weightKg.data <= 0) return false;
+  // Rounded to 2 decimals so float noise (59.94 kg at 180 cm gives 18.4999…) does not block a BMI of 18.5.
+  const bmi = Math.round(bodyMassIndex(heightCm.data, weightKg.data) * 100) / 100;
+  return bmi < calculationConfig.underweight_guard.min_bmi_for_loss;
+}
+
 export type CalculateTargetInput = CalculatorInputs & {
   sex: SexInput;
   activity_level: ActivityLevel;
@@ -185,6 +204,7 @@ export function calculateTarget(input: CalculateTargetInput): Result<CalculatedT
 
   let adjustedEstimate = maintenanceEstimate;
   if (input.goal === "lose") {
+    if (lossBlocked(input.height, input.weight)) return failure(UNDERWEIGHT_LOSS_MESSAGE);
     if (!input.pace || !hasOwnKey(calculationConfig.goal_adjustments.loss_paces_kcal, input.pace)) {
       return failure("Choose a Slow or Faster pace for weight loss.");
     }

@@ -122,6 +122,12 @@ Allow macro editing. Reject negative macro grams and protein above the 35% cap. 
 
  “These are estimates for healthy adults and are not medical advice. If you are pregnant, breastfeeding, or have a medical condition, talk to a doctor before changing your diet.”
 
+> **Note, 2026-10-24 (user decision, AU-50).** The rule "no new health or safety wording" (docs/PHASE3.md, docs/MEAL-PLANNER.md) is lifted for these two lines only. Everything else in that rule still applies.
+> - The disclaimer above gets one more sentence: “If you have or have had an eating disorder, talk to a professional before tracking calories.”
+> - Underweight guard: when calculator height and weight give a BMI under 18.5 (placeholder, `calculationConfig.underweight_guard`), Lose weight is not offered on the calculator or Profile, the server refuses it on save, and this line is shown: “Your BMI is under 18.5, so Lose weight is not offered. Talk to a doctor before trying to lose weight.” Manual targets do not ask for height, so the guard does not cover them.
+> - Audience: personal/family use first (a private test). A public launch is decided later. The privacy and terms pages say this and are marked as drafts until reviewed. The contact email stays the owner's for now and must change before any public launch.
+> - Calorie targets are append-only history: signed-in users can read and add targets, not change or delete them (migration 20261024010000_append_only_targets).
+
 
 
 ## Stage 0 — Prepare content and decisions

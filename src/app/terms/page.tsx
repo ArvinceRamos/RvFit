@@ -7,10 +7,10 @@ export const metadata: Metadata = { title: "Terms of service · RvFit" };
 export default function TermsPage() {
   return (
     <LegalPage title="Terms of service">
-      <p>By using RvFit you agree to these terms.</p>
+      <p>RvFit is a private test for friends and family. By using it you agree to these terms.</p>
       <section>
         <h2>Not medical advice</h2>
-        <p>RvFit gives estimates for healthy adults. It is not medical advice. If you are pregnant, breastfeeding or have a medical condition, talk to a doctor before changing your diet or exercise.</p>
+        <p>RvFit gives estimates for healthy adults. It is not medical advice. If you are pregnant, breastfeeding or have a medical condition, talk to a doctor before changing your diet or exercise. If you have or have had an eating disorder, talk to a professional before tracking calories. If your BMI is under 18.5, RvFit does not offer a weight-loss target.</p>
       </section>
       <section>
         <h2>Who can use it</h2>

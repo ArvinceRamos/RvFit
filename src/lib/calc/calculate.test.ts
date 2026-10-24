@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  bodyMassIndex,
   calculateDefaultMacros,
   calculateTarget,
   checkMacroMismatch,
   convertAndValidateInputs,
   createManualTarget,
+  lossBlocked,
+  UNDERWEIGHT_LOSS_MESSAGE,
   validateMacroEdit,
   type MacroEdit,
 } from "./calculate";
@@ -196,6 +199,43 @@ describe("calculateTarget", () => {
         goal: "lose",
       }),
     ).toMatchObject({ ok: false, error: expect.stringContaining("pace") });
+  });
+});
+
+describe("underweight guard", () => {
+  // 180 cm: BMI 18.5 is 59.94 kg.
+  const base = { age_years: 30, height: { unit: "cm", value: 180 }, sex: "male", activity_level: "moderate" } as const;
+
+  it("computes BMI from metric values", () => {
+    expect(bodyMassIndex(180, 80)).toBeCloseTo(24.69, 2);
+  });
+
+  it("blocks Lose under BMI 18.5 and allows it at 18.5", () => {
+    expect(lossBlocked(base.height, { unit: "kg", value: 59.9 })).toBe(true);
+    expect(lossBlocked(base.height, { unit: "kg", value: 59.94 })).toBe(false);
+    const under = calculateTarget({ ...base, weight: { unit: "kg", value: 59.9 }, goal: "lose", pace: "gradual" });
+    expect(under).toEqual({ ok: false, error: UNDERWEIGHT_LOSS_MESSAGE });
+    expect(UNDERWEIGHT_LOSS_MESSAGE).toContain("Talk to a doctor");
+    expect(calculateTarget({ ...base, weight: { unit: "kg", value: 59.94 }, goal: "lose", pace: "gradual" }).ok).toBe(true);
+  });
+
+  it("still allows Maintain and Gain under BMI 18.5", () => {
+    const weight = { unit: "kg", value: 55 } as const;
+    expect(calculateTarget({ ...base, weight, goal: "maintain" }).ok).toBe(true);
+    expect(calculateTarget({ ...base, weight, goal: "gain", pace: "gradual" }).ok).toBe(true);
+  });
+
+  it("checks imperial inputs after converting them", () => {
+    // 5 ft 10 in is 177.8 cm; BMI 18.5 is about 58.48 kg or 128.9 lb.
+    const height = { unit: "ft-in", feet: 5, inches: 10 } as const;
+    expect(lossBlocked(height, { unit: "lb", value: 128 })).toBe(true);
+    expect(lossBlocked(height, { unit: "lb", value: 130 })).toBe(false);
+  });
+
+  it("ignores unfinished inputs", () => {
+    expect(lossBlocked({ unit: "cm", value: 0 }, { unit: "kg", value: 50 })).toBe(false);
+    expect(lossBlocked({ unit: "cm", value: 180 }, { unit: "kg", value: 0 })).toBe(false);
+    expect(lossBlocked({ unit: "cm", value: Number.NaN }, { unit: "kg", value: 50 })).toBe(false);
   });
 });
 

@@ -4,6 +4,7 @@ import {
   convertAndValidateInputs,
   convertWeightToKg,
   createManualTarget,
+  lossBlocked,
   validateMacroEdit,
   type DefaultMacros,
   type HeightInput,
@@ -114,6 +115,20 @@ function readInput(raw: unknown): ProfileFormInput | null {
   if (input.goal !== "lose" && input.goal !== "maintain" && input.goal !== "gain") return null;
   if (input.pace !== "gradual" && input.pace !== "steady") return null;
   return input as ProfileFormInput;
+}
+
+// True when the form's height and weight are under the BMI guard, so Profile hides Lose weight.
+// Blank or unfinished fields return false. The save re-checks this through calculateTarget.
+export function profileLossBlocked(input: Pick<ProfileFormInput, "units" | "height" | "feet" | "inches" | "weight">): boolean {
+  const weight = parse(input.weight);
+  if (weight === null) return false;
+  if (input.units === "metric") {
+    const cm = parse(input.height);
+    return cm !== null && lossBlocked({ unit: "cm", value: cm }, { unit: "kg", value: weight });
+  }
+  const feet = parse(input.feet);
+  const inches = input.inches.trim() === "" ? 0 : parse(input.inches);
+  return feet !== null && inches !== null && lossBlocked({ unit: "ft-in", feet, inches }, { unit: "lb", value: weight });
 }
 
 // Runs the existing calculation module on the form. Nothing is saved.

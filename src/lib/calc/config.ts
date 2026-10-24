@@ -38,6 +38,8 @@ export const calculationConfig = {
     gain_paces_kcal: { gradual: 100, steady: 200 },
   },
   formula_branch_floors_kcal: { male: 1500, female: 1200 },
+  // Placeholder: below this BMI, Lose weight is not offered (calculator, Profile and the server save).
+  underweight_guard: { min_bmi_for_loss: 18.5 },
   database_target_bounds_kcal: { min: 800, max: 6000 },
   // Placeholder per-item limit. Keep in step with meal_items_grams_max_placeholder_check in the database.
   // max_items is a safety cap, not a nutrition value. Keep in step with save_meal in the database.

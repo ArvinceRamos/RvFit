@@ -9,7 +9,7 @@ The user picks the foods they have. The planner builds a day or week of meals th
 - `docs/PLAN.md` line 13 says V1 has no "AI meal plans". This planner is rule-based, not AI, but it is a new feature beyond the original V1 scope. The user asked for it and approved it.
 - `docs/PHASE2.md` suggestion rule 5 says "suggest foods, not portion sizes". The planner sets gram amounts. That rule still applies to the existing suggestions panel in the meal builder, which stays unchanged.
 
-No new health or safety wording. The existing footer disclaimer and "starting estimate, not a promise" tone apply.
+No new health or safety wording. The existing footer disclaimer and "starting estimate, not a promise" tone apply. (Lifted on 2026-10-24 for two lines only; see the AU-50 note in docs/PLAN.md "Input and safety rules".)
 
 ## Decisions
 

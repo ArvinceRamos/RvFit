@@ -10,6 +10,8 @@ import {
   convertAndValidateInputs,
   convertWeightToKg,
   createManualTarget,
+  lossBlocked,
+  UNDERWEIGHT_LOSS_MESSAGE,
   validateMacroEdit,
   type GoalInput,
   type MacroEdit,
@@ -158,7 +160,7 @@ function CalculatorForm({ draft }: { draft: GuestDraft }) {
   const [weight, setWeight] = useState(saved?.weight ?? draft.profile?.weight_kg?.toString() ?? "");
   const [sex, setSex] = useState<FormulaBranch | "">(saved?.sex ?? draft.profile?.sex_formula_branch ?? "");
   const [activity, setActivity] = useState<ActivityLevel>(saved?.activity ?? draft.profile?.activity_level ?? "sedentary");
-  const [goal, setGoal] = useState<GoalInput>(saved?.goal ?? "maintain");
+  const [chosenGoal, setGoal] = useState<GoalInput>(saved?.goal ?? "maintain");
   const [pace, setPace] = useState<PaceInput>(saved?.pace ?? "gradual");
   const [error, setError] = useState<string>();
 
@@ -167,10 +169,20 @@ function CalculatorForm({ draft }: { draft: GuestDraft }) {
       ...current,
       setup_inputs: {
         ...current.setup_inputs,
-        calculate: { age, height, feet, inches, weight, sex, activity, goal, pace, units },
+        calculate: { age, height, feet, inches, weight, sex, activity, goal: chosenGoal, pace, units },
       },
     }));
-  }, [activity, age, feet, goal, height, inches, pace, sex, units, weight]);
+  }, [activity, age, chosenGoal, feet, height, inches, pace, sex, units, weight]);
+
+  const heightInput = units === "metric"
+    ? { unit: "cm" as const, value: Number(height) }
+    : { unit: "ft-in" as const, feet: Number(feet), inches: Number(inches) };
+  const weightInput = units === "metric"
+    ? { unit: "kg" as const, value: Number(weight) }
+    : { unit: "lb" as const, value: Number(weight) };
+  // Under the BMI guard, Lose weight is hidden and a saved "lose" choice falls back to Maintain.
+  const noLoss = lossBlocked(heightInput, weightInput);
+  const goal = noLoss && chosenGoal === "lose" ? "maintain" : chosenGoal;
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -184,12 +196,6 @@ function CalculatorForm({ draft }: { draft: GuestDraft }) {
     }
 
     const numericAge = Number(age);
-    const heightInput = units === "metric"
-      ? { unit: "cm" as const, value: Number(height) }
-      : { unit: "ft-in" as const, feet: Number(feet), inches: Number(inches) };
-    const weightInput = units === "metric"
-      ? { unit: "kg" as const, value: Number(weight) }
-      : { unit: "lb" as const, value: Number(weight) };
     const target = calculateTarget({
       age_years: numericAge,
       height: heightInput,
@@ -271,8 +277,9 @@ function CalculatorForm({ draft }: { draft: GuestDraft }) {
         <fieldset>
           <legend className="text-sm font-semibold">Goal</legend>
           <div className="mt-2 space-y-2">
-            {goalOptions.map((option) => <button aria-pressed={goal === option.value} className="choice w-full" key={option.value} onClick={() => setGoal(option.value)} type="button"><span className="block font-semibold">{option.title}</span><span className="mt-1 block text-sm text-muted">{option.detail}</span></button>)}
+            {goalOptions.filter((option) => !noLoss || option.value !== "lose").map((option) => <button aria-pressed={goal === option.value} className="choice w-full" key={option.value} onClick={() => setGoal(option.value)} type="button"><span className="block font-semibold">{option.title}</span><span className="mt-1 block text-sm text-muted">{option.detail}</span></button>)}
           </div>
+          {noLoss && <p className="mt-3 alert-warn" role="note">{UNDERWEIGHT_LOSS_MESSAGE}</p>}
         </fieldset>
         {goal !== "maintain" && <fieldset><legend className="text-sm font-semibold">How fast?</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{paceOptions[goal].map((option) => <button aria-pressed={pace === option.value} className="choice w-full" key={option.value} onClick={() => setPace(option.value)} type="button"><span className="block font-semibold">{option.title}</span><span className="mt-1 block text-sm text-muted">{option.detail}</span></button>)}</div></fieldset>}
         <ErrorMessage message={error} />

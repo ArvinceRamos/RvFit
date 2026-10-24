@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveProfileAndTargetAction } from "@/app/profile/actions";
-import { checkMacroMismatch, validateMacroEdit, type DefaultMacros } from "@/lib/calc/calculate";
+import { checkMacroMismatch, UNDERWEIGHT_LOSS_MESSAGE, validateMacroEdit, type DefaultMacros } from "@/lib/calc/calculate";
 import { calculationConfig, type ActivityLevel, type FormulaBranch } from "@/lib/calc/config";
-import { computeProfileTarget, heightFields, weightField, type ComputedTarget, type ProfileFormInput } from "@/lib/profile-save";
+import { computeProfileTarget, heightFields, profileLossBlocked, weightField, type ComputedTarget, type ProfileFormInput } from "@/lib/profile-save";
 import { activityOptions, goalOptions, goalPaceLabel, paceOptions } from "@/lib/target-options";
 import type { PreferredUnits } from "@/lib/weigh-in";
 
@@ -77,7 +77,10 @@ function Field({ label, value, onChange, hint }: { label: string; value: string;
 
 export function ProfileForm({ profile, current, latestWeightKg, suggestedKcal = null }: { profile: SavedProfile; current: CurrentTarget | null; latestWeightKg: number | null; suggestedKcal?: number | null }) {
   const router = useRouter();
-  const [details, setDetails] = useState<ProfileFormInput>(() => initialDetails(profile, current, latestWeightKg, suggestedKcal));
+  const [enteredDetails, setDetails] = useState<ProfileFormInput>(() => initialDetails(profile, current, latestWeightKg, suggestedKcal));
+  // Under the BMI guard, Lose weight is hidden and a saved "lose" goal falls back to Maintain.
+  const noLoss = enteredDetails.method === "calculated" && profileLossBlocked(enteredDetails);
+  const details: ProfileFormInput = noLoss && enteredDetails.goal === "lose" ? { ...enteredDetails, goal: "maintain" } : enteredDetails;
   const [preview, setPreview] = useState<{ key: string; computed: ComputedTarget }>();
   const [macros, setMacros] = useState<MacroText>();
   const [error, setError] = useState<string>();
@@ -287,13 +290,14 @@ export function ProfileForm({ profile, current, latestWeightKg, suggestedKcal = 
                 <fieldset>
                   <legend className="text-sm font-semibold">Goal</legend>
                   <div className="mt-2 grid gap-2">
-                    {goalOptions.map((option) => (
+                    {goalOptions.filter((option) => !noLoss || option.value !== "lose").map((option) => (
                       <button aria-pressed={details.goal === option.value} className={`${choiceClass} w-full`} key={option.value} onClick={() => update({ goal: option.value })} type="button">
                         <span className="block">{option.title}</span>
                         <span className="mt-1 block text-sm font-normal text-muted">{option.detail}</span>
                       </button>
                     ))}
                   </div>
+                  {noLoss && <p className="mt-3 alert-warn" role="note">{UNDERWEIGHT_LOSS_MESSAGE}</p>}
                 </fieldset>
 
                 {(details.goal === "lose" || details.goal === "gain") && (

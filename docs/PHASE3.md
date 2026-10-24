@@ -117,7 +117,7 @@ These start as placeholders in `src/lib/calc/config.ts` and stay placeholders un
 
 ## Out of scope
 
-Dashboard, weekly plan view, progress charts, weight trend, profile editing, delete workout, rest timer, workout notes, warm-up sets, supersets, custom exercises, exercise images or videos, AI plans, "up next" suggestions, advanced levels, and any new health or safety wording beyond the existing footer disclaimer.
+Dashboard, weekly plan view, progress charts, weight trend, profile editing, delete workout, rest timer, workout notes, warm-up sets, supersets, custom exercises, exercise images or videos, AI plans, "up next" suggestions, advanced levels, and any new health or safety wording beyond the existing footer disclaimer. (Lifted on 2026-10-24 for two lines only; see the AU-50 note in docs/PLAN.md "Input and safety rules".)
 
 ## Acceptance checks (Phase 3 done when)
 

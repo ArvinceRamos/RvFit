@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { calculateDefaultMacros, calculateTarget, checkMacroMismatch } from "./calc/calculate";
+import { calculateDefaultMacros, calculateTarget, checkMacroMismatch, UNDERWEIGHT_LOSS_MESSAGE } from "./calc/calculate";
 import {
   buildProfileSave,
   computeProfileTarget,
   heightFields,
+  profileLossBlocked,
   readMacros,
   weightField,
   weightUnchanged,
@@ -87,10 +88,20 @@ describe("computeProfileTarget", () => {
     const maintain = computeProfileTarget({ ...calculated, goal: "maintain" }, null);
     if (!maintain.ok) throw new Error(maintain.error);
     expect(maintain.data.target.pace).toBeNull();
-    const floored = computeProfileTarget({ ...calculated, sex: "female", age: "90", height: "150", weight: "40", activity: "sedentary", goal: "lose", pace: "steady" }, null);
+    const floored = computeProfileTarget({ ...calculated, sex: "female", age: "90", height: "150", weight: "42", activity: "sedentary", goal: "lose", pace: "steady" }, null);
     if (!floored.ok) throw new Error(floored.error);
     expect(floored.data.target.floor_applied).toBe(true);
     expect(floored.data.floor_explanation).toContain("1200");
+  });
+
+  it("refuses Lose under BMI 18.5 on save and hides it in the form", () => {
+    const thin = { ...calculated, weight: "55" };
+    expect(computeProfileTarget(thin, null)).toEqual({ ok: false, error: UNDERWEIGHT_LOSS_MESSAGE });
+    expect(computeProfileTarget({ ...thin, goal: "maintain" }, null).ok).toBe(true);
+    expect(profileLossBlocked(thin)).toBe(true);
+    expect(profileLossBlocked(calculated)).toBe(false);
+    expect(profileLossBlocked({ ...thin, units: "imperial", feet: "5", inches: "10", weight: "128" })).toBe(true);
+    expect(profileLossBlocked({ ...thin, units: "imperial", feet: "5", inches: "", weight: "" })).toBe(false);
   });
 
   it("follows the manual rules and keeps saved details", () => {
