@@ -1,17 +1,11 @@
 import Link from "next/link";
 import { calculationConfig } from "@/lib/calc/config";
 import type { CheckIn } from "@/lib/check-in";
+import { formatWeeklyRate } from "@/lib/remaining-format";
 import type { PreferredUnits } from "@/lib/weigh-in";
 
 // Target check-in on Profile and targets. Advice only: "Use this target" pre-fills the form below,
 // and nothing changes until the user presses Save there.
-
-function rate(kgPerWeek: number, units: PreferredUnits): string {
-  const value = units === "metric" ? kgPerWeek : kgPerWeek / calculationConfig.unit_conversions.pounds_to_kilograms;
-  const rounded = Math.round(value * 10) / 10;
-  const sign = rounded > 0 ? "+" : rounded < 0 ? "−" : "";
-  return `${sign}${Math.abs(rounded).toFixed(1)} ${units === "metric" ? "kg" : "lb"} a week`;
-}
 
 const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium" });
 
@@ -34,8 +28,8 @@ export function CheckInCard({ checkIn, units }: { checkIn: CheckIn; units: Prefe
   } else {
     const trend = (
       <p className="mt-2 text-sm text-muted">
-        Your weekly average changed by about <span className="font-semibold text-ink">{rate(checkIn.observedKgPerWeek, units)}</span>.
-        Your {checkIn.expectedKgPerWeek === 0 ? "goal" : "pace"} aims for about <span className="font-semibold text-ink">{rate(checkIn.expectedKgPerWeek, units)}</span>.
+        Your weekly average changed by about <span className="font-semibold text-ink">{formatWeeklyRate(checkIn.observedKgPerWeek, units)}</span>.
+        Your {checkIn.expectedKgPerWeek === 0 ? "goal" : "pace"} aims for about <span className="font-semibold text-ink">{formatWeeklyRate(checkIn.expectedKgPerWeek, units)}</span>.
       </p>
     );
     if (checkIn.status === "on_track") {

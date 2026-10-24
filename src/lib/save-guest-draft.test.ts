@@ -52,6 +52,19 @@ describe("saveInitialGuestDraft", () => {
     }));
   });
 
+  it("uses the BMI-30 protein weight for default macros, like the calculator", async () => {
+    const { client, rpc } = clientWith("saved");
+    const draft = calculatedDraft();
+    draft.setup_inputs.calculate.height = "165";
+    draft.setup_inputs.calculate.weight = "130";
+    // No edited macros, so the server uses its own defaults.
+    Reflect.deleteProperty(draft.target, "macros");
+    await expect(saveInitialGuestDraft(client, userId, draft)).resolves.toEqual({ ok: true, status: "saved" });
+    expect(rpc).toHaveBeenCalledWith("save_initial_guest_draft", expect.objectContaining({
+      p_target: expect.objectContaining({ protein_g: 131 }),
+    }));
+  });
+
   it("saves a manual draft without using its tampered target display value", async () => {
     const { client, rpc } = clientWith("saved");
     await expect(saveInitialGuestDraft(client, userId, manualDraft())).resolves.toEqual({ ok: true, status: "saved" });

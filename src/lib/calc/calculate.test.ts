@@ -6,7 +6,9 @@ import {
   checkMacroMismatch,
   convertAndValidateInputs,
   createManualTarget,
+  expectedWeeklyChangeKg,
   lossBlocked,
+  proteinReferenceWeightKg,
   UNDERWEIGHT_LOSS_MESSAGE,
   validateMacroEdit,
   type MacroEdit,
@@ -250,6 +252,39 @@ describe("calculateDefaultMacros", () => {
   it("caps protein for a heavy current weight and low calorie target", () => {
     const result = calculateDefaultMacros(1200, 300);
     expect(result).toMatchObject({ ok: true, data: { protein_g: 105 } });
+  });
+});
+
+describe("protein reference weight (BMI over 30)", () => {
+  it("uses the weight at BMI 30 for the height when BMI is higher", () => {
+    // 30 × 1.65² = 81.675 kg, so 1.6 g/kg gives 131 g instead of 208 g from 130 kg.
+    expect(proteinReferenceWeightKg(130, 165)).toBeCloseTo(81.675, 3);
+    expect(calculateDefaultMacros(3000, 130, 165)).toMatchObject({ ok: true, data: { protein_g: 131 } });
+  });
+
+  it("keeps the current weight at or under BMI 30 and without a height", () => {
+    expect(calculateDefaultMacros(2759.4, 80, 180)).toEqual(calculateDefaultMacros(2759.4, 80));
+    expect(proteinReferenceWeightKg(130)).toBe(130);
+    expect(calculateDefaultMacros(3000, 130)).toMatchObject({ ok: true, data: { protein_g: 208 } });
+  });
+
+  it("does not drop protein just above the cut-off", () => {
+    const atCutOff = calculateDefaultMacros(3000, 81.675, 165);
+    const justAbove = calculateDefaultMacros(3000, 82, 165);
+    expect(justAbove).toEqual(atCutOff);
+  });
+});
+
+describe("maintenance and expected weekly change", () => {
+  it("returns the maintenance estimate with every calculated target", () => {
+    const lose = calculateTarget({ ...metricInputs, sex: "male", activity_level: "moderate", goal: "lose", pace: "steady" });
+    expect(lose).toMatchObject({ ok: true, data: { target_kcal: 2259, maintenance_kcal: 2759 } });
+  });
+
+  it("turns the gap to maintenance into a rough weekly change", () => {
+    expect(expectedWeeklyChangeKg(2259, 2759)).toBeCloseTo(-0.4545, 3);
+    expect(expectedWeeklyChangeKg(2859, 2759)).toBeCloseTo(0.0909, 3);
+    expect(expectedWeeklyChangeKg(2759, 2759)).toBe(0);
   });
 });
 

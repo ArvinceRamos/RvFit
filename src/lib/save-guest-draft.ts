@@ -155,7 +155,7 @@ export function buildInitialGuestDraftSave(rawDraft: unknown): { ok: true; data:
     if (!calculation.ok) return calculation;
     const validatedInputs = convertAndValidateInputs({ age_years: age as number, height: heightInput, weight: weightInput });
     if (!validatedInputs.ok) return validatedInputs;
-    const defaults = calculateDefaultMacros(calculation.data.target_kcal, validatedInputs.data.weight_kg);
+    const defaults = calculateDefaultMacros(calculation.data.target_kcal, validatedInputs.data.weight_kg, validatedInputs.data.height_cm);
     if (!defaults.ok) return defaults;
     const macros = macrosFromDraft(targetDraft.macros, defaults.data, calculation.data.target_kcal);
     if (isFailure(macros)) return macros;

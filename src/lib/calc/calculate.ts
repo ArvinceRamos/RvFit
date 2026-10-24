@@ -159,6 +159,8 @@ export type CalculateTargetInput = CalculatorInputs & {
 
 export type CalculatedTarget = {
   target_kcal: number;
+  /** Estimated maintenance (before the goal adjustment), rounded. A rough estimate. */
+  maintenance_kcal: number;
   floor_applied: boolean;
   floor_explanation: string | null;
   formula_branch: FormulaBranch;
@@ -228,6 +230,7 @@ export function calculateTarget(input: CalculateTargetInput): Result<CalculatedT
   const floorApplied = adjustedEstimate < floor;
   return success({
     target_kcal: Math.round(floorApplied ? floor : adjustedEstimate),
+    maintenance_kcal: Math.round(maintenanceEstimate),
     floor_applied: floorApplied,
     floor_explanation: floorApplied ? floorExplanation(branch, floor, maintenanceEstimate, input.goal) : null,
     formula_branch: branch,
@@ -235,9 +238,24 @@ export function calculateTarget(input: CalculateTargetInput): Result<CalculatedT
   });
 }
 
+// The rough weekly weight change a target gives against estimated maintenance, in kg (negative = loss).
+// Uses the same placeholder kcal-per-kg rule as the check-in; real change varies and slows over time.
+export function expectedWeeklyChangeKg(targetKcal: number, maintenanceKcal: number): number {
+  return ((targetKcal - maintenanceKcal) * 7) / calculationConfig.check_in.kcal_per_kg;
+}
+
+// The weight protein is based on. Above the reference BMI it is the weight at that BMI for the height.
+// Without a height (manual targets) it is the current weight.
+export function proteinReferenceWeightKg(currentWeightKg: number, heightCm?: number): number {
+  if (heightCm === undefined || !isFiniteNumber(heightCm) || heightCm <= 0) return currentWeightKg;
+  const meters = heightCm / 100;
+  return Math.min(currentWeightKg, calculationConfig.macros.protein_reference_bmi * meters * meters);
+}
+
 export function calculateDefaultMacros(
   targetKcal: number,
   currentWeightKg: number,
+  heightCm?: number,
 ): Result<DefaultMacros> {
   if (!isFiniteNumber(targetKcal) || targetKcal <= calculationConfig.macros.minimum_grams) {
     return failure("Calorie target must be a positive finite number.");
@@ -252,7 +270,7 @@ export function calculateDefaultMacros(
 
   const target = Math.round(targetKcal);
   const macroConfig = calculationConfig.macros;
-  const proteinFromWeight = Math.round(currentWeightKg * macroConfig.protein_grams_per_kg);
+  const proteinFromWeight = Math.round(proteinReferenceWeightKg(currentWeightKg, heightCm) * macroConfig.protein_grams_per_kg);
   const maxProteinGrams = Math.floor(
     (target * macroConfig.protein_calorie_cap_fraction) / macroConfig.kcal_per_gram.protein,
   );

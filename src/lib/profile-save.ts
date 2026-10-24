@@ -194,7 +194,7 @@ export function computeProfileTarget(raw: unknown, latestWeightKg: number | null
   if (!calculated.ok) return calculated;
   const validated = convertAndValidateInputs({ age_years: age, height, weight });
   if (!validated.ok) return validated;
-  const defaults = calculateDefaultMacros(calculated.data.target_kcal, validated.data.weight_kg);
+  const defaults = calculateDefaultMacros(calculated.data.target_kcal, validated.data.weight_kg, validated.data.height_cm);
   if (!defaults.ok) return defaults;
 
   const heightCm = Math.round(validated.data.height_cm * 100) / 100;

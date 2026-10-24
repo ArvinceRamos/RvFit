@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeRemaining, formatGrams, formatKcal, progressPercent } from "./remaining-format";
+import { describeRemaining, formatGrams, formatKcal, formatWeeklyRate, progressPercent } from "./remaining-format";
 
 describe("formatKcal", () => {
   it("rounds to a whole number with a thousands comma", () => {
@@ -53,5 +53,18 @@ describe("progressPercent", () => {
     expect(progressPercent(100, -5)).toBe(0);
     expect(progressPercent(Number.NaN, 100)).toBe(0);
     expect(progressPercent(-10, 100)).toBe(0);
+  });
+});
+
+describe("formatWeeklyRate", () => {
+  it("shows a signed rate to one decimal in kg or lb", () => {
+    expect(formatWeeklyRate(-0.4545, "metric")).toBe("−0.5 kg a week");
+    expect(formatWeeklyRate(0.0909, "metric")).toBe("+0.1 kg a week");
+    expect(formatWeeklyRate(-0.4545, "imperial")).toBe("−1.0 lb a week");
+  });
+
+  it("shows no sign when the rate rounds to zero", () => {
+    expect(formatWeeklyRate(0, "metric")).toBe("0.0 kg a week");
+    expect(formatWeeklyRate(-0.04, "metric")).toBe("0.0 kg a week");
   });
 });

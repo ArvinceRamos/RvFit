@@ -63,6 +63,13 @@ describe("computeProfileTarget", () => {
     expect(result.data.profile).toEqual({ preferred_units: "metric", age_years: 30, sex_formula_branch: "male", height_cm: 180, activity_level: "moderate" });
   });
 
+  it("bases protein on the BMI-30 weight above BMI 30, like the calculator", () => {
+    const result = computeProfileTarget({ ...calculated, height: "165", weight: "130", goal: "maintain" }, null);
+    if (!result.ok) throw new Error(result.error);
+    expect(result.data.defaults).toEqual((calculateDefaultMacros(result.data.target.target_kcal, 130, 165) as { data: unknown }).data);
+    expect(result.data.defaults.protein_g).toBe(131);
+  });
+
   it("saves a new weigh-in only when the weight changed", () => {
     expect((computeProfileTarget(calculated, null) as { data: { body_log: unknown } }).data.body_log).toEqual({ weight_kg: 80 });
     expect((computeProfileTarget({ ...calculated, weight: "80.0" }, 80.04) as { data: { body_log: unknown } }).data.body_log).toBeNull();

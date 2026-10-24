@@ -1,3 +1,5 @@
+import { calculationConfig } from "@/lib/calc/config";
+
 // One kcal format everywhere: whole numbers with a thousands comma, like 1,250 kcal.
 export function formatKcal(value: number): string {
   return `${wholeNumber(value)} kcal`;
@@ -26,4 +28,12 @@ export function describeRemaining(value: number, unit: string): string {
 export function progressPercent(eaten: number, target: number): number {
   if (!Number.isFinite(eaten) || !Number.isFinite(target) || target <= 0) return 0;
   return Math.min(100, Math.max(0, (eaten / target) * 100));
+}
+
+// A weekly weight change in the user's units, to one decimal, like "−0.5 kg a week". Rounds to 0 without a sign.
+export function formatWeeklyRate(kgPerWeek: number, units: "metric" | "imperial"): string {
+  const value = units === "metric" ? kgPerWeek : kgPerWeek / calculationConfig.unit_conversions.pounds_to_kilograms;
+  const rounded = Math.round(value * 10) / 10 || 0;
+  const sign = rounded > 0 ? "+" : rounded < 0 ? "−" : "";
+  return `${sign}${Math.abs(rounded).toFixed(1)} ${units === "metric" ? "kg" : "lb"} a week`;
 }

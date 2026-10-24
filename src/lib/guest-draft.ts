@@ -44,6 +44,8 @@ export type GuestDraft = {
     formula_branch: FormulaBranch | null;
     floor_applied: boolean;
     floor_explanation: string | null;
+    /** Calculated targets only. Older drafts may not have it. */
+    maintenance_kcal?: number;
     config_version: string;
     macros: DefaultMacros;
   };

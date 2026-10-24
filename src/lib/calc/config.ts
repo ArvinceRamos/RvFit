@@ -122,6 +122,11 @@ export const calculationConfig = {
   },
   macros: {
     protein_grams_per_kg: 1.6,
+    // Placeholder pending qualified review (2026-10-24 audit, H8). Above this BMI, protein uses the weight at
+    // this BMI for the person's height, not their current weight, so a heavy body weight does not set a very
+    // high protein target. Using the same BMI as the cut-off keeps grams smooth: no drop just above it.
+    // Only when height is known (calculated targets); manual targets keep the current weight.
+    protein_reference_bmi: 30,
     protein_calorie_cap_fraction: 0.35,
     fat_minimum_calorie_fraction: 0.2,
     fiber_grams_per_1000_kcal: 14,

@@ -10,6 +10,7 @@ import {
   convertAndValidateInputs,
   convertWeightToKg,
   createManualTarget,
+  expectedWeeklyChangeKg,
   lossBlocked,
   UNDERWEIGHT_LOSS_MESSAGE,
   validateMacroEdit,
@@ -24,7 +25,7 @@ import {
   updateGuestDraft,
   type GuestDraft,
 } from "@/lib/guest-draft";
-import { formatKcal } from "@/lib/remaining-format";
+import { formatGrams, formatKcal, formatWeeklyRate } from "@/lib/remaining-format";
 import { createClient } from "@/lib/supabase/client";
 import { activityOptions, goalOptions, paceOptions } from "@/lib/target-options";
 import { AuthFrame } from "./auth-frame";
@@ -215,7 +216,7 @@ function CalculatorForm({ draft }: { draft: GuestDraft }) {
       setError(validated.error);
       return;
     }
-    const macros = calculateDefaultMacros(target.data.target_kcal, validated.data.weight_kg);
+    const macros = calculateDefaultMacros(target.data.target_kcal, validated.data.weight_kg, validated.data.height_cm);
     if (!macros.ok) {
       setError(macros.error);
       return;
@@ -239,6 +240,7 @@ function CalculatorForm({ draft }: { draft: GuestDraft }) {
         formula_branch: target.data.formula_branch,
         floor_applied: target.data.floor_applied,
         floor_explanation: target.data.floor_explanation,
+        maintenance_kcal: target.data.maintenance_kcal,
         config_version: target.data.config_version,
         macros: macros.data,
       },
@@ -371,6 +373,27 @@ const macroNotes: Record<keyof MacroEdit, string> = {
   fiber_g: "Helps fullness and digestion. Counted inside carbs.",
 };
 
+const macroLabels: [keyof MacroEdit, string][] = [["protein_g", "Protein"], ["carbs_g", "Carbohydrates"], ["fat_g", "Fat"], ["fiber_g", "Fiber"]];
+
+// Calculated targets only: estimated maintenance and the rough weekly change the target gives against it.
+function MaintenanceAndRate({ maintenanceKcal, targetKcal, units }: { maintenanceKcal: number; targetKcal: number; units: Units }) {
+  const rate = formatWeeklyRate(expectedWeeklyChangeKg(targetKcal, maintenanceKcal), units);
+  return (
+    <dl className="mt-6 grid gap-3 sm:grid-cols-2">
+      <div className="tile p-4">
+        <dt className="text-sm text-muted">Maintenance estimate</dt>
+        <dd className="mt-1 text-lg font-bold">{formatKcal(maintenanceKcal)}</dd>
+        <dd className="mt-1 text-xs text-muted">About what keeps your weight the same.</dd>
+      </div>
+      <div className="tile p-4">
+        <dt className="text-sm text-muted">Expected change</dt>
+        <dd className="mt-1 text-lg font-bold">{/^[+−]/.test(rate) ? `About ${rate}` : "About the same weight"}</dd>
+        <dd className="mt-1 text-xs text-muted">A rough guide. Real change varies and slows over time.</dd>
+      </div>
+    </dl>
+  );
+}
+
 function SaveTargets({ state }: { state: AccountState }) {
   if (state === "checking") return <div aria-hidden className="mt-8 h-32" />;
   if (state === "has-target") {
@@ -450,19 +473,34 @@ function Results() {
       <h1 className="mt-2 text-4xl font-bold tracking-tight">{formatKcal(draft.target.target_kcal)}</h1>
       <p className="mt-3 leading-7 text-muted">This is a starting estimate, not an exact number. Compare it with your weight trend over time, then decide whether to edit your target.</p>
       {draft.target.floor_explanation && <p className="mt-4 alert-warn" role="note">{draft.target.floor_explanation}</p>}
+      {draft.target.maintenance_kcal !== undefined && (
+        <MaintenanceAndRate maintenanceKcal={draft.target.maintenance_kcal} targetKcal={draft.target.target_kcal} units={draft.profile?.preferred_units ?? "metric"} />
+      )}
       <section className="mt-8">
         <h2 className="text-xl font-bold">Daily macros</h2>
-        <p className="mt-1 text-sm text-muted">These are suggested grams. Editing is optional. Your calorie target stays at {formatKcal(draft.target.target_kcal)}.</p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          {([["protein_g", "Protein"], ["carbs_g", "Carbohydrates"], ["fat_g", "Fat"], ["fiber_g", "Fiber"]] as [keyof MacroEdit, string][]).map(([name, label]) => (
-            <div key={name}>
-              <NumberField label={`${label} (g)`} onChange={(value) => editMacro(name, value)} value={displayedMacros[name].toString()} />
-              <p className="mt-1 text-xs text-muted">{macroNotes[name]}</p>
+        <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {macroLabels.map(([name, label]) => (
+            <div className="tile p-3" key={name}>
+              <dt className="text-sm text-muted">{label}</dt>
+              <dd className="mt-1 text-lg font-bold">{formatGrams(displayedMacros[name])}</dd>
+              <dd className="mt-1 text-xs text-muted">{macroNotes[name]}</dd>
             </div>
           ))}
-        </div>
-        <ErrorMessage message={error} />
+        </dl>
         {mismatch.ok && mismatch.data.warning && <p className="mt-4 alert-warn">Your macro calories differ from the target by more than 5%. This is a warning only; your calorie target has not changed.</p>}
+        {/* Most people keep the suggested grams, so editing stays folded away. */}
+        <details className="tile mt-4">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">Adjust (optional)</summary>
+          <div className="px-4 pb-4">
+            <p className="text-sm text-muted">Edit grams if you like. Your calorie target stays at {formatKcal(draft.target.target_kcal)}.</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              {macroLabels.map(([name, label]) => (
+                <NumberField key={name} label={`${label} (g)`} onChange={(value) => editMacro(name, value)} value={displayedMacros[name].toString()} />
+              ))}
+            </div>
+            <ErrorMessage message={error} />
+          </div>
+        </details>
       </section>
       <SaveTargets state={account} />
     </Frame>
