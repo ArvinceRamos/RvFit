@@ -50,3 +50,36 @@ jobs:
       - run: npx supabase db start
       # pgTAP tests in supabase/tests/database: grants, row-level security and the save functions.
       - run: npx supabase test db
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # A fresh local stack with only what the app uses: Postgres, Auth, the API gateway, PostgREST and Mailpit.
+      - run: npx supabase start -x realtime,storage-api,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      # The local stack's fixed demo keys, under the names the app reads. The status output quotes each value.
+      - run: |
+          npx supabase status -o env \
+            --override-name api.url=NEXT_PUBLIC_SUPABASE_URL \
+            --override-name auth.anon_key=NEXT_PUBLIC_SUPABASE_ANON_KEY \
+            --override-name auth.service_role_key=SUPABASE_SERVICE_ROLE_KEY \
+            | grep -E '^(NEXT_PUBLIC_SUPABASE_URL|NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY|MAILPIT_URL)=' \
+            | tr -d '"' >> "$GITHUB_ENV"
+      # Builds the app, then runs Playwright at phone and desktop sizes against the local stack.
+      - run: npm run test:e2e
+      # Traces of failed tests, to open with `npx playwright show-trace`.
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

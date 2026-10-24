@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import { adminClient, readTestUser } from "./test-user";
+import { adminClient, newTestUser, readTestUser } from "./test-user";
 
 // WCAG 2.1 A and AA rules. Any violation fails the test and is listed in the error.
 async function expectNoAxeViolations(page: Page): Promise<void> {
@@ -46,6 +46,48 @@ test.describe("guest", () => {
   test("a signed-in page sends a guest to log in", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/\/login/);
+  });
+});
+
+// Local Supabase catches every auth email in Mailpit instead of sending it.
+const mailpitUrl = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
+
+async function confirmationLink(email: string): Promise<string> {
+  let link = "";
+  await expect
+    .poll(async () => {
+      const search = await fetch(`${mailpitUrl}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`);
+      const { messages } = (await search.json()) as { messages: { ID: string }[] };
+      if (!messages.length) return "";
+      const message = (await (await fetch(`${mailpitUrl}/api/v1/message/${messages[0].ID}`)).json()) as { Text: string };
+      link = message.Text.match(/https?:\/\/\S+\/auth\/v1\/verify\?[^\s)\]]+/)?.[0] ?? "";
+      return link;
+    }, { message: `confirmation email for ${email}`, timeout: 15_000 })
+    .not.toBe("");
+  return link;
+}
+
+test.describe("sign up", () => {
+  test("a new account is confirmed through the emailed link and lands on Today", async ({ page }) => {
+    const { email, password } = newTestUser();
+    const admin = adminClient();
+    try {
+      await open(page, "/signup");
+      await page.getByLabel("Email").fill(email);
+      await page.getByLabel("Password", { exact: true }).fill(password);
+      await page.getByLabel("Confirm password").fill(password);
+      await page.getByRole("button", { name: "Create account" }).click();
+      await expect(page.getByText(`We sent a confirmation link to ${email}.`)).toBeVisible();
+
+      // The link goes to Supabase, which sends the browser back to /auth/callback with a code.
+      await page.goto(await confirmationLink(email));
+      await expect(page).toHaveURL(/\/dashboard/);
+      await expect(page.getByRole("heading", { level: 1, name: "Today" })).toBeVisible();
+    } finally {
+      const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
+      const user = data.users.find((candidate) => candidate.email === email);
+      if (user) await admin.auth.admin.deleteUser(user.id);
+    }
   });
 });
 

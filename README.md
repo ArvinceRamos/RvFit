@@ -64,7 +64,7 @@ npm run test:db
 npm run test:e2e
 ```
 
-`npm run test:e2e` builds the app and runs the Playwright smoke test in `e2e/` against local Supabase, at phone and desktop sizes. It opens every public and signed-in page and runs axe (WCAG 2.1 A and AA; any violation fails), logs in, saves a weigh-in and logs out. It creates a throwaway user with the admin key from `.env.local`, refuses to run unless Supabase is on 127.0.0.1, and deletes the user afterwards. Install the browser once with `npx playwright install chromium`. It runs locally only, not in CI, because it needs the whole Supabase stack.
+`npm run test:e2e` builds the app and runs the Playwright smoke test in `e2e/` against local Supabase, at phone and desktop sizes. It opens every public and signed-in page and runs axe (WCAG 2.1 A and AA; any violation fails), logs in, saves a weigh-in and logs out. It also signs up a new account and opens the confirmation link from Mailpit (local Supabase's mail catcher, `MAILPIT_URL`, default `http://127.0.0.1:54324`). It creates throwaway users with the admin key from `.env.local`, refuses to run unless Supabase is on 127.0.0.1, and deletes the users afterwards. Install the browser once with `npx playwright install chromium`. After changing `supabase/config.toml` (for example the allowed redirect URLs), restart local Supabase with `npx supabase stop` then `npx supabase start`; stop keeps your data. CI runs it in the `e2e` job on a fresh local stack.
 
 `npm run test:db` runs the database tests in `supabase/tests/database` (pgTAP: grants, row-level security and the save functions) against local Supabase, so start it first with `npx supabase start`. Each test file runs in one transaction and is rolled back.
 
