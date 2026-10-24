@@ -7,10 +7,11 @@ import { ThemeToggle } from "./theme-toggle";
 // never load the menu or the logout code. AuthFrame passes the menu in as nav.
 // Signed-in pages (with nav) are 1152px wide. Login, sign-up, password, error, and guest pages are
 // narrow and sit on one floating card, so they feel like the landing page's panels.
-export function FrameShell({ children, nav }: { children: React.ReactNode; nav?: React.ReactNode }) {
+// tabBar is the phone tab bar; the page leaves room for it at the bottom.
+export function FrameShell({ children, nav, tabBar }: { children: React.ReactNode; nav?: React.ReactNode; tabBar?: React.ReactNode }) {
   const width = nav ? "max-w-6xl" : "max-w-xl";
   return (
-    <div className="flex min-h-screen flex-col text-ink">
+    <div className={`flex min-h-screen flex-col text-ink ${tabBar ? "pb-[var(--tab-bar-space)] md:pb-0" : ""}`}>
       {/* Sticky glass header: content scrolls under it, so the blur has something to do. */}
       <header className="surface-float sticky top-0 z-20 !rounded-none !border-x-0 !border-t-0 px-4 py-2.5 !shadow-none sm:px-5">
         <div className={`mx-auto flex items-center gap-3 sm:gap-6 ${width}`}>
@@ -27,6 +28,7 @@ export function FrameShell({ children, nav }: { children: React.ReactNode; nav?:
         </main>
       )}
       <AppFooter />
+      {tabBar}
     </div>
   );
 }

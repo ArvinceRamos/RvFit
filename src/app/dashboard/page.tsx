@@ -12,7 +12,7 @@ export default async function DashboardPage() {
 
   return (
     <AuthFrame showNav>
-      <h1 className="page-title">Dashboard</h1>
+      <h1 className="page-title">Today</h1>
       <p className="mt-3 text-sm text-muted">{greeting(user.user_metadata)}</p>
       {/* Saves a guest draft from this browser after sign-in. Its action re-renders this page when it saves one. */}
       <AccountDraftSave />

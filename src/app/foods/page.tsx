@@ -42,7 +42,7 @@ export default async function FoodsPage({ searchParams }: PageProps<"/foods">) {
 
   return (
     <AuthFrame showNav>
-      <h1 className="page-title">Food library</h1>
+      <h1 className="page-title">Browse foods</h1>
       <p className="mt-3 text-sm text-muted">Nutrition values are per 100 g, from USDA FoodData Central.</p>
 
       <div className="mt-8 grid items-start gap-[30px] lg:grid-cols-[320px_1fr]">

@@ -47,7 +47,7 @@ export async function saveMealAction(rawMeal: unknown): Promise<SaveMealResult> 
     const { error: eatenError } = await supabase.from("meals").update({ eaten: meal.eaten }).eq("id", mealId);
     if (eatenError) {
       logError("meals.saveEaten", eatenError);
-      return { ok: false, error: "Meal saved, but it could not be ticked as eaten. Tick it on the Meals page." };
+      return { ok: false, error: "Meal saved, but it could not be ticked as eaten. Tick it on the Food page." };
     }
   }
 

@@ -77,6 +77,10 @@ export default async function ProfilePage() {
   return (
     <AuthFrame showNav>
       <h1 className="page-title">Profile and targets</h1>
+      <p className="mt-3 text-sm text-muted">
+        Food settings (allergies and avoided foods) and your training plan are in{" "}
+        <Link className="font-semibold text-ink underline" href="/preferences">Preferences</Link>.
+      </p>
       {body}
       <AccountCard email={user.email ?? ""} name={savedDisplayName(user.user_metadata)} />
       <DeleteAccountSection />

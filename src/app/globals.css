@@ -5,6 +5,9 @@
   Dark is the default. Light applies when <html data-theme="light"> (set by the script in layout.tsx).
 */
 :root {
+  /* The phone tab bar (AU-64) and the room pages leave for it, including the iPhone home bar. */
+  --tab-bar-height: 4rem;
+  --tab-bar-space: calc(var(--tab-bar-height) + env(safe-area-inset-bottom));
   --page: #161a18;
   --card: #222624;
   --ink: #fef9f5;
@@ -502,6 +505,49 @@ body:has(.landing) {
   }
 
   .btn-ghost[aria-current="page"] {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  /* Phones: the five signed-in sections in a bar at the bottom of the screen. Solid, so nothing is blurred. */
+  .tab-bar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    height: var(--tab-bar-space);
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid var(--float-edge);
+    background: var(--card);
+    box-shadow: var(--shadow-float);
+  }
+
+  .tab-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.125rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .tab-icon {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 1.75rem;
+    border-radius: 999px;
+  }
+
+  .tab-link[aria-current="page"] {
+    color: var(--ink);
+  }
+
+  .tab-link[aria-current="page"] .tab-icon {
     background: var(--accent);
     color: var(--on-accent);
   }

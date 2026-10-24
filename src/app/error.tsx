@@ -15,11 +15,11 @@ export default function ErrorPage({ error, retry }: { error: Error & { digest?: 
       <p className="text-sm font-semibold uppercase tracking-wide text-accent-text">Something went wrong</p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight">This page could not load</h1>
       <p className="mt-3 text-muted">
-        This is usually a brief connection problem. Your saved data is safe. Try again, or go back to your dashboard.
+        This is usually a brief connection problem. Your saved data is safe. Try again, or go back to Today.
       </p>
       <div className="mt-6 flex flex-wrap gap-3">
         <button className="btn-primary" onClick={() => retry()} type="button">Try again</button>
-        <Link className="btn-secondary" href="/dashboard">Go to Dashboard</Link>
+        <Link className="btn-secondary" href="/dashboard">Go to Today</Link>
       </div>
       {error.digest && <p className="mt-6 font-mono text-xs text-muted">Error code: {error.digest}</p>}
     </PlainFrame>

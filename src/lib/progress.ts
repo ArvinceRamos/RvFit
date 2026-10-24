@@ -1,5 +1,5 @@
 import { calculationConfig } from "@/lib/calc/config";
-import { recentWeekStarts, weekStart } from "@/lib/week";
+import { addDays, recentWeekStarts, weekStart } from "@/lib/week";
 
 const msPerDay = 24 * 60 * 60 * 1000;
 
@@ -36,4 +36,16 @@ export function workoutsPerWeek(
     if (counts.has(start)) counts.set(start, (counts.get(start) ?? 0) + 1);
   }
   return [...counts].map(([week_start, count]) => ({ week_start, count }));
+}
+
+export type KcalDay = { date: string; kcal: number; logged: boolean };
+
+// Eaten calories for each of the 7 days ending today, oldest first, for the Progress strip. Only meals ticked
+// as eaten count, like every other total. A day with no eaten meal is not logged (shown as a gap, not as 0 eaten).
+export function sevenDayKcal(meals: readonly { meal_date: string; eaten: boolean; kcal: number }[], today: string): KcalDay[] {
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = addDays(today, index - 6);
+    const eaten = meals.filter((meal) => meal.meal_date === date && meal.eaten);
+    return { date, kcal: Math.round(eaten.reduce((sum, meal) => sum + meal.kcal, 0)), logged: eaten.length > 0 };
+  });
 }

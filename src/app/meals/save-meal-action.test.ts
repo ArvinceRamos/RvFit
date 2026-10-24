@@ -53,7 +53,7 @@ describe("saveMealAction eaten tick", () => {
     updateResponse = { data: null, error: { message: "boom" } };
     await expect(saveMealAction({ ...meal, eaten: true })).resolves.toEqual({
       ok: false,
-      error: "Meal saved, but it could not be ticked as eaten. Tick it on the Meals page.",
+      error: "Meal saved, but it could not be ticked as eaten. Tick it on the Food page.",
     });
   });
 

@@ -294,7 +294,7 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
               I ate this
             </label>
             <p className="mt-1 text-xs text-muted">
-              {futureDate ? "A future meal is saved as planned. Tick it on the Meals page once you eat it." : "Only meals ticked as eaten count toward the day's totals."}
+              {futureDate ? "A future meal is saved as planned. Tick it on the Food page once you eat it." : "Only meals ticked as eaten count toward the day's totals."}
             </p>
           </div>
         </section>
@@ -424,14 +424,14 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
       </aside>
 
       {/* Under 1024px the Save bar sticks to the bottom of the screen, edge to edge, so it is never buried under totals and suggestions. */}
-      <div className="sticky bottom-0 z-10 -mx-4 grid gap-3 border-t border-line bg-page px-4 py-3 sm:-mx-5 sm:px-5 lg:static lg:col-start-1 lg:row-start-2 lg:mx-0 lg:self-start lg:border-0 lg:bg-transparent lg:p-0">
+      <div className="sticky bottom-[var(--tab-bar-space)] z-10 -mx-4 md:bottom-0 grid gap-3 border-t border-line bg-page px-4 py-3 sm:-mx-5 sm:px-5 lg:static lg:col-start-1 lg:row-start-2 lg:mx-0 lg:self-start lg:border-0 lg:bg-transparent lg:p-0">
         <div aria-live="polite">
           {message === savedMessage ? (
             <p className="alert-success">
-              {savedMessage} It is on your Meals page for that day.{" "}
+              {savedMessage} It is on your Food page for that day.{" "}
               <Link className="font-semibold underline" href="/meals">View my meals</Link>
               {" · "}
-              <Link className="font-semibold underline" href="/dashboard">Dashboard</Link>
+              <Link className="font-semibold underline" href="/dashboard">Today</Link>
             </p>
           ) : (
             message && <p className="alert-danger" role="alert">{message}</p>

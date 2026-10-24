@@ -2,9 +2,12 @@ import Link from "next/link";
 import { AuthFrame } from "@/components/auth-frame";
 import { DeleteWorkoutButton } from "@/components/delete-workout-button";
 import { SwapControl } from "@/components/swap-control";
+import { requestClock } from "@/lib/request-clock";
 import { requireUser } from "@/lib/supabase/auth";
+import { weekStart } from "@/lib/week";
 import { choiceLabel, formatCalendarDate, planSummary, restText, schemeText } from "@/lib/workouts/format";
 import { orderSwaps } from "@/lib/workouts/swaps";
+import { nextWorkout } from "@/lib/workouts/next-up";
 import { applySwaps, resolveTemplate, resolveTemplateByKey, swapOptions } from "@/lib/workouts/templates";
 
 const recentWorkoutLimit = 10;
@@ -14,12 +17,12 @@ function dayName(templateKey: string, dayKey: string): string {
 }
 
 export default async function WorkoutsPage({ searchParams }: PageProps<"/workouts">) {
-  const { supabase } = await requireUser();
+  const [{ supabase }, { today }] = await Promise.all([requireUser(), requestClock()]);
   // Set by the log form after a save, so the user sees it worked.
   const savedParam = (await searchParams).saved;
   const savedNotice = savedParam === "new" || savedParam === "updated" ? savedParam : null;
 
-  const [{ data: saved, error }, { data: recent, error: recentError }] = await Promise.all([
+  const [{ data: saved, error }, { data: recent, error: recentError }, { data: weekLogs }] = await Promise.all([
     supabase.from("user_preferences").select("experience, equipment, training_days").maybeSingle(),
     supabase
       .from("workout_logs")
@@ -27,6 +30,8 @@ export default async function WorkoutsPage({ searchParams }: PageProps<"/workout
       .order("performed_on", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(recentWorkoutLimit),
+    // This week's logs, for "Next up". If they cannot be read, the badge is simply left out.
+    supabase.from("workout_logs").select("template_key, day_key").gte("performed_on", weekStart(today)).lte("performed_on", today),
   ]);
 
   // Never guess level, equipment, or days. A saved row that no longer fits any template is treated as not set.
@@ -40,13 +45,21 @@ export default async function WorkoutsPage({ searchParams }: PageProps<"/workout
     : { data: null, error: null };
 
   const template = defaultTemplate ? applySwaps(defaultTemplate, orderSwaps(savedSwaps ?? [])) : null;
+  // The same rule as Today's Workout card: the first plan day not logged this week.
+  const nextUp = defaultTemplate && saved && weekLogs
+    ? nextWorkout(
+        defaultTemplate.days,
+        saved.training_days,
+        weekLogs.filter((log) => log.template_key === defaultTemplate.key).map((log) => log.day_key),
+      )
+    : null;
   const defaultExerciseBySlot = new Map(
     defaultTemplate?.days.flatMap((day) => day.slots.map((slot) => [slot.key, slot.exercise.key] as const)),
   );
 
   return (
     <AuthFrame showNav>
-      <h1 className="page-title">Workouts</h1>
+      <h1 className="page-title">Train</h1>
       {savedNotice && (
         <p className="alert-success mt-4" role="status">
           {savedNotice === "updated" ? "Workout updated." : "Workout saved. Nice work."}{" "}
@@ -65,13 +78,19 @@ export default async function WorkoutsPage({ searchParams }: PageProps<"/workout
         <>
           <p className="mt-3 text-sm text-muted">
             {planSummary(template.level, template.days.length, template.equipment)} ·{" "}
-            <Link className="font-semibold text-ink underline" href="/preferences">Change preferences</Link>
+            {nextUp && <>{nextUp.done} of {nextUp.planned} done this week ·{" "}</>}
+            <Link className="font-semibold text-ink underline" href="/preferences">Change plan</Link>
           </p>
           <div className="mt-8 grid gap-[30px] md:grid-cols-2 lg:grid-cols-3">
             {template.days.map((day) => (
               <section className="card" key={day.key}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="section-title">{day.name}</h2>
+                  <h2 className="section-title flex items-center gap-2">
+                    {day.name}
+                    {nextUp?.status === "next" && nextUp.dayKey === day.key && (
+                      <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-on-accent">Next up</span>
+                    )}
+                  </h2>
                   <Link className="btn-primary btn-sm" href={`/workouts/log/new?day=${day.key}`}>Log this workout</Link>
                 </div>
                 <ul className="mt-3 grid gap-4">

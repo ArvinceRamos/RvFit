@@ -66,7 +66,9 @@ UI-5 contrast (both themes; measured over the old glow, so the flat page is the 
 
 ## Header
 
-One slim row: logo on the left, nav items, Log out on the right. Active item has an accent fill with black text. At 1152px all eight items plus Log out fit in one row. On phones the row scrolls sideways inside the header (no wrapping, no page scroll). No hamburger menu in V1 (not requested).
+One slim row: logo on the left, nav items, Log out on the right. Active item has an accent fill with black text.
+
+**AU-64 (audit 2026-10-24, section 3):** five sections in `src/lib/nav.ts`: Today (`/dashboard`, also lit on `/week`), Food (`/meals`, also `/foods`), Train (`/workouts`), Progress (`/progress`), Me (`/profile`, also `/preferences`). Addresses did not change. From 768px they sit in the header row with Log out. Under 768px the header keeps only Log out, and a solid tab bar (`.tab-bar`, `--tab-bar-space`) sits at the bottom of the screen; pages and the meal builder's sticky Save bar leave room for it. The Menu dropdown from AU-14 is gone. Food has Today / Plan / History tabs (`?view=upcoming|past`), Browse foods and Food settings links; Train marks the Next up day; Progress runs weigh in, weight numbers, chart and History, calories for the last 7 days, check-in, workouts; Today links to the Week page.
 
 ## Layout per page
 

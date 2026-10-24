@@ -28,6 +28,7 @@ export function DashboardView({ result }: { result: DashboardResult }) {
         <Link className="btn-primary" href="/meals/new">New meal</Link>
         <Link className="btn-secondary" href="/workouts">Log a workout</Link>
         <Link className="btn-secondary" href="/progress">Log a weigh-in</Link>
+        <Link className="btn-secondary" href="/week">This week</Link>
       </div>
     </section>
   );
@@ -47,7 +48,7 @@ export function DashboardView({ result }: { result: DashboardResult }) {
       <SetupCard flags={setup} />
       <section className="card md:col-span-2 lg:col-span-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="section-title flex items-center gap-2"><Icon className="size-5 text-accent-text" name="calories" />Today</h2>
+          <h2 className="section-title flex items-center gap-2"><Icon className="size-5 text-accent-text" name="calories" />Eaten today</h2>
           {target && goalPaceLabel(target.goal, target.pace) && (
             <p className="text-sm text-muted">
               Goal: <span className="font-semibold text-ink">{goalPaceLabel(target.goal, target.pace)}</span>
@@ -99,7 +100,7 @@ export function DashboardView({ result }: { result: DashboardResult }) {
           ) : nextUp?.status === "done" ? (
             <p className="mt-3 text-sm text-muted">All {nextUp.planned} planned workouts are done this week. Rest well. <Link className="font-semibold text-ink underline" href="/workouts">See your plan</Link></p>
           ) : setup.hasPreferences ? (
-            <p className="mt-3 text-sm text-muted">No workout logged today. <Link className="font-semibold text-ink underline" href="/workouts">Go to Workouts</Link></p>
+            <p className="mt-3 text-sm text-muted">No workout logged today. <Link className="font-semibold text-ink underline" href="/workouts">Go to Train</Link></p>
           ) : (
             <p className="mt-3 text-sm text-muted">Save your training preferences to get a workout plan. <Link className="font-semibold text-ink underline" href="/preferences">Set preferences</Link></p>
           )

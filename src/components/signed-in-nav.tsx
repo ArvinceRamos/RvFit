@@ -1,92 +1,51 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/icon";
 import { LogoutButton } from "@/components/logout-button";
-import { activeNavLabel, isActiveNavItem, signedInNavItems } from "@/lib/nav";
+import { isActiveSection, signedInNavItems } from "@/lib/nav";
 
-// Wide screens (1024px+): one row of links. Phones and tablets: a Menu button that opens the same links as a list,
-// so nothing scrolls sideways and Log out is always reachable.
-export function SignedInNav() {
+function useLinks() {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
-  const [openedOn, setOpenedOn] = useState(pathname);
-  const menuId = useId();
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  return signedInNavItems.map((item) => ({ ...item, active: isActiveSection(pathname, item) }));
+}
 
-  // Close the phone menu after navigating (adjusting state during render, not in an effect).
-  if (openedOn !== pathname) {
-    setOpenedOn(pathname);
-    setOpen(false);
-  }
-
-  useEffect(() => {
-    if (!open) return;
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpen(false);
-        buttonRef.current?.focus();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
-
-  const links = signedInNavItems.map((item) => {
-    const active = isActiveNavItem(pathname, item.href);
-    return { ...item, active };
-  });
+// The five signed-in sections (src/lib/nav.ts). From 768px they sit in one row in the header with Log out.
+// On phones the header keeps only Log out, and SignedInTabBar shows the sections at the bottom of the screen.
+export function SignedInNav() {
+  const links = useLinks();
 
   return (
     <>
-      <nav aria-label="Main" className="hidden min-w-0 flex-1 items-center gap-0.5 overflow-x-auto whitespace-nowrap text-sm lg:flex">
+      <nav aria-label="Main" className="hidden min-w-0 flex-1 items-center gap-1 whitespace-nowrap text-sm md:flex">
         {links.map((item) => (
-          <Link aria-current={item.active ? "page" : undefined} className="btn-ghost btn-sm xl:!gap-1.5 xl:!px-2.5" href={item.href} key={item.href}>
-            <Icon className="hidden size-4 xl:block" name={item.icon} />
+          <Link aria-current={item.active ? "page" : undefined} className="btn-ghost btn-sm !gap-1.5 !px-2.5" href={item.href} key={item.href}>
+            <Icon className="size-4" name={item.icon} />
             {item.label}
           </Link>
         ))}
-        <LogoutButton className="btn-ghost btn-sm ml-auto lg:max-xl:[&_svg]:hidden xl:!gap-1.5 xl:!px-2.5" />
+        <LogoutButton className="btn-ghost btn-sm ml-auto !gap-1.5 !px-2.5" />
       </nav>
 
-      <div className="flex flex-1 justify-end lg:hidden">
-        <button
-          aria-controls={menuId}
-          aria-expanded={open}
-          className="btn-secondary btn-sm"
-          onClick={() => setOpen((current) => !current)}
-          ref={buttonRef}
-          type="button"
-        >
-          <Icon name={open ? "close" : "menu"} />
-          {activeNavLabel(pathname) ?? "Menu"}
-          <span className="sr-only">, open menu</span>
-        </button>
+      <div className="flex flex-1 justify-end md:hidden">
+        <LogoutButton className="btn-ghost btn-sm !gap-1.5 !px-2.5" />
       </div>
-      {open && (
-        <nav aria-label="Main" className="surface-float absolute inset-x-3 top-full z-30 mt-2 rounded-2xl !bg-card p-2 lg:hidden" id={menuId}>
-          <ul className="grid gap-1 text-base">
-            {links.map((item) => (
-              <li key={item.href}>
-                <Link
-                  aria-current={item.active ? "page" : undefined}
-                  className="btn-ghost w-full !justify-start"
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                >
-                  <Icon name={item.icon} />
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-            <li className="mt-1 border-t border-line pt-1">
-              <LogoutButton className="btn-ghost w-full !justify-start" />
-            </li>
-          </ul>
-        </nav>
-      )}
     </>
+  );
+}
+
+// Phones only. It sits outside the header: the header's glass would otherwise pin a fixed bar to itself.
+export function SignedInTabBar() {
+  const links = useLinks();
+  return (
+    <nav aria-label="Main" className="tab-bar md:hidden">
+      {links.map((item) => (
+        <Link aria-current={item.active ? "page" : undefined} className="tab-link" href={item.href} key={item.href}>
+          <span className="tab-icon"><Icon className="size-5" name={item.icon} /></span>
+          {item.label}
+        </Link>
+      ))}
+    </nav>
   );
 }

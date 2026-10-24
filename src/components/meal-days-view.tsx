@@ -13,8 +13,8 @@ import type { DailyTargets } from "@/lib/suggestions";
 
 const tabs: { view: MealDayView; label: string }[] = [
   { view: "today", label: "Today" },
-  { view: "upcoming", label: "Upcoming" },
-  { view: "past", label: "Past" },
+  { view: "upcoming", label: "Plan" },
+  { view: "past", label: "History" },
 ];
 
 const emptyText: Record<MealDayView, string> = {
@@ -115,6 +115,9 @@ export function MealDaysView({ target, view, today, result, todayTotals }: {
       <div className="mt-6 flex flex-wrap gap-3">
         <Link className="btn-primary" href="/meals/new">New meal</Link>
         <Link className="btn-secondary text-base" href="/meals/plan">Plan meals</Link>
+        <Link className="btn-secondary text-base" href="/foods">Browse foods</Link>
+        {/* Allergies and avoided foods live on Preferences, under Me. */}
+        <Link className="btn-ghost text-base" href="/preferences">Food settings</Link>
       </div>
 
       {showCopy && <CopyYesterdayButton today={today} />}

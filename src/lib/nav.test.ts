@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeNavLabel, isActiveNavItem, signedInNavItems } from "./nav";
+import { isActiveNavItem, isActiveSection, signedInNavItems } from "./nav";
 
 describe("isActiveNavItem", () => {
   it("is active on the exact path", () => {
@@ -24,10 +24,27 @@ describe("signedInNavItems", () => {
   });
 });
 
-describe("activeNavLabel", () => {
-  it("names the current section, including pages below it", () => {
-    expect(activeNavLabel("/workouts/log/new")).toBe("Workouts");
-    expect(activeNavLabel("/dashboard")).toBe("Dashboard");
-    expect(activeNavLabel("/start")).toBeNull();
+describe("isActiveSection", () => {
+  const section = (label: string) => signedInNavItems.find((item) => item.label === label)!;
+  const active = (pathname: string) => signedInNavItems.filter((item) => isActiveSection(pathname, item)).map((item) => item.label);
+
+  it("has the five sections in order", () => {
+    expect(signedInNavItems.map((item) => item.label)).toEqual(["Today", "Food", "Train", "Progress", "Me"]);
+  });
+
+  it("lights exactly one section on every signed-in page, including pages that moved under a section", () => {
+    expect(active("/dashboard")).toEqual(["Today"]);
+    expect(active("/week")).toEqual(["Today"]);
+    expect(active("/meals/plan")).toEqual(["Food"]);
+    expect(active("/foods")).toEqual(["Food"]);
+    expect(active("/workouts/log/new")).toEqual(["Train"]);
+    expect(active("/progress")).toEqual(["Progress"]);
+    expect(active("/profile")).toEqual(["Me"]);
+    expect(active("/preferences")).toEqual(["Me"]);
+  });
+
+  it("lights nothing on pages outside the app", () => {
+    expect(active("/start")).toEqual([]);
+    expect(isActiveSection("/foodsx", section("Food"))).toBe(false);
   });
 });

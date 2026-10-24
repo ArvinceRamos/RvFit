@@ -6,6 +6,7 @@ import { logError } from "@/lib/log";
 import {
   loadChartWeighIns,
   loadLatestWeighIns,
+  loadMeals,
   loadSavedTarget,
   loadUnits,
   loadWeighInsSince,
@@ -13,10 +14,11 @@ import {
   type SavedTarget,
   type WeighInRow,
 } from "@/lib/overview-data";
-import { weightTrend, workoutsPerWeek, type WeekCount, type WeightTrend } from "@/lib/progress";
+import { sevenDayKcal, weightTrend, workoutsPerWeek, type KcalDay, type WeekCount, type WeightTrend } from "@/lib/progress";
 import type { createClient } from "@/lib/supabase/server";
 import type { PreferredUnits } from "@/lib/weigh-in";
 import { addDays, recentWeekStarts } from "@/lib/week";
+import { reviewStart } from "@/lib/weekly-review";
 import { DEFAULT_CHART_RANGE, rangeStart } from "@/lib/weight-chart";
 
 export type ChartPoint = { logged_at: string; weight_kg: number };
@@ -36,6 +38,9 @@ export type ProgressResult =
       checkIn: CheckIn | null;
       // The chart's first range (DEFAULT_CHART_RANGE), newest first, in kg. Other ranges load when picked.
       chart: ChartPoint[] | null;
+      // Eaten calories for the last 7 days, and the target to compare with (null without one).
+      kcalDays: KcalDay[];
+      targetKcal: number | null;
     }
   | { ok: false; error: string };
 
@@ -46,7 +51,7 @@ export async function loadProgress(supabase: Awaited<ReturnType<typeof createCli
   const now = new Date(nowMs);
   const since = new Date(now.getTime() - trend_window_days * 24 * 60 * 60 * 1000);
   const oldestWeek = recentWeekStarts(today, workout_weeks)[workout_weeks - 1];
-  const [units, history, recent, workouts, preferences, target, checkInData, chart] = await Promise.all([
+  const [units, history, recent, workouts, preferences, target, checkInData, chart, meals] = await Promise.all([
     loadUnits(supabase),
     loadLatestWeighIns(supabase, history_weigh_ins),
     loadWeighInsSince(supabase, since),
@@ -56,8 +61,9 @@ export async function loadProgress(supabase: Awaited<ReturnType<typeof createCli
     loadSavedTarget(supabase),
     loadCheckInData(supabase, now.getTime()),
     loadChartWeighIns(supabase, rangeStart(DEFAULT_CHART_RANGE, nowMs), calculationConfig.progress.chart_max_weigh_ins),
+    loadMeals(supabase, reviewStart(today), today),
   ]);
-  if (checkInData === "error" || !units || !history || !recent || !workouts || preferences.error || target === "error") {
+  if (checkInData === "error" || !units || !history || !recent || !workouts || preferences.error || target === "error" || !meals) {
     logError("progress.load", preferences.error);
     return { ok: false, error: "Your progress could not be loaded. Please try again." };
   }
@@ -74,5 +80,7 @@ export async function loadProgress(supabase: Awaited<ReturnType<typeof createCli
     checkIn: checkInData?.checkIn ?? null,
     // A chart read error only affects the chart, which says so.
     chart,
+    kcalDays: sevenDayKcal(meals.map((meal) => ({ meal_date: meal.meal_date, eaten: meal.eaten, kcal: meal.totals.kcal })), today),
+    targetKcal: target?.kcal ?? null,
   };
 }

@@ -8,8 +8,9 @@ import { WeighInForm } from "@/components/weigh-in-form";
 import { calculationConfig } from "@/lib/calc/config";
 import { checkInReady } from "@/lib/check-in";
 import type { WeighInRow } from "@/lib/overview-data";
-import type { WeekCount } from "@/lib/progress";
+import type { KcalDay, WeekCount } from "@/lib/progress";
 import type { ChartPoint, ProgressResult } from "@/lib/progress-data";
+import { formatKcal } from "@/lib/remaining-format";
 import { goalPaceLabel } from "@/lib/target-options";
 import { chartLayout, chartRanges, DEFAULT_CHART_RANGE, filterByRange, weightChange, type ChartRangeKey } from "@/lib/weight-chart";
 import { formatLengthCm, formatWeightKg, type PreferredUnits } from "@/lib/weigh-in";
@@ -239,6 +240,39 @@ function WeightChartCard({ hasWeighIns, initialPoints, units, now, timeZone }: {
 }
 
 // Bars for the last weeks, oldest on the left. The current week is Fit Green.
+const weekdayFormat = new Intl.DateTimeFormat("en", { weekday: "short" });
+
+// Eaten calories for the last 7 days (from the Week page, AU-64). Plain numbers, no good or bad colours,
+// no streaks. A day with nothing ticked as eaten shows a dash, not 0.
+function KcalStrip({ days, targetKcal }: { days: KcalDay[]; targetKcal: number | null }) {
+  const most = Math.max(1, targetKcal ?? 0, ...days.map((day) => day.kcal));
+  return (
+    <section className="card">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="section-title">Calories, last 7 days</h2>
+        <p className="text-sm text-muted">
+          {targetKcal === null ? "Meals ticked as eaten" : <>Target <span className="font-semibold text-ink">{formatKcal(targetKcal)}</span> a day</>}
+        </p>
+      </div>
+      <ul className="mt-4 flex h-40 items-end gap-2">
+        {days.map((day, index) => {
+          const today = index === days.length - 1;
+          const [year, month, date] = day.date.split("-").map(Number);
+          const weekday = weekdayFormat.format(new Date(year, month - 1, date));
+          return (
+            <li className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1" key={day.date}>
+              <span className={`text-xs tabular-nums ${today ? "font-semibold text-ink" : "text-muted"}`}>{day.logged ? day.kcal.toLocaleString("en-US") : "—"}</span>
+              <span className={`w-full rounded-t-lg ${today ? "bg-accent" : "bg-track"}`} style={{ height: `${day.logged ? Math.max(4, (day.kcal / most) * 100) : 4}px` }} />
+              <span className="text-xs text-muted">{today ? "Today" : weekday}</span>
+              <span className="sr-only">{formatCalendarDate(day.date)}: {day.logged ? formatKcal(day.kcal) : "nothing ticked as eaten"}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 function WorkoutBars({ weeks }: { weeks: WeekCount[] }) {
   const ordered = [...weeks].reverse();
   const most = Math.max(1, ...ordered.map((week) => week.count));
@@ -294,7 +328,8 @@ function DeleteWeighInButton({ weighInId }: { weighInId: string }) {
   );
 }
 
-// Weigh-ins, the weight trend, and workouts per week, rendered on the server with the user's today, time zone
+// Progress, in this order (AU-64): weigh in, latest weight and trend, chart and History, calories for the last
+// 7 days, the target check-in, then workouts per week. Rendered on the server with the user's today, time zone
 // and one moment (now). Saves and deletes re-render the page from their server actions.
 export function ProgressView({ result, now, timeZone }: { result: ProgressResult; now: number; timeZone: string }) {
   // After a check-in is accepted, its card stays to show the confirmation while progress reloads.
@@ -302,7 +337,7 @@ export function ProgressView({ result, now, timeZone }: { result: ProgressResult
 
   if (!result.ok) return <p className="alert-danger mt-6" role="alert">{result.error}</p>;
 
-  const { units, trend, history, weeks, plannedDays, goal, pace, checkIn, chart } = result;
+  const { units, trend, history, weeks, plannedDays, goal, pace, checkIn, chart, kcalDays, targetKcal } = result;
   const { dateFormat } = momentFormats(timeZone);
   const goalLabel = goalPaceLabel(goal, pace);
   return (
@@ -313,30 +348,20 @@ export function ProgressView({ result, now, timeZone }: { result: ProgressResult
           <Link className="font-semibold text-ink underline" href="/profile">Target check-in</Link>
         </p>
       )}
-      {checkIn && (keepCheckIn || checkInReady(checkIn)) && (
-        <CheckInCard checkIn={checkIn} className="" onSaved={() => setKeepCheckIn(true)} units={units} />
-      )}
-      <div className="grid gap-[30px] sm:grid-cols-3">
+      {/* Weigh in first, then the two weight numbers. One 3-column rhythm all the way down, so edges line up. */}
+      <div className="grid gap-[30px] md:grid-cols-3">
+        <WeighInForm preferredUnits={units} />
         <LatestWeightTile history={history} now={now} timeZone={timeZone} units={units} />
         <StatTile
           label="Weight trend"
           note={trend.status === "ok" ? `Average of ${trend.count} weigh-ins in the last ${calculationConfig.progress.trend_window_days} days` : "Not enough data yet"}
           value={trend.status === "ok" ? formatWeightKg(trend.average_kg, units) : "—"}
         />
-        <WorkoutsRingTile plannedDays={plannedDays} week={weeks[0]} />
       </div>
 
-      {/* One 3-column rhythm: the chart and the bars take two columns, the form and History one, so edges line up. */}
       <div className="grid gap-[30px] md:grid-cols-3">
         <div className="md:col-span-2">
           <WeightChartCard hasWeighIns={history.some((row) => row.weight_kg !== null)} initialPoints={chart} now={now} timeZone={timeZone} units={units} />
-        </div>
-        <WeighInForm preferredUnits={units} />
-      </div>
-
-      <div className="grid gap-[30px] md:grid-cols-3">
-        <div className="md:col-span-2">
-          <WorkoutBars weeks={weeks} />
         </div>
         <section className="card flex flex-col">
           <h2 className="section-title">History</h2>
@@ -364,6 +389,19 @@ export function ProgressView({ result, now, timeZone }: { result: ProgressResult
             </ol>
           )}
         </section>
+      </div>
+
+      <KcalStrip days={kcalDays} targetKcal={targetKcal} />
+
+      {checkIn && (keepCheckIn || checkInReady(checkIn)) && (
+        <CheckInCard checkIn={checkIn} className="" onSaved={() => setKeepCheckIn(true)} units={units} />
+      )}
+
+      <div className="grid gap-[30px] md:grid-cols-3">
+        <div className="md:col-span-2">
+          <WorkoutBars weeks={weeks} />
+        </div>
+        <WorkoutsRingTile plannedDays={plannedDays} week={weeks[0]} />
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { PageLoading } from "@/components/page-loading";
 
 export default function Loading() {
-  return <PageLoading title="Meals" />;
+  return <PageLoading title="Food" />;
 }

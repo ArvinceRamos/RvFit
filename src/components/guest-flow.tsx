@@ -460,7 +460,7 @@ function Results() {
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link className="btn-primary" href="/start">Start setup</Link>
-          {(account === "has-target" || account === "no-target") && <Link className="btn-secondary" href="/dashboard">Go to Dashboard</Link>}
+          {(account === "has-target" || account === "no-target") && <Link className="btn-secondary" href="/dashboard">Go to Today</Link>}
         </div>
       </Frame>
     );

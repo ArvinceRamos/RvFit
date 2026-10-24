@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calculationConfig } from "./calc/config";
-import { weightTrend, workoutsPerWeek } from "./progress";
+import { sevenDayKcal, weightTrend, workoutsPerWeek } from "./progress";
 
 const now = new Date("2026-10-10T12:00:00Z");
 const daysAgo = (days: number) => new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
@@ -72,5 +72,29 @@ describe("workoutsPerWeek", () => {
 
   it("uses the placeholder number of weeks by default", () => {
     expect(workoutsPerWeek([], "2026-10-08")).toHaveLength(8);
+  });
+});
+
+describe("sevenDayKcal", () => {
+  const meals = [
+    { meal_date: "2026-10-25", eaten: true, kcal: 500.4 },
+    { meal_date: "2026-10-25", eaten: true, kcal: 700 },
+    { meal_date: "2026-10-25", eaten: false, kcal: 900 },
+    { meal_date: "2026-10-21", eaten: true, kcal: 1800 },
+    { meal_date: "2026-10-18", eaten: true, kcal: 2000 },
+    { meal_date: "2026-10-26", eaten: true, kcal: 2000 },
+  ];
+
+  it("covers the 7 days ending today, oldest first", () => {
+    expect(sevenDayKcal(meals, "2026-10-25").map((day) => day.date)).toEqual([
+      "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25",
+    ]);
+  });
+
+  it("counts only eaten meals and marks days with none as not logged", () => {
+    const days = sevenDayKcal(meals, "2026-10-25");
+    expect(days[6]).toEqual({ date: "2026-10-25", kcal: 1200, logged: true });
+    expect(days[2]).toEqual({ date: "2026-10-21", kcal: 1800, logged: true });
+    expect(days[0]).toEqual({ date: "2026-10-19", kcal: 0, logged: false });
   });
 });
