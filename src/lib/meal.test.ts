@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { calculationConfig } from "./calc/config";
 import {
   addTotals,
+  describeItemNutrition,
   describeNutrition,
   itemNutrition,
   maxMealItemGrams,
@@ -249,6 +250,15 @@ describe("describeNutrition", () => {
   it("rounds only for display and shows missing fiber as not listed", () => {
     expect(describeNutrition(itemNutrition(noFiber, 150))).toBe(
       "248 kcal · Protein 46.5 g · Carbs 0.0 g · Fat 5.4 g · Fiber Not listed",
+    );
+  });
+});
+
+describe("describeItemNutrition", () => {
+  it("uses whole numbers like the meal totals and shows missing fiber as not listed", () => {
+    expect(describeItemNutrition(itemNutrition(noFiber, 150))).toBe("248 kcal · Protein 47 g · Carbs 0 g · Fat 5 g · Fiber Not listed");
+    expect(describeItemNutrition({ kcal: 1234.6, protein_g: 0.4, carbs_g: 10.5, fat_g: 2, fiber_g: 3.49 })).toBe(
+      "1,235 kcal · Protein 0 g · Carbs 11 g · Fat 2 g · Fiber 3 g",
     );
   });
 });

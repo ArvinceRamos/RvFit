@@ -86,6 +86,15 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
   const [message, setMessage] = useState<string>();
   const [saving, setSaving] = useState(false);
 
+  // A newly saved target (from this form or from "Use X kcal" on the check-in card, both of which
+  // re-render the page) becomes the starting value for "Enter my own target".
+  const savedAt = current?.created_at ?? null;
+  const [seenSavedAt, setSeenSavedAt] = useState(savedAt);
+  if (savedAt !== seenSavedAt) {
+    setSeenSavedAt(savedAt);
+    if (current) setDetails((currentDetails) => ({ ...currentDetails, targetKcal: String(current.kcal) }));
+  }
+
   const resultRef = useRef<HTMLElement>(null);
 
   // After Recalculate, bring the new target into view; it sits below the long form.
@@ -156,8 +165,6 @@ export function ProfileForm({ profile, current, latestWeightKg }: { profile: Sav
     }
     setPreview(undefined);
     setMacros(undefined);
-    // The saved target becomes the starting value for "Enter my own target".
-    setDetails((currentDetails) => ({ ...currentDetails, targetKcal: String(targetKcal) }));
     setMessage(savedMessage);
   }
 

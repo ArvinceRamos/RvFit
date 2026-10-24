@@ -13,7 +13,7 @@ import {
   type PlanFood,
 } from "@/lib/meal-plan-save";
 import type { LoggedDay } from "@/lib/meal-planner";
-import { copyDayLabels, firstFreeMealLabel } from "@/lib/meal-slots";
+import { copyDayLabels, firstFreeMealLabel, mealsToCopy } from "@/lib/meal-slots";
 import { loadMeals } from "@/lib/overview-data";
 import { addDays } from "@/lib/week";
 import { logError } from "@/lib/log";
@@ -89,9 +89,11 @@ export async function copyMealToDateAction(mealId: unknown, date: unknown): Prom
 
 export type CopyMealDayResult = { ok: true; count: number } | { ok: false; error: string };
 
-// "Copy yesterday": copies every meal on one date to another date with the same foods and grams,
-// all or nothing. Each meal keeps its label when it is free on the new date, otherwise it takes the
-// next free one. It saves through save_meal_plan, so the copies start unticked and are marked from_plan.
+// "Copy yesterday": copies the meals on one date to another date with the same foods and grams,
+// all or nothing. Meals already there with the same foods and grams are skipped, so a second press
+// (after a reload, or in another tab) copies nothing. Each meal keeps its label when it is free on the
+// new date, otherwise it takes the next free one. It saves through save_meal_plan, so the copies start
+// unticked; from_plan is then cleared, because they did not come from the meal planner.
 export async function copyMealDayAction(fromDate: unknown, toDate: unknown): Promise<CopyMealDayResult> {
   const auth = await getActionUser();
   if (!auth) return { ok: false, error: "You must be signed in to copy meals." };
@@ -102,18 +104,19 @@ export async function copyMealDayAction(fromDate: unknown, toDate: unknown): Pro
 
   const [{ data: fromMeals, error: fromError }, { data: toMeals, error: toError }] = await Promise.all([
     supabase.from("meals").select("label, meal_items(food_id, grams)").eq("meal_date", fromDate).order("label").order("created_at"),
-    supabase.from("meals").select("label").eq("meal_date", toDate),
+    supabase.from("meals").select("label, meal_items(food_id, grams)").eq("meal_date", toDate),
   ]);
   if (fromError || toError || !fromMeals || !toMeals) {
     logError("meals.copyDay", fromError, toError);
     return { ok: false, error: "Those meals could not be copied. Please try again." };
   }
 
-  const meals = (fromMeals as { label: string; meal_items: { food_id: string; grams: number | string }[] }[]).filter(
-    (meal) => meal.meal_items.length > 0,
-  );
-  if (meals.length === 0) return { ok: false, error: "There are no meals to copy." };
-  const labels = copyDayLabels(meals.map((meal) => meal.label), toMeals.map((row) => row.label as string));
+  type CopyMeal = { label: string; meal_items: { food_id: string; grams: number | string }[] };
+  const fromWithFoods = (fromMeals as CopyMeal[]).filter((meal) => meal.meal_items.length > 0);
+  if (fromWithFoods.length === 0) return { ok: false, error: "There are no meals to copy." };
+  const meals = mealsToCopy(fromWithFoods, toMeals as CopyMeal[]);
+  if (meals.length === 0) return { ok: false, error: "Those meals are already on that day, so nothing was copied." };
+  const labels = copyDayLabels(meals.map((meal) => meal.label), (toMeals as CopyMeal[]).map((row) => row.label));
   if (!labels) return { ok: false, error: "There are not enough free meal labels to copy every meal. Nothing was copied." };
 
   const { data: mealIds, error } = await supabase.rpc("save_meal_plan", {
@@ -129,6 +132,9 @@ export async function copyMealDayAction(fromDate: unknown, toDate: unknown): Pro
     logError("meals.copyDay", error);
     return { ok: false, error: "Those meals could not be copied. Please try again." };
   }
+  // The copies are saved either way, and nothing on screen reads from_plan, so a failure is only logged.
+  const { error: fromPlanError } = await supabase.from("meals").update({ from_plan: false }).in("id", mealIds as string[]);
+  if (fromPlanError) logError("meals.copyDayFromPlan", fromPlanError);
   refresh();
   return { ok: true, count: meals.length };
 }

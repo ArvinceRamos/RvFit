@@ -2,6 +2,7 @@ import type { Result } from "@/lib/calc/calculate";
 import { calculationConfig } from "@/lib/calc/config";
 import { formatFiber } from "@/lib/food-catalog";
 import { isMealLabel } from "@/lib/meal-slots";
+import { formatGrams, formatKcal } from "@/lib/remaining-format";
 
 // Placeholder limit pending qualified review. Amounts above it are rejected, never clamped.
 export const maxMealItemGrams = calculationConfig.meal_limits.max_item_grams;
@@ -77,8 +78,15 @@ export function addTotals(a: MealTotals, b: MealTotals): MealTotals {
   };
 }
 
+// Per-100 g food facts keep one decimal.
 export function describeNutrition(nutrition: MealItemNutrition): string {
   return `${Math.round(nutrition.kcal)} kcal · Protein ${nutrition.protein_g.toFixed(1)} g · Carbs ${nutrition.carbs_g.toFixed(1)} g · Fat ${nutrition.fat_g.toFixed(1)} g · Fiber ${formatFiber(nutrition.fiber_g)}`;
+}
+
+// One item in a meal, in the same whole numbers as the meal and day totals.
+export function describeItemNutrition(nutrition: MealItemNutrition): string {
+  const fiber = nutrition.fiber_g === null ? "Not listed" : formatGrams(nutrition.fiber_g);
+  return `${formatKcal(nutrition.kcal)} · Protein ${formatGrams(nutrition.protein_g)} · Carbs ${formatGrams(nutrition.carbs_g)} · Fat ${formatGrams(nutrition.fat_g)} · Fiber ${fiber}`;
 }
 
 // A common measure is only a convenience: it is converted to grams before saving.

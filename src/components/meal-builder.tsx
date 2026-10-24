@@ -9,7 +9,7 @@ import { SuggestionsPanel, type SuggestionsView } from "@/components/suggestions
 import { stateLabels, type FoodRole } from "@/lib/food-catalog";
 import {
   addTotals,
-  describeNutrition,
+  describeItemNutrition,
   isCalendarDate,
   itemNutrition,
   mealFormEaten,
@@ -105,7 +105,7 @@ function ItemCard({ item, grams, focus, onChange, onRemove }: {
       {grams.ok ? (
         <p className="mt-3 text-sm text-muted">
           {item.unit !== gramsUnit && <span className="font-semibold">{grams.grams} g · </span>}
-          {describeNutrition(itemNutrition(item.food.nutrition, grams.grams))}
+          {describeItemNutrition(itemNutrition(item.food.nutrition, grams.grams))}
         </p>
       ) : (
         item.amount !== "" && <p className="mt-3 text-sm text-danger" role="alert">{grams.error}</p>

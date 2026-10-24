@@ -3,11 +3,13 @@
 import { groupMealDays, mealDaysRange, type MealDay, type MealDayView } from "@/lib/meal-days";
 import { nutritionColumns, type NutritionRow } from "@/lib/meal-foods";
 import type { MealTotals } from "@/lib/meal";
+import { mealsToCopy } from "@/lib/meal-slots";
 import { eatenAndPlanned, itemRowsTotals } from "@/lib/overview-data";
 import type { createClient } from "@/lib/supabase/server";
 import { addDays } from "@/lib/week";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
+type CopyMeal = { meal_items: { food_id: string; grams: number | string }[] };
 
 // totals: meals ticked as eaten. planned: saved but not eaten yet. usedLabels: every saved meal.
 export type DayTotalsResult = { ok: true; totals: MealTotals; planned: MealTotals; usedLabels: string[] } | { ok: false };
@@ -37,8 +39,9 @@ export async function loadDayTotals(supabase: ServerClient, date: string, exclud
   };
 }
 
-// yesterdayMeals is only counted for the Today view, for "Copy yesterday".
-export type MealDaysResult = { ok: true; days: MealDay[]; yesterdayMeals: number } | { ok: false };
+// yesterdayToCopy is only counted for the Today view, for "Copy yesterday": yesterday's meals that are
+// not on today yet (see mealsToCopy).
+export type MealDaysResult = { ok: true; days: MealDay[]; yesterdayToCopy: number } | { ok: false };
 
 // Meals for the Meals page tabs, grouped by day with food names and grams. today is the user's calendar date.
 export async function loadMealDays(supabase: ServerClient, dayView: MealDayView, today: string): Promise<MealDaysResult> {
@@ -46,15 +49,15 @@ export async function loadMealDays(supabase: ServerClient, dayView: MealDayView,
   const [{ data, error }, yesterday] = await Promise.all([
     supabase
       .from("meals")
-      .select(`id, label, meal_date, from_plan, eaten, created_at, meal_items(grams, foods(name, ${nutritionColumns}))`)
+      .select(`id, label, meal_date, from_plan, eaten, created_at, meal_items(food_id, grams, foods(name, ${nutritionColumns}))`)
       .gte("meal_date", range.from)
       .lte("meal_date", range.to)
       .order("meal_date")
       .order("label")
       .order("created_at"),
     dayView === "today"
-      ? supabase.from("meals").select("id", { count: "exact", head: true }).eq("meal_date", addDays(today, -1))
-      : Promise.resolve({ count: 0, error: null }),
+      ? supabase.from("meals").select("meal_items(food_id, grams)").eq("meal_date", addDays(today, -1))
+      : Promise.resolve({ data: [], error: null }),
   ]);
   if (error || !data) return { ok: false };
 
@@ -70,6 +73,7 @@ export async function loadMealDays(supabase: ServerClient, dayView: MealDayView,
       items: items.map((item) => ({ name: item.foods.name, grams: Number(item.grams) })),
     };
   });
-  // If yesterday cannot be counted, the page just leaves out "Copy yesterday".
-  return { ok: true, days: groupMealDays(meals, range.newestFirst), yesterdayMeals: yesterday.error ? 0 : (yesterday.count ?? 0) };
+  // If yesterday cannot be read, the page just leaves out "Copy yesterday". In the Today view, data is today's meals.
+  const yesterdayToCopy = yesterday.error || !yesterday.data ? 0 : mealsToCopy(yesterday.data as CopyMeal[], data as unknown as CopyMeal[]).length;
+  return { ok: true, days: groupMealDays(meals, range.newestFirst), yesterdayToCopy };
 }

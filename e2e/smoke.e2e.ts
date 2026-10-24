@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { randomUUID } from "node:crypto";
 import { adminClient, readTestUser } from "./test-user";
 
 // WCAG 2.1 A and AA rules. Any violation fails the test and is listed in the error.
@@ -94,6 +95,55 @@ test.describe("signed in", () => {
     await page.getByRole("button", { name: "Save workout" }).click();
     await expect(page).toHaveURL(/\/workouts\?saved=new/);
     expect(await countWorkouts()).toBe(before + 1);
+  });
+
+  test("Copy yesterday copies once and marks the copy as not from the planner", async ({ page }) => {
+    const user = readTestUser();
+    const admin = adminClient();
+    // The browser runs in Asia/Manila, so the app's today is Manila's.
+    const manilaDate = (offsetDays: number) =>
+      new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date(Date.now() + offsetDays * 86_400_000));
+    const [yesterday, today] = [manilaDate(-1), manilaDate(0)];
+    // Each project (phone, desktop) starts from one meal yesterday and none today.
+    await admin.from("meals").delete().eq("user_id", user.id).in("meal_date", [yesterday, today]);
+    const { data: food } = await admin.from("foods").select("id").limit(1).single();
+    const { data: meal } = await admin.from("meals").insert({ user_id: user.id, meal_date: yesterday, label: "Meal 2" }).select("id").single();
+    await admin.from("meal_items").insert({ meal_id: meal!.id, food_id: food!.id, grams: 120 });
+    const todayMeals = async () => (await admin.from("meals").select("label, from_plan, eaten").eq("user_id", user.id).eq("meal_date", today)).data;
+
+    await open(page, "/meals");
+    await page.getByRole("button", { name: "Copy yesterday" }).click();
+    await expect(page.getByText("Copied 1 meal from yesterday.")).toBeVisible();
+    expect(await todayMeals()).toEqual([{ label: "Meal 2", from_plan: false, eaten: false }]);
+
+    // After a reload nothing is left to copy, so the button is gone.
+    await page.reload();
+    await expect(page.locator("h1").first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Copy yesterday" })).toHaveCount(0);
+    expect(await todayMeals()).toHaveLength(1);
+  });
+
+  test("Enter my own target starts from a target saved elsewhere once the page re-renders", async ({ page }) => {
+    const user = readTestUser();
+    const admin = adminClient();
+    await open(page, "/profile");
+    await page.getByRole("button", { name: "Enter my own target" }).click();
+    const box = page.getByLabel("Calorie target (kcal)");
+    const before = Number(await box.inputValue());
+
+    // A new target saved outside this form, as "Use X kcal" on the check-in card does.
+    const kcal = before + 50;
+    const { error } = await admin.from("calorie_targets").insert({
+      user_id: user.id, guest_draft_id: randomUUID(), source: "manual", target_kcal: kcal, goal: null, pace: null, protein_g: 120, carbs_g: 240, fat_g: 67,
+      fiber_g: 29, formula_branch: null, floor_applied: false, config_version: "e2e", calculation_inputs: { weight_kg: 75 },
+    });
+    expect(error).toBeNull();
+
+    // Saving a name re-renders the page with the new target, without a reload.
+    await page.getByLabel("Name (optional)").fill("E2E");
+    await page.getByRole("button", { name: "Save name" }).click();
+    await expect(page.getByText(`${kcal.toLocaleString("en-US")} kcal`).first()).toBeVisible();
+    await expect(box).toHaveValue(String(kcal));
   });
 
   test("a weigh-in saves and log out ends the session", async ({ page }) => {

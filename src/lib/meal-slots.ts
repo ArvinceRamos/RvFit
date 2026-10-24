@@ -46,6 +46,30 @@ export function firstFreeMealLabel(usedLabels: readonly string[]): string | null
   return mealLabels.find((label) => !usedLabels.includes(label)) ?? null;
 }
 
+type CopyItem = { food_id: string; grams: number | string };
+
+// The same foods and grams, in any order.
+function itemsKey(items: readonly CopyItem[]): string {
+  return items.map((item) => `${item.food_id}@${Number(item.grams)}`).sort().join("|");
+}
+
+// The meals from one day that are worth copying onto a date that already has toMeals, in order.
+// A meal with no foods is skipped, and so is a meal whose exact copy (same foods and grams) is
+// already there, each existing meal matching once. So pressing "Copy yesterday" again copies nothing.
+export function mealsToCopy<T extends { meal_items: readonly CopyItem[] }>(
+  fromMeals: readonly T[],
+  toMeals: readonly { meal_items: readonly CopyItem[] }[],
+): T[] {
+  const existing = toMeals.map((meal) => itemsKey(meal.meal_items));
+  return fromMeals.filter((meal) => {
+    if (meal.meal_items.length === 0) return false;
+    const match = existing.indexOf(itemsKey(meal.meal_items));
+    if (match === -1) return true;
+    existing.splice(match, 1);
+    return false;
+  });
+}
+
 // Labels for copying one day's meals onto a date that already uses usedLabels, in the same order.
 // A meal keeps its "Meal N" label when that label is free; the others take the next free labels.
 // Null when there are not enough free labels for all of them.

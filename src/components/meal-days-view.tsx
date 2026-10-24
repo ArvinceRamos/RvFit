@@ -106,8 +106,8 @@ export function MealDaysView({ target, view, today, result, todayTotals }: {
   result: MealDaysResult;
   todayTotals: DayTotalsResult;
 }) {
-  // Yesterday's meals do not change after a copy, so the button (and its message) stays while the days reload.
-  const showCopy = view === "today" && result.ok && result.yesterdayMeals > 0;
+  // The button stays mounted after a copy, so its message stays when the re-render finds nothing left to copy.
+  const showCopy = view === "today" && result.ok;
 
   return (
     <>
@@ -120,7 +120,7 @@ export function MealDaysView({ target, view, today, result, todayTotals }: {
         <Link className="btn-ghost text-base" href="/preferences">Food settings</Link>
       </div>
 
-      {showCopy && <CopyYesterdayButton today={today} />}
+      {showCopy && <CopyYesterdayButton count={result.yesterdayToCopy} today={today} />}
 
       <nav aria-label="Meal days" className="mt-8 flex gap-2">
         {tabs.map((tab) => (

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { copyDayLabels, firstFreeMealLabel, isMealLabel, mapItemsToSlots, mealLabels, slotForRole, takenMealLabels } from "./meal-slots";
+import { copyDayLabels, firstFreeMealLabel, isMealLabel, mapItemsToSlots, mealLabels, mealsToCopy, slotForRole, takenMealLabels } from "./meal-slots";
 import type { FoodRole } from "./food-catalog";
 
 const item = (id: string, role: FoodRole | null) => ({ id, role });
@@ -61,6 +61,27 @@ describe("firstFreeMealLabel", () => {
     expect(firstFreeMealLabel([])).toBe("Meal 1");
     expect(firstFreeMealLabel(["Meal 1", "Meal 3"])).toBe("Meal 2");
     expect(firstFreeMealLabel(["Meal 1", "Meal 2", "Meal 3", "Meal 4", "Meal 5", "Meal 6"])).toBeNull();
+  });
+});
+
+describe("mealsToCopy", () => {
+  const meal = (label: string, ...items: [string, number | string][]) => ({ label, meal_items: items.map(([food_id, grams]) => ({ food_id, grams })) });
+
+  it("copies every meal with foods when the new date has none of them", () => {
+    const from = [meal("Meal 1", ["egg", 100]), meal("Meal 2"), meal("Meal 3", ["rice", 150])];
+    expect(mealsToCopy(from, [meal("Meal 1", ["egg", 50])]).map((m) => m.label)).toEqual(["Meal 1", "Meal 3"]);
+  });
+
+  it("skips meals already there with the same foods and grams, in any order", () => {
+    const from = [meal("Meal 1", ["egg", "100.00"], ["rice", 150]), meal("Meal 2", ["rice", 150])];
+    expect(mealsToCopy(from, [meal("Meal 4", ["rice", "150"], ["egg", 100])]).map((m) => m.label)).toEqual(["Meal 2"]);
+    // A second copy after the first one finds every meal already there.
+    expect(mealsToCopy(from, [meal("Meal 4", ["rice", 150], ["egg", 100]), meal("Meal 3", ["rice", 150])])).toEqual([]);
+  });
+
+  it("matches each existing meal once", () => {
+    const from = [meal("Meal 1", ["egg", 100]), meal("Meal 2", ["egg", 100])];
+    expect(mealsToCopy(from, [meal("Meal 1", ["egg", 100])]).map((m) => m.label)).toEqual(["Meal 2"]);
   });
 });
 

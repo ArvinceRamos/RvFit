@@ -6,11 +6,17 @@ const getClaims = vi.fn();
 const update = vi.fn();
 const refresh = vi.fn();
 let response: Response = { data: null, error: null };
+let yesterdayResponse: Response = { data: [], error: null };
 
-// A tiny stand-in for the query builder: every chain resolves to the canned response.
+// A tiny stand-in for the query builder: every chain resolves to the canned response, except the
+// Meals page's read of yesterday's foods for "Copy yesterday".
 function query() {
+  let current = response;
   const builder = {
-    select: () => builder,
+    select: (columns: string) => {
+      current = columns === "meal_items(food_id, grams)" ? yesterdayResponse : response;
+      return builder;
+    },
     eq: () => builder,
     neq: () => builder,
     gte: () => builder,
@@ -20,7 +26,7 @@ function query() {
       update(values);
       return builder;
     },
-    then: (resolve: (value: Response) => unknown, reject: (reason: unknown) => unknown) => Promise.resolve(response).then(resolve, reject),
+    then: (resolve: (value: Response) => unknown, reject: (reason: unknown) => unknown) => Promise.resolve(current).then(resolve, reject),
   };
   return builder;
 }
@@ -112,10 +118,18 @@ describe("loadMealDays", () => {
     expect(result.days[0].eaten.kcal).toBe(0);
   });
 
-  it("counts yesterday's meals for the Today view only", async () => {
-    response = { data: [], error: null, count: 2 };
-    expect(await loadMealDays(client, "today", "2026-10-07")).toEqual({ ok: true, days: [], yesterdayMeals: 2 });
-    expect(await loadMealDays(client, "past", "2026-10-07")).toEqual({ ok: true, days: [], yesterdayMeals: 0 });
+  it("counts yesterday's meals not on today yet, for the Today view only", async () => {
+    response = { data: [], error: null };
+    yesterdayResponse = { data: [{ meal_items: [{ food_id: "egg", grams: "100" }] }, { meal_items: [{ food_id: "rice", grams: "150" }] }], error: null };
+    expect(await loadMealDays(client, "today", "2026-10-07")).toEqual({ ok: true, days: [], yesterdayToCopy: 2 });
+    expect(await loadMealDays(client, "past", "2026-10-07")).toEqual({ ok: true, days: [], yesterdayToCopy: 0 });
+
+    // Today already has the egg meal (same foods and grams), so only the rice meal is left to copy.
+    response = { data: [{ id: "c", label: "Meal 1", meal_date: "2026-10-07", from_plan: false, eaten: false, meal_items: [{ food_id: "egg", grams: "100.00", foods: { ...food, name: "Egg" } }] }], error: null };
+    const result = await loadMealDays(client, "today", "2026-10-07");
+    expect(result.ok && result.yesterdayToCopy).toBe(1);
+    yesterdayResponse = { data: null, error: { message: "boom" } };
+    expect(await loadMealDays(client, "today", "2026-10-07")).toMatchObject({ ok: true, yesterdayToCopy: 0 });
   });
 
   it("fails when meals cannot be read", async () => {
