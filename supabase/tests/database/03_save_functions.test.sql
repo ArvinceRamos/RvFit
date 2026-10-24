@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(36);
+select plan(40);
 
 insert into auth.users (id, aud, role, email) values
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'authenticated', 'authenticated', 'a@rvfit.test'),
@@ -115,11 +115,29 @@ select throws_ok($$select public.save_workout_log(null, 'full-body.beginner.gym'
     (select jsonb_agg(two_sets -> 0) from args, generate_series(1, 101)))$$,
   '22023', null, 'a workout with 101 sets is refused');
 
+-- A new workout sent twice with the same save key is saved once; the second send replaces its sets.
+select is(
+  (select public.save_workout_log(null, 'full-body.beginner.gym', 'day-b', '2026-10-25', two_sets,
+    'c0000000-0000-4000-8000-000000000001') from args),
+  (select public.save_workout_log(null, 'full-body.beginner.gym', 'day-b', '2026-10-25', jsonb_build_array(two_sets -> 0),
+    'c0000000-0000-4000-8000-000000000001') from args),
+  'a retried save returns the same workout');
+select is((select count(*)::int from public.workout_logs where save_key = 'c0000000-0000-4000-8000-000000000001'),
+  1, 'a retried save does not make a second workout');
+select is((select count(*)::int from public.workout_log_sets s join public.workout_logs w on w.id = s.workout_log_id
+    where w.save_key = 'c0000000-0000-4000-8000-000000000001'),
+  1, 'the retry''s sets replace the first send''s');
+select isnt(
+  (select public.save_workout_log(null, 'full-body.beginner.gym', 'day-b', '2026-10-25', two_sets,
+    'c0000000-0000-4000-8000-000000000002') from args),
+  (select id from public.workout_logs where save_key = 'c0000000-0000-4000-8000-000000000001'),
+  'a different save key is a new workout');
+
 -- User B cannot edit A's meal or workout, and has no profile to save a target to.
 -- A's ids are noted first, because B cannot read A's rows.
 create temporary table a_ids on commit drop as select
   (select id from public.meals where not from_plan) as meal_id,
-  (select id from public.workout_logs) as workout_id;
+  (select id from public.workout_logs where save_key is null) as workout_id;
 set local "request.jwt.claims" to '{"sub": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", "role": "authenticated"}';
 select throws_ok($$select public.save_meal(meal_id, '2026-10-25', 'Taken', one_item) from a_ids, args$$,
   'P0002', null, 'B cannot edit A''s meal');

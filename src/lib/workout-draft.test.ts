@@ -72,6 +72,15 @@ describe("workout drafts", () => {
     expect(storage.getItem(WORKOUT_DRAFTS_STORAGE_KEY)).toBeNull();
   });
 
+  it("keeps a valid save key and drops a malformed one", () => {
+    const saveKey = "c0000000-0000-4000-8000-000000000001";
+    writeWorkoutDraft(storage, "new:full_body:a", { ...draft, saveKey });
+    expect(readWorkoutDraft(storage, "new:full_body:a", slots)).toEqual({ ...draft, saveKey });
+
+    writeWorkoutDraft(storage, "new:full_body:a", { ...draft, saveKey: "not-a-uuid" });
+    expect(readWorkoutDraft(storage, "new:full_body:a", slots)).toEqual(draft);
+  });
+
   it("ignores broken storage", () => {
     storage.setItem(WORKOUT_DRAFTS_STORAGE_KEY, "{not json");
     expect(readWorkoutDraft(storage, "new:full_body:a", slots)).toBeNull();

@@ -1,3 +1,4 @@
+import { isUuid } from "@/lib/meal";
 import type { PreferredUnits } from "@/lib/weigh-in";
 import { maxSetsPerExercise, type LogSlot, type SetFields } from "@/lib/workouts/log";
 
@@ -9,6 +10,8 @@ export type WorkoutDraft = {
   date: string;
   units: PreferredUnits;
   entries: Record<string, { exerciseKey: string; sets: SetFields[] }>;
+  // A new workout's save key, kept once Save was pressed, so a retry after a reload is not saved twice.
+  saveKey?: string;
 };
 
 // New logs keep one draft per plan day; edits keep one per saved log.
@@ -50,7 +53,7 @@ export function parseWorkoutDraft(value: unknown, slots: LogSlot[]): WorkoutDraf
     if (!Array.isArray(sets) || sets.length === 0 || sets.length > maxSetsPerExercise || !sets.every(isSet)) return null;
     entries[slot.slotKey] = { exerciseKey: entry.exerciseKey, sets: sets.map((set) => ({ amount: set.amount, weight: set.weight })) };
   }
-  return { date: draft.date, units: draft.units, entries };
+  return { date: draft.date, units: draft.units, entries, ...(isUuid(draft.saveKey) ? { saveKey: draft.saveKey } : {}) };
 }
 
 export function readWorkoutDraft(storage: Storage, key: string, slots: LogSlot[]): WorkoutDraft | null {

@@ -41,6 +41,14 @@ type WorkoutLogFormProps = {
 
 const subscribeNever = () => () => {};
 
+const offlineError = "Your workout could not be sent. Check your connection and press Save again.";
+
+// randomUUID needs a secure page (https or localhost). Without it there is no key, and a retry
+// behaves as before.
+function newSaveKey(): string | undefined {
+  return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : undefined;
+}
+
 // The server cannot see the browser's saved draft, so the form renders from the plan first
 // and starts again from the draft (if any) once it is running in the browser.
 export function WorkoutLogForm(props: WorkoutLogFormProps) {
@@ -79,24 +87,29 @@ function LogForm({ initial, slots, units: savedUnits, showHistory, inBrowser }: 
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
   const [units, setUnits] = useState<PreferredUnits>((restored ?? baseline).units);
+  // A new workout has one save key. Once Save is pressed it is kept in the draft, so pressing Save
+  // again (after a lost reply or a reload) updates that workout instead of adding a second one.
+  const [saveKey] = useState(() => restored?.saveKey ?? (initial.logId ? undefined : newSaveKey()));
+  const [keySent, setKeySent] = useState(() => restored?.saveKey !== undefined);
 
   // Keep the draft in step with the form. A form that matches its starting point keeps no draft.
   useEffect(() => {
     if (!inBrowser) return;
     const current: WorkoutDraft = { date, units, entries };
     try {
-      if (JSON.stringify(current) === JSON.stringify(baseline)) clearWorkoutDraft(window.localStorage, draftKey);
-      else writeWorkoutDraft(window.localStorage, draftKey, current);
+      if (!keySent && JSON.stringify(current) === JSON.stringify(baseline)) clearWorkoutDraft(window.localStorage, draftKey);
+      else writeWorkoutDraft(window.localStorage, draftKey, keySent && saveKey ? { ...current, saveKey } : current);
     } catch {
       // Storage can be blocked or full; the form still works without a draft.
     }
-  }, [inBrowser, date, units, entries, baseline, draftKey]);
+  }, [inBrowser, date, units, entries, baseline, draftKey, keySent, saveKey]);
 
   function discardDraft() {
     setDate(baseline.date);
     setUnits(baseline.units);
     setEntries(baseline.entries);
     setRestored(null);
+    setKeySent(false);
   }
 
   // Earlier sessions before the chosen date, fetched again whenever the date changes.
@@ -152,14 +165,31 @@ function LogForm({ initial, slots, units: savedUnits, showHistory, inBrowser }: 
     event.preventDefault();
     setSaving(true);
     setError(undefined);
-    const result = await saveWorkoutLogAction({
-      logId: initial.logId,
-      templateKey: initial.templateKey,
-      dayKey: initial.dayKey,
-      date,
-      units,
-      entries: slots.map((slot) => ({ slotKey: slot.slotKey, ...entries[slot.slotKey] })),
-    });
+    if (saveKey) {
+      setKeySent(true);
+      try {
+        writeWorkoutDraft(window.localStorage, draftKey, { date, units, entries, saveKey });
+      } catch {
+        // Without storage the key still lasts until the page is closed.
+      }
+    }
+    let result: Awaited<ReturnType<typeof saveWorkoutLogAction>>;
+    try {
+      result = await saveWorkoutLogAction({
+        logId: initial.logId,
+        saveKey,
+        templateKey: initial.templateKey,
+        dayKey: initial.dayKey,
+        date,
+        units,
+        entries: slots.map((slot) => ({ slotKey: slot.slotKey, ...entries[slot.slotKey] })),
+      });
+    } catch {
+      // No connection, or the reply was lost on the way back.
+      setSaving(false);
+      setError(saveKey || initial.logId ? `${offlineError} It will not be saved twice.` : offlineError);
+      return;
+    }
     if (!result.ok) {
       setSaving(false);
       setError(result.error);

@@ -85,7 +85,7 @@ select function_privs_are('public', 'save_meal_plan', array['jsonb'],
   'authenticated', array['EXECUTE']);
 select function_privs_are('public', 'save_profile_and_target', array['jsonb', 'jsonb', 'jsonb'],
   'authenticated', array['EXECUTE']);
-select function_privs_are('public', 'save_workout_log', array['uuid', 'text', 'text', 'date', 'jsonb'],
+select function_privs_are('public', 'save_workout_log', array['uuid', 'text', 'text', 'date', 'jsonb', 'uuid'],
   'authenticated', array['EXECUTE']);
 
 select function_privs_are('public', 'save_initial_guest_draft', array['uuid', 'uuid', 'jsonb', 'jsonb', 'jsonb'],
@@ -96,7 +96,7 @@ select function_privs_are('public', 'save_meal_plan', array['jsonb'],
   'anon', array[]::text[]);
 select function_privs_are('public', 'save_profile_and_target', array['jsonb', 'jsonb', 'jsonb'],
   'anon', array[]::text[]);
-select function_privs_are('public', 'save_workout_log', array['uuid', 'text', 'text', 'date', 'jsonb'],
+select function_privs_are('public', 'save_workout_log', array['uuid', 'text', 'text', 'date', 'jsonb', 'uuid'],
   'anon', array[]::text[]);
 
 -- Deleting an account removes every row that belongs to it.

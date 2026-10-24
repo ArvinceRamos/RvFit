@@ -28,4 +28,10 @@ export default async function globalSetup(): Promise<void> {
     p_initial_body_log: { weight_kg: 75 },
   });
   if (saveError || saved?.status !== "saved") throw new Error(`Could not save the e2e target: ${saveError?.message}`);
+
+  // A training plan, so Train has a "log this day" link.
+  const { error: preferencesError } = await client
+    .from("user_preferences")
+    .insert({ user_id: data.user.id, experience: "beginner", equipment: "gym", training_days: 3 });
+  if (preferencesError) throw new Error(`Could not save the e2e preferences: ${preferencesError.message}`);
 }

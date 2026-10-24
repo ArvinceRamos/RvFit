@@ -115,10 +115,13 @@ export async function saveWorkoutLogAction(rawLog: unknown): Promise<SaveWorkout
   if (!auth) return { ok: false, error: "You must be signed in to save a workout." };
   const { supabase } = auth;
 
-  const input = (rawLog ?? {}) as { logId?: unknown; templateKey?: unknown; dayKey?: unknown };
+  const input = (rawLog ?? {}) as { logId?: unknown; templateKey?: unknown; dayKey?: unknown; saveKey?: unknown };
   if (typeof input.templateKey !== "string" || typeof input.dayKey !== "string") {
     return { ok: false, error: "Workout details are invalid." };
   }
+  // One key per new workout, so pressing Save again after a lost reply updates it instead of adding a second.
+  const saveKey = input.saveKey ?? null;
+  if (saveKey !== null && !isUuid(saveKey)) return { ok: false, error: "Workout details are invalid." };
 
   // A new workout uses the plan from current Preferences. An edit keeps the workout's own plan and day.
   const logId = input.logId ?? null;
@@ -154,6 +157,7 @@ export async function saveWorkoutLogAction(rawLog: unknown): Promise<SaveWorkout
     p_day_key: log.day_key,
     p_performed_on: log.performed_on,
     p_sets: log.sets,
+    p_save_key: log.log_id === null ? saveKey : null,
   });
   if (error || typeof savedId !== "string") return { ok: false, error: saveError };
   return { ok: true, logId: savedId };
