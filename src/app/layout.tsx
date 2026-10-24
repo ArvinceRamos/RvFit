@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { RibbonBackground } from "@/components/ribbon-background";
+import { timeZoneCookieScript } from "@/lib/time-zone";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,6 +33,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {/* Sets the saved or device theme before the page paints, so there is no flash. */}
         <Script id="theme-init" strategy="beforeInteractive">{themeScript}</Script>
+        {/* Saves the device's time zone, so signed-in pages are rendered with the user's today (src/lib/time-zone.ts). */}
+        <Script id="time-zone-init" strategy="beforeInteractive">{timeZoneCookieScript()}</Script>
         {/* One ribbon behind every page. Cards are frosted glass over it. */}
         <RibbonBackground />
         {children}

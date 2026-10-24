@@ -50,6 +50,9 @@ export const chartRanges = [
 
 export type ChartRangeKey = (typeof chartRanges)[number]["key"];
 
+// The range the chart opens on. The page renders it on the server.
+export const DEFAULT_CHART_RANGE: ChartRangeKey = "30";
+
 export function isChartRangeKey(value: unknown): value is ChartRangeKey {
   return chartRanges.some((option) => option.key === value);
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { deleteMealAction } from "@/app/meals/actions";
 
-// onDeleted lets a client list reload itself; the page is refreshed either way.
+// onDeleted lets a caller react; the action re-renders the page either way.
 export function DeleteMealButton({ mealId, onDeleted }: { mealId: string; onDeleted?: () => void }) {
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);

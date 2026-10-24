@@ -1,7 +1,6 @@
-"use server";
-
+// Today's data for the Dashboard, read on the server when the page renders.
 import { calculationConfig } from "@/lib/calc/config";
-import { isCalendarDate, type MealTotals } from "@/lib/meal";
+import type { MealTotals } from "@/lib/meal";
 import {
   eatenAndPlanned,
   loadMeals,
@@ -21,7 +20,7 @@ import { nextWorkout, type NextUp } from "@/lib/workouts/next-up";
 import { resolveTemplate } from "@/lib/workouts/templates";
 import type { CheckIn } from "@/lib/check-in";
 import { loadCheckInData } from "@/lib/check-in-data";
-import { getActionUser } from "@/lib/supabase/auth";
+import type { createClient } from "@/lib/supabase/server";
 import type { PreferredUnits } from "@/lib/weigh-in";
 import { logError } from "@/lib/log";
 
@@ -46,14 +45,9 @@ export type DashboardResult =
     }
   | { ok: false; error: string };
 
-// Today's data for the signed-in user. The date is the browser's local date.
-export async function loadDashboardAction(today: unknown): Promise<DashboardResult> {
-  const auth = await getActionUser();
-  if (!auth) return { ok: false, error: "You must be signed in." };
-  const { supabase } = auth;
-  if (typeof today !== "string" || !isCalendarDate(today)) return { ok: false, error: "Choose a valid date." };
-
-  const now = new Date();
+// today is the user's calendar date and now the render's moment (see requestClock).
+export async function loadDashboard(supabase: Awaited<ReturnType<typeof createClient>>, today: string, nowMs: number): Promise<DashboardResult> {
+  const now = new Date(nowMs);
   // Two trend windows: this week for the trend, and the week before for the review's weight change.
   const since = new Date(now.getTime() - 2 * calculationConfig.progress.trend_window_days * 24 * 60 * 60 * 1000);
   const [target, reviewMeals, workouts, weighIns, units, anyPreferences, anyMeal, anyWeighIn, weekWorkouts, checkInData, reviewWorkouts] = await Promise.all([

@@ -26,6 +26,9 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({ auth: { getClaims }, from: () => query(), rpc }),
 }));
 
+// The real refresh only works inside a running Server Action.
+vi.mock("next/cache", () => ({ refresh: vi.fn() }));
+
 const { copyMealDayAction } = await import("./actions");
 
 const userId = "11111111-2222-4333-8444-555555555555";

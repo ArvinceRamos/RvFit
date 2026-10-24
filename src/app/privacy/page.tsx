@@ -18,7 +18,7 @@ export default function PrivacyPage() {
       </section>
       <section>
         <h2>Stored on your device</h2>
-        <p>Before you have an account, the calculator keeps your answers and estimate in your browser&apos;s local storage so you can save them after signing up. It stays on your device and is cleared once it is saved to your account or when you log out. While you log a workout, the sets you have typed are kept there too, so a reload does not lose them; they are cleared when you save the workout, choose Discard draft, or log out. The site also keeps two small settings there: your Day or Night theme, and whether you hid the Dashboard setup steps.</p>
+        <p>Before you have an account, the calculator keeps your answers and estimate in your browser&apos;s local storage so you can save them after signing up. It stays on your device and is cleared once it is saved to your account or when you log out. While you log a workout, the sets you have typed are kept there too, so a reload does not lose them; they are cleared when you save the workout, choose Discard draft, or log out. The site also keeps two small settings there: your Day or Night theme, and whether you hid the Dashboard setup steps. One small cookie, rvfit-tz, holds your device&apos;s time zone (for example Asia/Manila), so your pages show the right &ldquo;today&rdquo;. It is sent only to this site and lasts a year.</p>
       </section>
       <section>
         <h2>How we use it</h2>

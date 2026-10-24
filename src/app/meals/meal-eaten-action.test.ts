@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 type Response = { data: unknown; error: unknown; count?: number };
 const getClaims = vi.fn();
 const update = vi.fn();
+const refresh = vi.fn();
 let response: Response = { data: null, error: null };
 
 // A tiny stand-in for the query builder: every chain resolves to the canned response.
@@ -26,7 +27,13 @@ function query() {
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getClaims }, from: () => query() }) }));
 
-const { loadDayTotalsAction, loadMealDaysAction, setMealEatenAction } = await import("./actions");
+// The real refresh only works inside a running Server Action.
+vi.mock("next/cache", () => ({ refresh: () => refresh() }));
+
+const { loadDayTotalsAction, setMealEatenAction } = await import("./actions");
+const { loadMealDays } = await import("@/lib/meal-days-data");
+// The page passes its own signed-in client to the loader.
+const client = { from: () => query() } as unknown as Parameters<typeof loadMealDays>[0];
 
 const userId = "11111111-2222-4333-8444-555555555555";
 const mealId = "66666666-7777-4888-8999-000000000000";
@@ -53,6 +60,8 @@ describe("setMealEatenAction", () => {
   it("ticks and unticks only the eaten flag", async () => {
     response = { data: [{ id: mealId }], error: null };
     expect(await setMealEatenAction(mealId, true)).toEqual({ ok: true });
+    // The page re-renders in the same response, so the totals update.
+    expect(refresh).toHaveBeenCalledTimes(1);
     expect(update).toHaveBeenLastCalledWith({ eaten: true });
     expect(await setMealEatenAction(mealId, false)).toEqual({ ok: true });
     expect(update).toHaveBeenLastCalledWith({ eaten: false });
@@ -86,14 +95,7 @@ describe("loadDayTotalsAction", () => {
   });
 });
 
-describe("loadMealDaysAction", () => {
-  it("refuses a signed-out caller or a bad date", async () => {
-    getClaims.mockResolvedValue({ data: null, error: null });
-    expect(await loadMealDaysAction("today", "2026-10-07")).toEqual({ ok: false });
-    getClaims.mockResolvedValue({ data: { claims: { sub: userId } }, error: null });
-    expect(await loadMealDaysAction("today", "2026-02-30")).toEqual({ ok: false });
-  });
-
+describe("loadMealDays", () => {
   it("groups meals into days with food names and grams", async () => {
     response = {
       data: [
@@ -102,7 +104,7 @@ describe("loadMealDaysAction", () => {
       ],
       error: null,
     };
-    const result = await loadMealDaysAction("upcoming", "2026-10-07");
+    const result = await loadMealDays(client, "upcoming", "2026-10-07");
     if (!result.ok) throw new Error("Expected ok");
     expect(result.days).toHaveLength(1);
     expect(result.days[0].meals[0].items).toEqual([{ name: "Rice", grams: 150 }]);
@@ -112,12 +114,12 @@ describe("loadMealDaysAction", () => {
 
   it("counts yesterday's meals for the Today view only", async () => {
     response = { data: [], error: null, count: 2 };
-    expect(await loadMealDaysAction("today", "2026-10-07")).toEqual({ ok: true, days: [], yesterdayMeals: 2 });
-    expect(await loadMealDaysAction("past", "2026-10-07")).toEqual({ ok: true, days: [], yesterdayMeals: 0 });
+    expect(await loadMealDays(client, "today", "2026-10-07")).toEqual({ ok: true, days: [], yesterdayMeals: 2 });
+    expect(await loadMealDays(client, "past", "2026-10-07")).toEqual({ ok: true, days: [], yesterdayMeals: 0 });
   });
 
   it("fails when meals cannot be read", async () => {
     response = { data: null, error: { message: "boom" } };
-    expect(await loadMealDaysAction("past", "2026-10-07")).toEqual({ ok: false });
+    expect(await loadMealDays(client, "past", "2026-10-07")).toEqual({ ok: false });
   });
 });

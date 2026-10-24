@@ -3,13 +3,12 @@
 import { useState } from "react";
 import { setMealEatenAction } from "@/app/meals/actions";
 
-// "I ate this" for any saved meal. Future days cannot be ticked. onChanged reloads the totals.
-export function MealEatenToggle({ mealId, label, eaten, future, onChanged }: {
+// "I ate this" for any saved meal. Future days cannot be ticked. The action re-renders the page, so the totals update.
+export function MealEatenToggle({ mealId, label, eaten, future }: {
   mealId: string;
   label: string;
   eaten: boolean;
   future: boolean;
-  onChanged: () => void;
 }) {
   const [checked, setChecked] = useState(eaten);
   const [busy, setBusy] = useState(false);
@@ -24,9 +23,7 @@ export function MealEatenToggle({ mealId, label, eaten, future, onChanged }: {
     if (!result.ok) {
       setChecked(!next);
       setError(result.error);
-      return;
     }
-    onChanged();
   }
 
   return (

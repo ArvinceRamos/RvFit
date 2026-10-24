@@ -1,22 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Link from "next/link";
-import { deleteWeighInAction, loadProgressAction, loadWeightChartAction, type ProgressResult, type WeightChartResult } from "@/app/progress/actions";
+import { deleteWeighInAction, loadWeightChartAction, type WeightChartResult } from "@/app/progress/actions";
 import { CheckInCard } from "@/components/check-in-card";
-import { localToday } from "@/components/today-summary";
 import { WeighInForm } from "@/components/weigh-in-form";
 import { calculationConfig } from "@/lib/calc/config";
 import { checkInReady } from "@/lib/check-in";
 import type { WeighInRow } from "@/lib/overview-data";
 import type { WeekCount } from "@/lib/progress";
+import type { ChartPoint, ProgressResult } from "@/lib/progress-data";
 import { goalPaceLabel } from "@/lib/target-options";
-import { chartLayout, chartRanges, filterByRange, weightChange, type ChartRangeKey } from "@/lib/weight-chart";
+import { chartLayout, chartRanges, DEFAULT_CHART_RANGE, filterByRange, weightChange, type ChartRangeKey } from "@/lib/weight-chart";
 import { formatLengthCm, formatWeightKg, type PreferredUnits } from "@/lib/weigh-in";
 import { formatCalendarDate } from "@/lib/workouts/format";
 
-const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium" });
-const shortDateFormat = new Intl.DateTimeFormat("en", { month: "short", day: "numeric" });
+// Weigh-in times are moments, so they are shown in the user's time zone. The server renders with the same
+// zone (requestClock), so the page hydrates without a mismatch.
+function momentFormats(timeZone: string) {
+  return {
+    dateFormat: new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone }),
+    shortDateFormat: new Intl.DateTimeFormat("en", { month: "short", day: "numeric", timeZone }),
+  };
+}
+
+const weekFormat = new Intl.DateTimeFormat("en", { month: "short", day: "numeric" });
 
 function inUnits(weightKg: number, units: PreferredUnits): number {
   return units === "metric" ? weightKg : weightKg / calculationConfig.unit_conversions.pounds_to_kilograms;
@@ -25,7 +33,7 @@ function inUnits(weightKg: number, units: PreferredUnits): number {
 // Calendar dates are plain "YYYY-MM-DD" text, so build the Date from its parts to avoid time zone shifts.
 function shortWeek(date: string): string {
   const [year, month, day] = date.split("-").map(Number);
-  return shortDateFormat.format(new Date(year, month - 1, day));
+  return weekFormat.format(new Date(year, month - 1, day));
 }
 
 function StatTile({ label, value, note }: { label: string; value: string; note: string }) {
@@ -42,8 +50,8 @@ const changeDays = 30;
 
 // The Fit Green tile. Black text on Fit Green only. The chip compares weekly averages (see weightChange) in plain numbers, with no
 // good or bad colour, because the app does not know or judge the user's goal here.
-function LatestWeightTile({ history, units }: { history: WeighInRow[]; units: PreferredUnits }) {
-  const [now] = useState(() => Date.now());
+function LatestWeightTile({ history, units, now, timeZone }: { history: WeighInRow[]; units: PreferredUnits; now: number; timeZone: string }) {
+  const { dateFormat } = momentFormats(timeZone);
   const latest = history.find((row) => row.weight_kg !== null);
   const points = history
     .filter((row) => row.weight_kg !== null)
@@ -106,29 +114,41 @@ function WorkoutsRingTile({ week, plannedDays }: { week: WeekCount; plannedDays:
   );
 }
 
+const chartError = "Your weight chart could not be loaded. Please try again.";
 const chartWidth = 640;
 const chartHeight = 300;
 const chartBox = { width: chartWidth, height: chartHeight, left: 56, right: 20, top: 24, bottom: 44 };
 
 // A line chart of the recorded weigh-ins, drawn as inline SVG. Only recorded points: no smoothing, no goal line.
-// Each range loads its own weigh-ins, so longer ranges are not limited to the History list. reload changes after a save or delete.
-function WeightChartCard({ hasWeighIns, reload, units }: { hasWeighIns: boolean; reload: number; units: PreferredUnits }) {
+// Each range loads its own weigh-ins, so longer ranges are not limited to the History list. The page renders the
+// first range on the server (initialPoints); a save or delete re-renders the page, so another open range loads again.
+function WeightChartCard({ hasWeighIns, initialPoints, units, now, timeZone }: {
+  hasWeighIns: boolean;
+  initialPoints: ChartPoint[] | null;
+  units: PreferredUnits;
+  now: number;
+  timeZone: string;
+}) {
   const gradientId = useId();
-  const [range, setRange] = useState<ChartRangeKey>("30");
-  const [now] = useState(() => Date.now());
-  const [loaded, setLoaded] = useState<{ range: ChartRangeKey; reload: number; result: WeightChartResult }>();
+  const { dateFormat, shortDateFormat } = momentFormats(timeZone);
+  const [range, setRange] = useState<ChartRangeKey>(DEFAULT_CHART_RANGE);
+  const [loaded, setLoaded] = useState<{ range: ChartRangeKey; source: ChartPoint[] | null; result: WeightChartResult }>();
 
   useEffect(() => {
+    if (range === DEFAULT_CHART_RANGE) return;
     let cancelled = false;
     loadWeightChartAction(range)
-      .catch((): WeightChartResult => ({ ok: false, error: "Your weight chart could not be loaded. Please try again." }))
-      .then((result) => { if (!cancelled) setLoaded({ range, reload, result }); });
+      .catch((): WeightChartResult => ({ ok: false, error: chartError }))
+      .then((result) => { if (!cancelled) setLoaded({ range, source: initialPoints, result }); });
     return () => { cancelled = true; };
-  }, [range, reload]);
+  }, [range, initialPoints]);
 
-  const loading = !loaded || loaded.range !== range || loaded.reload !== reload;
+  const current: { result: WeightChartResult } | undefined = range === DEFAULT_CHART_RANGE
+    ? { result: initialPoints ? { ok: true, points: initialPoints } : { ok: false, error: chartError } }
+    : loaded && loaded.range === range && loaded.source === initialPoints ? loaded : undefined;
+  const loading = !current;
   // Weigh-ins arrive newest first. The chart runs oldest to newest.
-  const recorded = (loaded?.result.ok ? loaded.result.points : [])
+  const recorded = (current?.result.ok ? current.result.points : [])
     .map((row) => ({ time: new Date(row.logged_at).getTime(), value: inUnits(row.weight_kg, units) }))
     .sort((a, b) => a.time - b.time);
   const days = chartRanges.find((option) => option.key === range)?.days ?? null;
@@ -141,8 +161,8 @@ function WeightChartCard({ hasWeighIns, reload, units }: { hasWeighIns: boolean;
   const plotRight = chartWidth - chartBox.right;
 
   let body: React.ReactNode;
-  if (loaded && !loaded.result.ok && !loading) {
-    body = <p className="alert-danger mt-4" role="alert">{loaded.result.error}</p>;
+  if (current && !current.result.ok) {
+    body = <p className="alert-danger mt-4" role="alert">{current.result.error}</p>;
   } else if (!layout) {
     body = (
       <div className="relative mt-4">
@@ -242,8 +262,8 @@ function WorkoutBars({ weeks }: { weeks: WeekCount[] }) {
   );
 }
 
-// Asks once inline before deleting. There is no undo.
-function DeleteWeighInButton({ weighInId, onDeleted }: { weighInId: string; onDeleted: () => void }) {
+// Asks once inline before deleting. There is no undo. The action re-renders the page without the weigh-in.
+function DeleteWeighInButton({ weighInId }: { weighInId: string }) {
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -256,9 +276,7 @@ function DeleteWeighInButton({ weighInId, onDeleted }: { weighInId: string; onDe
     if (!result.ok) {
       setBusy(false);
       setError(result.error);
-      return;
     }
-    onDeleted();
   }
 
   if (!asking) {
@@ -276,27 +294,16 @@ function DeleteWeighInButton({ weighInId, onDeleted }: { weighInId: string; onDe
   );
 }
 
-// Weigh-ins, the weight trend, and workouts per week. "Today" is the browser's local date.
-export function ProgressView() {
-  const [result, setResult] = useState<ProgressResult>();
-  const [reload, setReload] = useState(0);
+// Weigh-ins, the weight trend, and workouts per week, rendered on the server with the user's today, time zone
+// and one moment (now). Saves and deletes re-render the page from their server actions.
+export function ProgressView({ result, now, timeZone }: { result: ProgressResult; now: number; timeZone: string }) {
   // After a check-in is accepted, its card stays to show the confirmation while progress reloads.
   const [keepCheckIn, setKeepCheckIn] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    loadProgressAction(localToday())
-      .then((progress) => { if (!cancelled) setResult(progress); })
-      .catch(() => { if (!cancelled) setResult({ ok: false, error: "Your progress could not be loaded. Please try again." }); });
-    return () => { cancelled = true; };
-  }, [reload]);
-
-  const onSaved = useCallback(() => setReload((count) => count + 1), []);
-
-  if (!result) return <p className="mt-6 text-sm text-muted" role="status">Loading your progress…</p>;
   if (!result.ok) return <p className="alert-danger mt-6" role="alert">{result.error}</p>;
 
-  const { units, trend, history, weeks, plannedDays, goal, pace, checkIn } = result;
+  const { units, trend, history, weeks, plannedDays, goal, pace, checkIn, chart } = result;
+  const { dateFormat } = momentFormats(timeZone);
   const goalLabel = goalPaceLabel(goal, pace);
   return (
     <div className="mt-8 grid gap-[30px]">
@@ -307,10 +314,10 @@ export function ProgressView() {
         </p>
       )}
       {checkIn && (keepCheckIn || checkInReady(checkIn)) && (
-        <CheckInCard checkIn={checkIn} className="" onSaved={() => { setKeepCheckIn(true); onSaved(); }} units={units} />
+        <CheckInCard checkIn={checkIn} className="" onSaved={() => setKeepCheckIn(true)} units={units} />
       )}
       <div className="grid gap-[30px] sm:grid-cols-3">
-        <LatestWeightTile history={history} units={units} />
+        <LatestWeightTile history={history} now={now} timeZone={timeZone} units={units} />
         <StatTile
           label="Weight trend"
           note={trend.status === "ok" ? `Average of ${trend.count} weigh-ins in the last ${calculationConfig.progress.trend_window_days} days` : "Not enough data yet"}
@@ -322,9 +329,9 @@ export function ProgressView() {
       {/* One 3-column rhythm: the chart and the bars take two columns, the form and History one, so edges line up. */}
       <div className="grid gap-[30px] md:grid-cols-3">
         <div className="md:col-span-2">
-          <WeightChartCard hasWeighIns={history.some((row) => row.weight_kg !== null)} reload={reload} units={units} />
+          <WeightChartCard hasWeighIns={history.some((row) => row.weight_kg !== null)} initialPoints={chart} now={now} timeZone={timeZone} units={units} />
         </div>
-        <WeighInForm onSaved={onSaved} preferredUnits={units} />
+        <WeighInForm preferredUnits={units} />
       </div>
 
       <div className="grid gap-[30px] md:grid-cols-3">
@@ -350,7 +357,7 @@ export function ProgressView() {
                       <span className="font-semibold">{row.weight_kg === null ? "No weight" : formatWeightKg(row.weight_kg, units)}</span>
                     </div>
                     {measurements.length > 0 && <p className="mt-1 text-muted">{measurements.join(" · ")}</p>}
-                    <DeleteWeighInButton onDeleted={onSaved} weighInId={row.id} />
+                    <DeleteWeighInButton weighInId={row.id} />
                   </li>
                 );
               })}

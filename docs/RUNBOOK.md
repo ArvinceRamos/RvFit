@@ -5,7 +5,7 @@ How to deploy, watch, back up and recover RvFit. Planned hosting: Vercel (app) a
 ## 1. One-time setup (needs your accounts)
 
 1. **Code backup.** Create a private GitHub repo and push `main`. CI (`.github/workflows/ci.yml`) then runs typecheck, lint, tests and build on every push and pull request.
-2. **Two Supabase projects.** One for staging and one for production, in the same region as the Vercel functions (set the Vercel project's function region to match).
+2. **Two Supabase projects.** One for staging and one for production, in the same region as the Vercel functions. `vercel.json` pins the functions to `hnd1` (Tokyo, next to the Supabase project); change both together.
 3. **Vercel project.** Import the repo and set the variables from `.env.example` in each environment:
    - Production → production Supabase.
    - Preview → **staging** Supabase. Never put the production keys in Preview.

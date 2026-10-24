@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { loadDayTotalsAction, type DayTotalsResult } from "@/app/meals/actions";
 import { useAnimatedNumber } from "@/lib/animated-number";
 import type { MealTotals } from "@/lib/meal";
+import type { DayTotalsResult } from "@/lib/meal-days-data";
 import { describeRemaining, formatGrams, progressPercent } from "@/lib/remaining-format";
 import { remainingTargets, type DailyTargets } from "@/lib/suggestions";
 
@@ -109,27 +108,14 @@ function MacroTile({ name, eaten, goal, left, primary = false }: { name: string;
 
 const emptyTotals: MealTotals = { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, fiber_incomplete: false };
 
-// Today's eaten, target, and left. "Today" is the browser's local date.
-// refreshKey changes when the meal list changes, so the card loads again.
-export function TodaySummary({ target, refreshKey }: { target: DailyTargets | null; refreshKey: string }) {
-  const [state, setState] = useState<{ key: string; result: DayTotalsResult }>();
-
-  useEffect(() => {
-    if (!target) return;
-    let cancelled = false;
-    loadDayTotalsAction(localToday(), null)
-      .then((result) => { if (!cancelled) setState({ key: refreshKey, result }); })
-      .catch(() => { if (!cancelled) setState({ key: refreshKey, result: { ok: false } }); });
-    return () => { cancelled = true; };
-  }, [target, refreshKey]);
-
+// Today's eaten, target, and left, read on the server for the user's today (see requestClock).
+export function TodaySummary({ target, totals }: { target: DailyTargets | null; totals: DayTotalsResult }) {
   return (
     <section className="card mt-6">
       <h2 className="section-title">Today</h2>
       {!target && <DayTotals target={null} totals={emptyTotals} />}
-      {target && !state && <p className="mt-3 text-sm text-muted" role="status">Loading today&apos;s totals…</p>}
-      {target && state && !state.result.ok && <p className="alert-danger mt-3" role="alert">Today&apos;s totals are not available right now. Please try again.</p>}
-      {target && state?.result.ok && <DayTotals plannedKcal={state.result.planned.kcal} target={target} totals={state.result.totals} />}
+      {target && !totals.ok && <p className="alert-danger mt-3" role="alert">Today&apos;s totals are not available right now. Please try again.</p>}
+      {target && totals.ok && <DayTotals plannedKcal={totals.planned.kcal} target={target} totals={totals.totals} />}
     </section>
   );
 }

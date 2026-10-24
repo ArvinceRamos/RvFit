@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { loadMealDaysAction, type MealDaysResult } from "@/app/meals/actions";
 import { CopyMealButton } from "@/components/copy-meal-button";
 import { CopyYesterdayButton } from "@/components/copy-yesterday-button";
 import { DeleteMealButton } from "@/components/delete-meal-button";
 import { MealEatenToggle } from "@/components/meal-eaten-toggle";
-import { localToday, TodaySummary } from "@/components/today-summary";
+import { TodaySummary } from "@/components/today-summary";
 import { dayPrepList, describeMealDay, mealDaysWindow, type MealDay, type MealDayMeal, type MealDayView } from "@/lib/meal-days";
+import type { DayTotalsResult, MealDaysResult } from "@/lib/meal-days-data";
 import { formatGrams, formatKcal } from "@/lib/remaining-format";
 import type { DailyTargets } from "@/lib/suggestions";
 
@@ -30,12 +29,12 @@ function formatDay(value: string): string {
   return new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric" }).format(new Date(year, month - 1, day));
 }
 
-function MealRow({ meal, date, today, onChanged }: { meal: MealDayMeal; date: string; today: string; onChanged: () => void }) {
+function MealRow({ meal, date, today }: { meal: MealDayMeal; date: string; today: string }) {
   const status = meal.eaten ? null : date < today ? "Not eaten" : "Planned";
   return (
     <li className="flex gap-3 border-t border-line pt-3">
       <div className="w-5 shrink-0 pt-0.5">
-        <MealEatenToggle eaten={meal.eaten} future={date > today} label={meal.label} mealId={meal.id} onChanged={onChanged} />
+        <MealEatenToggle eaten={meal.eaten} future={date > today} label={meal.label} mealId={meal.id} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
@@ -47,7 +46,7 @@ function MealRow({ meal, date, today, onChanged }: { meal: MealDayMeal; date: st
           <div className="flex flex-wrap items-start gap-4">
             {date < today && <CopyMealButton mealId={meal.id} />}
             <Link className="text-sm font-semibold underline" href={`/meals/${meal.id}`}>Edit</Link>
-            <DeleteMealButton mealId={meal.id} onDeleted={onChanged} />
+            <DeleteMealButton mealId={meal.id} />
           </div>
         </div>
         <p className="mt-1 text-sm">{meal.items.map((item) => `${item.name} ${item.grams} g`).join(" · ")}</p>
@@ -60,7 +59,7 @@ function MealRow({ meal, date, today, onChanged }: { meal: MealDayMeal; date: st
   );
 }
 
-function DayCard({ day, today, onChanged }: { day: MealDay; today: string; onChanged: () => void }) {
+function DayCard({ day, today }: { day: MealDay; today: string }) {
   const isToday = day.date === today;
   return (
     <li>
@@ -91,43 +90,34 @@ function DayCard({ day, today, onChanged }: { day: MealDay; today: string; onCha
           </section>
         )}
         <ul className="mt-3 grid gap-3">
-          {day.meals.map((meal) => <MealRow date={day.date} key={meal.id} meal={meal} onChanged={onChanged} today={today} />)}
+          {day.meals.map((meal) => <MealRow date={day.date} key={meal.id} meal={meal} today={today} />)}
         </ul>
       </details>
     </li>
   );
 }
 
-// The Meals page body: today's totals, the tabs, and one card per day. "Today" is the browser's local date.
-export function MealDaysView({ target, view }: { target: DailyTargets | null; view: MealDayView }) {
-  // Bumped after a meal is ticked or deleted, so the cards and totals load again.
-  const [version, setVersion] = useState(0);
-  const [state, setState] = useState<{ key: string; today: string; result: MealDaysResult }>();
-  const key = `${view}:${version}`;
-
-  useEffect(() => {
-    let cancelled = false;
-    const today = localToday();
-    loadMealDaysAction(view, today)
-      .then((result) => { if (!cancelled) setState({ key, today, result }); })
-      .catch(() => { if (!cancelled) setState({ key, today, result: { ok: false } }); });
-    return () => { cancelled = true; };
-  }, [view, key]);
-
-  const reload = () => setVersion((count) => count + 1);
-  const current = state && state.key.startsWith(`${view}:`) ? state : undefined;
+// The Meals page body: today's totals, the tabs, and one card per day, rendered on the server for the user's
+// today (see requestClock). Ticks, copies and deletes re-render the page from their server actions.
+export function MealDaysView({ target, view, today, result, todayTotals }: {
+  target: DailyTargets | null;
+  view: MealDayView;
+  today: string;
+  result: MealDaysResult;
+  todayTotals: DayTotalsResult;
+}) {
   // Yesterday's meals do not change after a copy, so the button (and its message) stays while the days reload.
-  const showCopy = view === "today" && current?.result.ok === true && current.result.yesterdayMeals > 0;
+  const showCopy = view === "today" && result.ok && result.yesterdayMeals > 0;
 
   return (
     <>
-      <TodaySummary refreshKey={String(version)} target={target} />
+      <TodaySummary target={target} totals={todayTotals} />
       <div className="mt-6 flex flex-wrap gap-3">
         <Link className="btn-primary" href="/meals/new">New meal</Link>
         <Link className="btn-secondary text-base" href="/meals/plan">Plan meals</Link>
       </div>
 
-      {showCopy && current && <CopyYesterdayButton onCopied={reload} today={current.today} />}
+      {showCopy && <CopyYesterdayButton today={today} />}
 
       <nav aria-label="Meal days" className="mt-8 flex gap-2">
         {tabs.map((tab) => (
@@ -142,18 +132,16 @@ export function MealDaysView({ target, view }: { target: DailyTargets | null; vi
         ))}
       </nav>
 
-      {!current ? (
-        <p className="mt-6 text-sm text-muted" role="status">Loading meals…</p>
-      ) : !current.result.ok ? (
+      {!result.ok ? (
         <p className="alert-danger mt-6" role="alert">Your meals could not be loaded. Please try again.</p>
-      ) : current.result.days.length === 0 ? (
+      ) : result.days.length === 0 ? (
         <p className="mt-6 text-sm text-muted">
           {emptyText[view]}{" "}
           {view !== "past" && <Link className="font-semibold text-ink underline" href="/meals/plan">Plan meals</Link>}
         </p>
       ) : (
         <ul className="mt-6 grid gap-4">
-          {current.result.days.map((day) => <DayCard day={day} key={day.date} onChanged={reload} today={current.today} />)}
+          {result.days.map((day) => <DayCard day={day} key={day.date} today={today} />)}
         </ul>
       )}
     </>

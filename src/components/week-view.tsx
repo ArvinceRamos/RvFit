@@ -1,10 +1,7 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { loadWeekAction, type WeekResult } from "@/app/week/actions";
-import { Bar, localToday } from "@/components/today-summary";
+import { Bar } from "@/components/today-summary";
 import { progressPercent } from "@/lib/remaining-format";
+import type { WeekResult } from "@/lib/week-data";
 
 // Calendar dates are plain "YYYY-MM-DD" text, so build the Date from its parts to avoid time zone shifts.
 function dayParts(date: string): { weekday: string; short: string } {
@@ -19,19 +16,8 @@ function dayParts(date: string): { weekday: string; short: string } {
 const kcal = (value: number) => Math.round(value).toLocaleString("en-US");
 
 // The current week, Monday to Sunday, from saved meals, workouts, and Preferences. Read-only.
-// "This week" comes from the browser's local date.
-export function WeekView() {
-  const [result, setResult] = useState<WeekResult>();
-
-  useEffect(() => {
-    let cancelled = false;
-    loadWeekAction(localToday())
-      .then((week) => { if (!cancelled) setResult(week); })
-      .catch(() => { if (!cancelled) setResult({ ok: false, error: "Your week could not be loaded. Please try again." }); });
-    return () => { cancelled = true; };
-  }, []);
-
-  if (!result) return <p className="mt-6 text-sm text-muted" role="status">Loading this week…</p>;
+// Rendered on the server; "this week" comes from the user's today (see requestClock).
+export function WeekView({ result }: { result: WeekResult }) {
   if (!result.ok) return <p className="alert-danger mt-6" role="alert">{result.error}</p>;
 
   const { today, target, days, plan } = result;

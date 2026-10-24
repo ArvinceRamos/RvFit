@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { loadDayTotalsAction, saveMealAction, type DayTotalsResult } from "@/app/meals/actions";
+import { loadDayTotalsAction, saveMealAction } from "@/app/meals/actions";
+import type { DayTotalsResult } from "@/lib/meal-days-data";
 import { FoodAutocomplete } from "@/components/food-autocomplete";
 import { SuggestionsPanel, type SuggestionsView } from "@/components/suggestions-panel";
 import { stateLabels, type FoodRole } from "@/lib/food-catalog";

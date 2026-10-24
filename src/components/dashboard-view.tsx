@@ -1,36 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { loadDashboardAction, type DashboardResult } from "@/app/dashboard/actions";
 import { CheckInCard } from "@/components/check-in-card";
 import { Icon } from "@/components/icon";
 import { MealEatenToggle } from "@/components/meal-eaten-toggle";
 import { SetupCard } from "@/components/setup-card";
 import { WeeklyReviewCard } from "@/components/weekly-review-card";
-import { DayTotals, localToday } from "@/components/today-summary";
+import { DayTotals } from "@/components/today-summary";
 import { calculationConfig } from "@/lib/calc/config";
 import { checkInReady } from "@/lib/check-in";
+import type { DashboardResult } from "@/lib/dashboard-data";
 import { formatKcal } from "@/lib/remaining-format";
 import { goalPaceLabel } from "@/lib/target-options";
 import { formatWeightKg } from "@/lib/weigh-in";
 
-// Today at a glance. "Today" is the browser's local date. refreshKey changes when the saved
-// target changes, so the dashboard loads again after a saved guest draft.
-export function DashboardView({ refreshKey }: { refreshKey: string }) {
-  const [state, setState] = useState<{ key: string; result: DashboardResult }>();
-  // Bumped after a meal is ticked, so the totals load again.
-  const [reloads, setReloads] = useState(0);
+// Today at a glance, rendered on the server with the user's today (see requestClock). Saves on this page
+// (a meal tick, a check-in, a guest draft) re-render it from their server actions.
+export function DashboardView({ result }: { result: DashboardResult }) {
   // After a check-in is accepted, its card stays to show the confirmation while today reloads.
   const [keepCheckIn, setKeepCheckIn] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    loadDashboardAction(localToday())
-      .then((result) => { if (!cancelled) setState({ key: refreshKey, result }); })
-      .catch(() => { if (!cancelled) setState({ key: refreshKey, result: { ok: false, error: "Your dashboard could not be loaded. Please try again." } }); });
-    return () => { cancelled = true; };
-  }, [refreshKey, reloads]);
 
   const quickActions = (
     <section className="card">
@@ -43,17 +32,16 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
     </section>
   );
 
-  if (!state) return <p className="mt-6 text-sm text-muted" role="status">Loading today…</p>;
-  if (!state.result.ok) {
+  if (!result.ok) {
     return (
       <>
-        <p className="alert-danger mt-6" role="alert">{state.result.error}</p>
+        <p className="alert-danger mt-6" role="alert">{result.error}</p>
         <div className="mt-6">{quickActions}</div>
       </>
     );
   }
 
-  const { target, totals, planned_kcal, meals, workouts, trend, units, setup, nextUp, checkIn, review } = state.result;
+  const { target, totals, planned_kcal, meals, workouts, trend, units, setup, nextUp, checkIn, review } = result;
   return (
     <div className="mt-8 grid gap-[30px] md:grid-cols-2 lg:grid-cols-3">
       <SetupCard flags={setup} />
@@ -76,7 +64,7 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
         <CheckInCard
           checkIn={checkIn}
           className="md:col-span-2 lg:col-span-3"
-          onSaved={() => { setKeepCheckIn(true); setReloads((count) => count + 1); }}
+          onSaved={() => setKeepCheckIn(true)}
           units={units}
         />
       )}
@@ -90,7 +78,7 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
             {meals.map((meal) => (
               <li className="flex items-center justify-between gap-3 text-sm" key={meal.id}>
                 <span className="flex items-center gap-2">
-                  <MealEatenToggle eaten={meal.eaten} future={false} label={meal.label} mealId={meal.id} onChanged={() => setReloads((count) => count + 1)} />
+                  <MealEatenToggle eaten={meal.eaten} future={false} label={meal.label} mealId={meal.id} />
                   <span><span className="font-bold">{meal.label}</span> <span className="text-muted">· {formatKcal(meal.totals.kcal)}{meal.eaten ? "" : " · planned"}</span></span>
                 </span>
                 <Link className="font-semibold underline" href={`/meals/${meal.id}`}>Edit</Link>

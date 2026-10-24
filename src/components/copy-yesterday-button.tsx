@@ -5,8 +5,8 @@ import { copyMealDayAction } from "@/app/meals/actions";
 import { addDays } from "@/lib/week";
 
 // "Copy yesterday" on the Meals Today tab: all of yesterday's meals, foods and grams, saved again
-// for today in one go. The copies start unticked, like every new meal.
-export function CopyYesterdayButton({ today, onCopied }: { today: string; onCopied: () => void }) {
+// for today in one go. The copies start unticked, like every new meal. The action re-renders the page.
+export function CopyYesterdayButton({ today }: { today: string }) {
   const [state, setState] = useState<{ status: "idle" | "saving" } | { status: "done"; count: number } | { status: "error"; error: string }>({ status: "idle" });
 
   async function copy() {
@@ -18,7 +18,6 @@ export function CopyYesterdayButton({ today, onCopied }: { today: string; onCopi
       return;
     }
     setState({ status: "done", count: result.count });
-    onCopied();
   }
 
   if (state.status === "done") {
