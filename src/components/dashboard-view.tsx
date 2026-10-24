@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { loadDashboardAction, type DashboardResult } from "@/app/dashboard/actions";
+import { Icon } from "@/components/icon";
 import { MealEatenToggle } from "@/components/meal-eaten-toggle";
 import { SetupCard } from "@/components/setup-card";
 import { DayTotals, localToday } from "@/components/today-summary";
@@ -27,7 +28,7 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
 
   const quickActions = (
     <section className="card">
-      <h2 className="text-xl font-medium">Quick actions</h2>
+      <h2 className="section-title">Quick actions</h2>
       <div className="mt-4 flex flex-wrap gap-3">
         <Link className="btn-primary" href="/meals/new">New meal</Link>
         <Link className="btn-secondary" href="/workouts">Log a workout</Link>
@@ -36,11 +37,11 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
     </section>
   );
 
-  if (!state) return <p className="mt-6 text-sm text-muted">Loading today…</p>;
+  if (!state) return <p className="mt-6 text-sm text-muted" role="status">Loading today…</p>;
   if (!state.result.ok) {
     return (
       <>
-        <p className="mt-6 text-sm text-danger">{state.result.error}</p>
+        <p className="alert-danger mt-6" role="alert">{state.result.error}</p>
         <div className="mt-6">{quickActions}</div>
       </>
     );
@@ -52,7 +53,7 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
       <SetupCard flags={setup} />
       <section className="card md:col-span-2 lg:col-span-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-xl font-medium">Today</h2>
+          <h2 className="section-title flex items-center gap-2"><Icon className="size-5 text-accent-text" name="calories" />Today</h2>
           {target && goalPaceLabel(target.goal, target.pace) && (
             <p className="text-sm text-muted">
               Goal: <span className="font-semibold text-ink">{goalPaceLabel(target.goal, target.pace)}</span>
@@ -63,7 +64,7 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
       </section>
 
       <section className="card">
-        <h2 className="text-xl font-medium">Meals</h2>
+        <h2 className="section-title flex items-center gap-2"><Icon className="size-5 text-accent-text" name="meals" />Meals</h2>
         {meals.length === 0 ? (
           <p className="mt-3 text-sm text-muted">No meals saved today. <Link className="font-semibold text-ink underline" href="/meals/new">Add a meal</Link></p>
         ) : (
@@ -82,7 +83,7 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
       </section>
 
       <section className="card">
-        <h2 className="text-xl font-medium">Workout</h2>
+        <h2 className="section-title flex items-center gap-2"><Icon className="size-5 text-accent-text" name="workouts" />Workout</h2>
         {workouts.length === 0 ? (
           nextUp?.status === "next" ? (
             <div className="mt-3">
@@ -109,10 +110,10 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
       </section>
 
       <section className="card">
-        <h2 className="text-xl font-medium">Weight trend</h2>
+        <h2 className="section-title flex items-center gap-2"><Icon className="size-5 text-accent-text" name="progress" />Weight trend</h2>
         {trend.status === "ok" ? (
           <>
-            <p className="mt-3 text-3xl font-medium tracking-tight">{formatWeightKg(trend.average_kg, units)}</p>
+            <p className="mt-3 metric">{formatWeightKg(trend.average_kg, units)}</p>
             <p className="mt-1 text-sm text-muted">Average of {trend.count} weigh-ins in the last {calculationConfig.progress.trend_window_days} days.</p>
           </>
         ) : (

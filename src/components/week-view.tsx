@@ -31,8 +31,8 @@ export function WeekView() {
     return () => { cancelled = true; };
   }, []);
 
-  if (!result) return <p className="mt-6 text-sm text-muted">Loading this week…</p>;
-  if (!result.ok) return <p className="mt-6 text-sm text-danger">{result.error}</p>;
+  if (!result) return <p className="mt-6 text-sm text-muted" role="status">Loading this week…</p>;
+  if (!result.ok) return <p className="alert-danger mt-6" role="alert">{result.error}</p>;
 
   const { today, target, days, plan } = result;
   return (
@@ -108,7 +108,7 @@ export function WeekView() {
       )}
 
       <section className="card mt-[30px]">
-        <h2 className="text-xl font-medium">This week&apos;s plan</h2>
+        <h2 className="section-title">This week&apos;s plan</h2>
         {plan === null ? (
           <p className="mt-3 text-sm text-muted">
             Save your experience, equipment, and training days in Preferences to see your workout days here.{" "}

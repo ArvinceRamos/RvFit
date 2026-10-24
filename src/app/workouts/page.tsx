@@ -46,7 +46,7 @@ export default async function WorkoutsPage({ searchParams }: PageProps<"/workout
 
   return (
     <AuthFrame showNav>
-      <h1 className="text-4xl font-medium tracking-tight">Workouts</h1>
+      <h1 className="page-title">Workouts</h1>
       {savedNotice && (
         <p className="alert-success mt-4" role="status">
           {savedNotice === "updated" ? "Workout updated." : "Workout saved. Nice work."}{" "}
@@ -55,7 +55,7 @@ export default async function WorkoutsPage({ searchParams }: PageProps<"/workout
       )}
 
       {error || swapsError ? (
-        <p className="mt-6 text-sm text-danger">Your workout plan could not be loaded. Please try again.</p>
+        <p className="alert-danger mt-6" role="alert">Your workout plan could not be loaded. Please try again.</p>
       ) : !template ? (
         <div className="mt-6 grid gap-3">
           <p className="text-sm text-muted">Save your experience, equipment, and training days in Preferences to see your workout plan.</p>
@@ -71,8 +71,8 @@ export default async function WorkoutsPage({ searchParams }: PageProps<"/workout
             {template.days.map((day) => (
               <section className="card" key={day.key}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-xl font-medium">{day.name}</h2>
-                  <Link className="btn-primary !px-3 !py-2" href={`/workouts/log/new?day=${day.key}`}>Log this workout</Link>
+                  <h2 className="section-title">{day.name}</h2>
+                  <Link className="btn-primary btn-sm" href={`/workouts/log/new?day=${day.key}`}>Log this workout</Link>
                 </div>
                 <ul className="mt-3 grid gap-4">
                   {day.slots.map((slot) => {
@@ -103,7 +103,7 @@ export default async function WorkoutsPage({ searchParams }: PageProps<"/workout
       <section className="mt-10">
         <h2 className="text-2xl font-medium tracking-tight">Recent workouts</h2>
         {recentError ? (
-          <p className="mt-4 text-sm text-danger">Your recent workouts could not be loaded. Please try again.</p>
+          <p className="alert-danger mt-4" role="alert">Your recent workouts could not be loaded. Please try again.</p>
         ) : !recent || recent.length === 0 ? (
           <p className="mt-4 text-sm text-muted">No workouts logged yet.</p>
         ) : (

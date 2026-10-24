@@ -120,7 +120,7 @@ export function MealDaysView({ target, view }: { target: DailyTargets | null; vi
     <>
       <TodaySummary refreshKey={String(version)} target={target} />
       <div className="mt-6 flex flex-wrap gap-3">
-        <Link className="inline-block rounded-lg bg-accent px-4 py-3 font-bold text-on-accent" href="/meals/new">New meal</Link>
+        <Link className="btn-primary" href="/meals/new">New meal</Link>
         <Link className="btn-secondary text-base" href="/meals/plan">Plan meals</Link>
       </div>
 
@@ -128,7 +128,7 @@ export function MealDaysView({ target, view }: { target: DailyTargets | null; vi
         {tabs.map((tab) => (
           <Link
             aria-current={tab.view === view ? "page" : undefined}
-            className={`chip px-4 py-2 ${tab.view === view ? "!border-accent !bg-accent text-on-accent" : ""}`}
+            className="btn-ghost"
             href={tab.view === "today" ? "/meals" : `/meals?view=${tab.view}`}
             key={tab.view}
           >
@@ -138,9 +138,9 @@ export function MealDaysView({ target, view }: { target: DailyTargets | null; vi
       </nav>
 
       {!current ? (
-        <p className="mt-6 text-sm text-muted">Loading meals…</p>
+        <p className="mt-6 text-sm text-muted" role="status">Loading meals…</p>
       ) : !current.result.ok ? (
-        <p className="mt-6 text-sm text-danger">Your meals could not be loaded. Please try again.</p>
+        <p className="alert-danger mt-6" role="alert">Your meals could not be loaded. Please try again.</p>
       ) : current.result.days.length === 0 ? (
         <p className="mt-6 text-sm text-muted">
           {emptyText[view]}{" "}

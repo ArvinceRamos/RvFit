@@ -15,7 +15,7 @@ export default async function PreferencesPage() {
 
   return (
     <AuthFrame showNav>
-      <h1 className="text-4xl font-medium tracking-tight">Preferences</h1>
+      <h1 className="page-title">Preferences</h1>
       {data ? (
         <PreferencesForm
           foods={data.foods as AvoidableFood[]}
@@ -25,7 +25,7 @@ export default async function PreferencesPage() {
         />
       ) : (
         // No form after a failed read, so Save cannot overwrite real allergy data with blanks.
-        <p className="mt-6 text-sm text-danger" role="alert">
+        <p className="alert-danger mt-6" role="alert">
           Your preferences could not be loaded. Nothing was changed. Please reload the page to try again.
         </p>
       )}

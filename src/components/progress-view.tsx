@@ -30,7 +30,7 @@ function StatTile({ label, value, note }: { label: string; value: string; note: 
   return (
     <div className="card !p-4">
       <p className="text-sm text-muted">{label}</p>
-      <p className="mt-1 text-3xl font-medium tracking-tight">{value}</p>
+      <p className="mt-1 metric">{value}</p>
       <p className="mt-1 text-sm text-muted">{note}</p>
     </div>
   );
@@ -57,7 +57,7 @@ function LatestWeightTile({ history, units }: { history: WeighInRow[]; units: Pr
   return (
     <div className="rounded-[22px] bg-accent p-4 text-on-accent">
       <p className="text-sm font-medium">Latest weight</p>
-      <p className="mt-1 text-3xl font-medium tracking-tight">{latest ? formatWeightKg(latest.weight_kg as number, units) : "—"}</p>
+      <p className="mt-1 metric">{latest ? formatWeightKg(latest.weight_kg as number, units) : "—"}</p>
       <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
         <span>{latest ? dateFormat.format(new Date(latest.logged_at)) : "No weigh-ins yet"}</span>
         {chip && <span className="rounded-full bg-on-accent px-2.5 py-0.5 text-xs font-semibold text-accent">{chip}</span>}
@@ -92,7 +92,7 @@ function WorkoutsRingTile({ week, plannedDays }: { week: WeekCount; plannedDays:
       ) : null}
       <div className="min-w-0">
         <p className="text-sm text-muted">Workouts this week</p>
-        <p className="mt-1 text-3xl font-medium tracking-tight">
+        <p className="mt-1 metric">
           {week.count}
           {plannedDays ? <span className="text-lg text-muted"> / {plannedDays}</span> : null}
         </p>
@@ -185,7 +185,7 @@ function WeightChartCard({ history, units }: { history: WeighInRow[]; units: Pre
   return (
     <section className="card h-full">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-medium">Weight chart</h2>
+        <h2 className="section-title">Weight chart</h2>
         <div aria-label="Chart range" className="segmented text-sm" role="group">
           {chartRanges.map((option) => (
             <button
@@ -210,7 +210,7 @@ function WorkoutBars({ weeks }: { weeks: WeekCount[] }) {
   const most = Math.max(1, ...ordered.map((week) => week.count));
   return (
     <section className="card h-full">
-      <h2 className="text-xl font-medium">Workouts per week</h2>
+      <h2 className="section-title">Workouts per week</h2>
       <ul className="mt-4 flex h-44 items-end gap-2">
         {ordered.map((week, index) => {
           const current = index === ordered.length - 1;
@@ -243,8 +243,8 @@ export function ProgressView() {
 
   const onSaved = useCallback(() => setReload((count) => count + 1), []);
 
-  if (!result) return <p className="mt-6 text-sm text-muted">Loading your progress…</p>;
-  if (!result.ok) return <p className="mt-6 text-sm text-danger">{result.error}</p>;
+  if (!result) return <p className="mt-6 text-sm text-muted" role="status">Loading your progress…</p>;
+  if (!result.ok) return <p className="alert-danger mt-6" role="alert">{result.error}</p>;
 
   const { units, trend, history, weeks, plannedDays, goal, pace } = result;
   const goalLabel = goalPaceLabel(goal, pace);
@@ -279,7 +279,7 @@ export function ProgressView() {
           <WorkoutBars weeks={weeks} />
         </div>
         <section className="card flex flex-col">
-          <h2 className="text-xl font-medium">History</h2>
+          <h2 className="section-title">History</h2>
           {history.length === 0 ? (
             <p className="mt-3 text-sm text-muted">No weigh-ins saved yet.</p>
           ) : (

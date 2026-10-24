@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { AccountCard } from "@/components/account-card";
 import { AuthFrame } from "@/components/auth-frame";
 import { CheckInCard } from "@/components/check-in-card";
 import { DeleteAccountSection } from "@/components/delete-account-section";
 import { ProfileForm, type SavedProfile, type CurrentTarget } from "@/components/profile-form";
 import { calculationConfig, type ActivityLevel, type FormulaBranch } from "@/lib/calc/config";
 import { targetCheckIn, type CheckInGoal, type CheckInPace } from "@/lib/check-in";
+import { savedDisplayName } from "@/lib/display-name";
 import { requireUser } from "@/lib/supabase/auth";
 
 // Enough history for the check-in's two weeks plus the gap between them.
@@ -30,7 +32,7 @@ async function loadProfileData(supabase: Awaited<ReturnType<typeof requireUser>>
 }
 
 export default async function ProfilePage({ searchParams }: PageProps<"/profile">) {
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   // Set by the check-in's "Use this target" link: it pre-fills the form, it does not save.
   const suggestParam = Number((await searchParams).suggest);
 
@@ -44,7 +46,7 @@ export default async function ProfilePage({ searchParams }: PageProps<"/profile"
 
   let body: React.ReactNode;
   if (profileError || targetError || weightError || recentError) {
-    body = <p className="mt-6 text-sm text-danger">Your profile could not be loaded. Please try again.</p>;
+    body = <p className="alert-danger mt-6" role="alert">Your profile could not be loaded. Please try again.</p>;
   } else if (!profile) {
     // The profile and its age confirmation are created when the first target is saved.
     body = (
@@ -97,8 +99,9 @@ export default async function ProfilePage({ searchParams }: PageProps<"/profile"
 
   return (
     <AuthFrame showNav>
-      <h1 className="text-4xl font-medium tracking-tight">Profile and targets</h1>
+      <h1 className="page-title">Profile and targets</h1>
       {body}
+      <AccountCard email={user.email ?? ""} name={savedDisplayName(user.user_metadata)} />
       <DeleteAccountSection />
     </AuthFrame>
   );

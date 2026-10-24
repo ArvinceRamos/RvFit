@@ -372,6 +372,28 @@ body:has(.landing) {
   Cards and floating surfaces are frosted glass over the ribbon. Tiles, fields and chips inside them stay solid enough to read.
 */
 @layer components {
+  /* Type scale for signed-in pages. Use these instead of repeating size and weight classes. */
+  .page-title {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 500;
+  }
+
+  .metric {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    font-variant-numeric: tabular-nums;
+  }
+
   /* Frosted glass, like the landing PreviewFrame: the ribbon behind the page shows through, blurred. */
   .card {
     border-radius: 22px;

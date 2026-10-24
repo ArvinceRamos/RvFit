@@ -19,7 +19,7 @@ export default async function EditMealPage({ params }: PageProps<"/meals/[id]">)
 
   return (
     <AuthFrame showNav>
-      <h1 className="text-4xl font-medium tracking-tight">Edit meal</h1>
+      <h1 className="page-title">Edit meal</h1>
       <MealBuilder
         foods={foods}
         suggestionContext={suggestionContext}

@@ -5,7 +5,7 @@ import { AuthFrame } from "./auth-frame";
 export function PageLoading({ title }: { title: string }) {
   return (
     <AuthFrame showNav>
-      <h1 className="text-4xl font-medium tracking-tight">{title}</h1>
+      <h1 className="page-title">{title}</h1>
       <p className="mt-3 text-sm text-muted" role="status">Loading…</p>
       <div aria-hidden className="mt-8 grid gap-[30px] md:grid-cols-2 lg:grid-cols-3">
         {[0, 1, 2].map((index) => (

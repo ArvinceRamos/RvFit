@@ -40,7 +40,7 @@ export default async function FoodsPage({ searchParams }: PageProps<"/foods">) {
 
   return (
     <AuthFrame showNav>
-      <h1 className="text-4xl font-medium tracking-tight">Food library</h1>
+      <h1 className="page-title">Food library</h1>
       <p className="mt-3 text-sm text-muted">Nutrition values are per 100 g, from USDA FoodData Central.</p>
 
       <div className="mt-8 grid items-start gap-[30px] lg:grid-cols-[320px_1fr]">
@@ -70,7 +70,7 @@ export default async function FoodsPage({ searchParams }: PageProps<"/foods">) {
 
       <div>
       {error ? (
-        <p className="text-sm text-danger">The food library could not be loaded. Please try again.</p>
+        <p className="alert-danger" role="alert">The food library could not be loaded. Please try again.</p>
       ) : foods.length === 0 ? (
         <p className="text-sm text-muted">No foods match your search.</p>
       ) : (

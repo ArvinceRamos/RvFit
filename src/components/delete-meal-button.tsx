@@ -35,7 +35,7 @@ export function DeleteMealButton({ mealId, onDeleted }: { mealId: string; onDele
         <button className="text-sm font-semibold text-danger underline disabled:opacity-60" disabled={busy} onClick={confirmDelete} type="button">{busy ? "Deleting…" : "Yes"}</button>
         <button className="text-sm font-semibold underline disabled:opacity-60" disabled={busy} onClick={() => { setAsking(false); setError(undefined); }} type="button">No</button>
       </div>
-      {error && <p aria-live="polite" className="text-sm text-danger">{error}</p>}
+      {error && <p className="text-sm text-danger" role="alert">{error}</p>}
     </div>
   );
 }

@@ -104,7 +104,7 @@ function ItemCard({ item, grams, focus, onChange, onRemove }: {
           {describeNutrition(itemNutrition(item.food.nutrition, grams.grams))}
         </p>
       ) : (
-        item.amount !== "" && <p className="mt-3 text-sm text-danger">{grams.error}</p>
+        item.amount !== "" && <p className="mt-3 text-sm text-danger" role="alert">{grams.error}</p>
       )}
     </div>
   );
@@ -262,7 +262,7 @@ export function MealBuilder({ foods, initial, suggestionContext }: {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold">Foods</h2>
+          <h2 className="section-title">Foods</h2>
           <p className="mt-1 text-sm text-muted">Fill any of these. Leave the rest empty. A meal needs at least one food.</p>
           <div className="mt-4 grid gap-5">
             {mealSlots.map((slot) => {
@@ -333,7 +333,7 @@ export function MealBuilder({ foods, initial, suggestionContext }: {
                 value={search}
               />
             ) : (
-              <button className="rounded-lg border border-edge bg-field px-4 py-2 text-sm font-semibold" onClick={() => setShowExtraSearch(true)} type="button">
+              <button className="btn-secondary btn-sm" onClick={() => setShowExtraSearch(true)} type="button">
                 Add another food
               </button>
             )}
@@ -343,7 +343,7 @@ export function MealBuilder({ foods, initial, suggestionContext }: {
 
       <aside className="grid gap-6 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
         <section className="rounded-xl border border-line bg-card p-5">
-          <h2 className="text-xl font-bold">Meal totals</h2>
+          <h2 className="section-title">Meal totals</h2>
           <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-5 lg:grid-cols-3">
             <div><dt className="text-muted">Calories</dt><dd className="font-bold">{Math.round(totals.kcal)} kcal</dd></div>
             <div><dt className="text-muted">Protein</dt><dd className="font-bold">{totals.protein_g.toFixed(1)} g</dd></div>

@@ -63,7 +63,7 @@ function DayTotalsBody({ target, totals, plannedKcal }: { target: DailyTargets; 
       <div className="mt-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <p>
-            <span className="text-3xl font-bold tracking-tight">{number(kcalShown)}</span>
+            <span className="metric">{number(kcalShown)}</span>
             <span className="ml-2 text-base text-muted">of {number(target.kcal)} kcal</span>
           </p>
           <p className={`text-base font-semibold ${caloriesOver ? "text-warn" : "text-ink"}`}>
@@ -89,7 +89,7 @@ function MacroTile({ name, eaten, goal, left }: { name: string; eaten: number | 
   const eatenShown = useAnimatedNumber(eaten ?? 0);
   const over = left !== null && left < 0;
   return (
-    <div className="rounded-lg border border-line bg-page p-3">
+    <div className="tile p-3">
       <dt className="text-sm text-muted">{name}</dt>
       <dd className={`mt-1 font-bold ${eaten === null ? "text-base" : "text-lg"}`}>{eaten === null ? "Incomplete" : `${eatenShown.toFixed(1)} g`}</dd>
       <dd className="text-sm text-muted">of {goal} g</dd>
@@ -123,10 +123,10 @@ export function TodaySummary({ target, refreshKey }: { target: DailyTargets | nu
 
   return (
     <section className="card mt-6">
-      <h2 className="text-xl font-medium">Today</h2>
+      <h2 className="section-title">Today</h2>
       {!target && <DayTotals target={null} totals={emptyTotals} />}
-      {target && !state && <p className="mt-3 text-sm text-muted">Loading today&apos;s totals…</p>}
-      {target && state && !state.result.ok && <p className="mt-3 text-sm text-danger">Today&apos;s totals are not available right now. Please try again.</p>}
+      {target && !state && <p className="mt-3 text-sm text-muted" role="status">Loading today&apos;s totals…</p>}
+      {target && state && !state.result.ok && <p className="alert-danger mt-3" role="alert">Today&apos;s totals are not available right now. Please try again.</p>}
       {target && state?.result.ok && <DayTotals plannedKcal={state.result.planned.kcal} target={target} totals={state.result.totals} />}
     </section>
   );

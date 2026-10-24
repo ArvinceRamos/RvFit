@@ -82,7 +82,7 @@ export function CheckInCard({ checkIn, units }: { checkIn: CheckIn; units: Prefe
 
   return (
     <section aria-labelledby="check-in-title" className="card mt-8">
-      <h2 className="text-xl font-medium" id="check-in-title">Target check-in</h2>
+      <h2 className="section-title" id="check-in-title">Target check-in</h2>
       {body}
     </section>
   );

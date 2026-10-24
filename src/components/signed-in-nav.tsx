@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { Icon } from "@/components/icon";
 import { LogoutButton } from "@/components/logout-button";
 import { activeNavLabel, isActiveNavItem, signedInNavItems } from "@/lib/nav";
 
@@ -40,13 +41,14 @@ export function SignedInNav() {
 
   return (
     <>
-      <nav aria-label="Main" className="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap text-sm lg:flex">
+      <nav aria-label="Main" className="hidden min-w-0 flex-1 items-center gap-0.5 overflow-x-auto whitespace-nowrap text-sm lg:flex">
         {links.map((item) => (
-          <Link aria-current={item.active ? "page" : undefined} className="btn-ghost btn-sm" href={item.href} key={item.href}>
+          <Link aria-current={item.active ? "page" : undefined} className="btn-ghost btn-sm xl:!gap-1.5 xl:!px-2.5" href={item.href} key={item.href}>
+            <Icon className="hidden size-4 xl:block" name={item.icon} />
             {item.label}
           </Link>
         ))}
-        <LogoutButton className="btn-ghost btn-sm ml-auto" />
+        <LogoutButton className="btn-ghost btn-sm ml-auto lg:max-xl:[&_svg]:hidden xl:!gap-1.5 xl:!px-2.5" />
       </nav>
 
       <div className="flex flex-1 justify-end lg:hidden">
@@ -58,7 +60,7 @@ export function SignedInNav() {
           ref={buttonRef}
           type="button"
         >
-          <span aria-hidden>{open ? "✕" : "☰"}</span>
+          <Icon name={open ? "close" : "menu"} />
           {activeNavLabel(pathname) ?? "Menu"}
           <span className="sr-only">, open menu</span>
         </button>
@@ -74,6 +76,7 @@ export function SignedInNav() {
                   href={item.href}
                   onClick={() => setOpen(false)}
                 >
+                  <Icon name={item.icon} />
                   {item.label}
                 </Link>
               </li>

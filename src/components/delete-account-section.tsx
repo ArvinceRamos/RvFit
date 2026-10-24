@@ -22,7 +22,7 @@ export function DeleteAccountSection() {
 
   return (
     <section className="card card-danger mt-[30px]">
-      <h2 className="text-xl font-medium">Delete my account and data</h2>
+      <h2 className="section-title">Delete my account and data</h2>
       {!confirming ? (
         <>
           <p className="mt-2 text-sm text-muted">Remove your account and everything you have saved in RvFit.</p>

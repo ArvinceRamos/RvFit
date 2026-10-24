@@ -37,7 +37,7 @@ export function WeighInForm({ preferredUnits, onSaved }: { preferredUnits: Prefe
 
   return (
     <section className="card h-full">
-      <h2 className="text-xl font-medium">Add a weigh-in</h2>
+      <h2 className="section-title">Add a weigh-in</h2>
       <form className="mt-4 grid gap-4" onSubmit={submit}>
         <Field label={`Weight (${weightUnit})`} name="weight" required value={fields.weight} onChange={updateField} />
         <div className="grid grid-cols-3 gap-3">

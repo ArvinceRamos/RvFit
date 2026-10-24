@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Icon } from "@/components/icon";
 import { GUEST_DRAFT_STORAGE_KEY } from "@/lib/guest-draft";
 import { createClient } from "@/lib/supabase/client";
 
@@ -36,6 +37,7 @@ export function LogoutButton({ className = defaultClassName }: { className?: str
   return (
     <>
       <button aria-busy={pending} className={`${className} disabled:opacity-60`} disabled={pending} onClick={logOut} type="button">
+        <Icon name="log-out" />
         {pending ? "Logging out…" : "Log out"}
       </button>
       {failed && <span className="sr-only" role="alert">Could not log out. Check your connection and try again.</span>}

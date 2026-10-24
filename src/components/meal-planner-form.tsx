@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/icon";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { loadPlanDaysAction, saveMealPlanAction } from "@/app/meals/actions";
@@ -224,7 +225,7 @@ export function MealPlannerForm({ foods, target, exclusions }: {
     <div className="mt-6 grid gap-8">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <section className="card grid content-start gap-5">
-          <h2 className="text-xl font-bold">Plan</h2>
+          <h2 className="section-title">Plan</h2>
           <fieldset className="grid gap-2">
             <legend className="mb-2 text-sm font-semibold">Length</legend>
             <div className="flex flex-wrap gap-2">
@@ -266,7 +267,7 @@ export function MealPlannerForm({ foods, target, exclusions }: {
 
         <section className="card grid content-start gap-6">
           <div>
-            <h2 className="text-xl font-bold">Foods you have</h2>
+            <h2 className="section-title">Foods you have</h2>
             <p className="mt-1 text-sm text-muted">Up to {limits.max_foods_per_group} per group. Each meal uses one protein, one carb, and one fat food, plus a second one when a portion is full. Portions stay within normal sizes.</p>
           </div>
           {plannerGroups.map((group) => {
@@ -296,7 +297,7 @@ export function MealPlannerForm({ foods, target, exclusions }: {
                     {picked.map((food) => (
                       <li className="inline-flex items-center gap-2 rounded-full border border-selected-edge bg-selected px-3 py-1 text-sm" key={food.id}>
                         {food.name}
-                        <button aria-label={`Remove ${food.name}`} className="font-bold text-muted hover:text-ink" onClick={() => removePick(group, food.id)} type="button">×</button>
+                        <button aria-label={`Remove ${food.name}`} className="font-bold text-muted hover:text-ink" onClick={() => removePick(group, food.id)} type="button"><Icon className="size-3.5" name="close" /></button>
                       </li>
                     ))}
                   </ul>
@@ -325,12 +326,12 @@ export function MealPlannerForm({ foods, target, exclusions }: {
           {busy && !preview ? "Planning…" : "Preview plan"}
         </button>
         {pickedCount === 0 && <p className="text-sm text-muted">Pick at least one food to preview a plan.</p>}
-        {message && <p aria-live="polite" className="text-sm text-danger">{message}</p>}
+        {message && <p className="text-sm text-danger" role="alert">{message}</p>}
       </div>
 
       {preview && (
         <section className="grid gap-4">
-          <h2 className="text-xl font-bold">Preview</h2>
+          <h2 className="section-title">Preview</h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {preview.days.map((day) => <DayCard day={day} key={day.date} logged={preview.logged[day.date]} />)}
           </div>
@@ -346,7 +347,7 @@ export function MealPlannerForm({ foods, target, exclusions }: {
           ) : (
             <button className="btn-primary w-fit" onClick={() => setConfirming(true)} type="button">Save as meals</button>
           )}
-          {saveError && <p aria-live="polite" className="text-sm text-danger">{saveError}</p>}
+          {saveError && <p className="text-sm text-danger" role="alert">{saveError}</p>}
         </section>
       )}
     </div>

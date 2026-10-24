@@ -7,7 +7,7 @@ export default async function ProgressPage() {
 
   return (
     <AuthFrame showNav>
-      <h1 className="text-4xl font-medium tracking-tight">Progress</h1>
+      <h1 className="page-title">Progress</h1>
       <ProgressView />
     </AuthFrame>
   );

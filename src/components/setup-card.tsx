@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/icon";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { setupComplete, setupSteps, type SetupFlags } from "@/lib/setup-steps";
@@ -43,7 +44,7 @@ export function SetupCard({ flags }: { flags: SetupFlags }) {
   return (
     <section aria-labelledby="setup-title" className="card md:col-span-2 lg:col-span-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl font-medium" id="setup-title">Get set up</h2>
+        <h2 className="section-title" id="setup-title">Get set up</h2>
         <p className="text-sm text-muted">{doneCount} of {steps.length} done</p>
       </div>
       <div aria-hidden className="mt-3 h-1.5 overflow-hidden rounded-full bg-track">
@@ -60,7 +61,7 @@ export function SetupCard({ flags }: { flags: SetupFlags }) {
                 aria-hidden
                 className={`grid size-5 shrink-0 place-items-center rounded-full text-xs ${step.done ? "bg-accent text-on-accent" : "border border-edge text-muted"}`}
               >
-                {step.done ? "✓" : index + 1}
+                {step.done ? <Icon className="size-3" name="check" /> : index + 1}
               </span>
               <span className={step.done ? "text-muted line-through" : ""}>{step.title}</span>
               <span className="sr-only">{step.done ? "(done)" : "(not done yet)"}</span>

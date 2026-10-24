@@ -22,7 +22,7 @@ const roleHeadings: Record<SuggestionRole, { title: string; macro: string }> = {
 export function SuggestionsPanel({ view, date }: { view: SuggestionsView; date: string }) {
   return (
     <section className="rounded-xl border border-line bg-card p-5">
-      <h2 className="text-xl font-bold">Remaining today</h2>
+      <h2 className="section-title">Remaining today</h2>
       <p className="mt-1 text-sm text-muted">Based on your saved target, meals saved on {date || "this date"}, and the foods in this meal.</p>
 
       {view.state === "no-target" && (
@@ -31,8 +31,8 @@ export function SuggestionsPanel({ view, date }: { view: SuggestionsView; date: 
         </p>
       )}
       {view.state === "no-date" && <p className="mt-4 text-sm text-muted">Choose a date to see what is left for that day.</p>}
-      {view.state === "error" && <p className="mt-4 text-sm text-danger">Suggestions are not available right now. Please try again.</p>}
-      {view.state === "loading" && <p className="mt-4 text-sm text-muted">Loading today&apos;s totals…</p>}
+      {view.state === "error" && <p className="alert-danger mt-4" role="alert">Suggestions are not available right now. Please try again.</p>}
+      {view.state === "loading" && <p className="mt-4 text-sm text-muted" role="status">Loading today&apos;s totals…</p>}
 
       {view.state === "ready" && (
         <>
@@ -45,7 +45,7 @@ export function SuggestionsPanel({ view, date }: { view: SuggestionsView; date: 
           </dl>
           {view.remaining.fiber_g === null && <p className="mt-3 text-sm text-muted">Some foods have no fiber listed, so the remaining fiber is not shown.</p>}
 
-          <h2 className="mt-8 text-xl font-bold">Suggested foods</h2>
+          <h2 className="mt-8 section-title">Suggested foods</h2>
           <p className="mt-1 text-sm text-muted">These are foods to consider, not amounts. Choose grams or a measure above.</p>
           <div className="mt-4 grid gap-6">
             {view.suggestions.map((group) => (
@@ -62,7 +62,7 @@ export function SuggestionsPanel({ view, date }: { view: SuggestionsView; date: 
                     {group.foods.map(({ food, macro_g_per_kcal }) => {
                       const measures = formatMeasures(food.measures);
                       return (
-                        <li className="rounded-lg border border-line p-3" key={food.id}>
+                        <li className="tile p-3" key={food.id}>
                           <p className="font-semibold">{food.name} <span className="text-sm font-normal text-muted">({stateLabels[food.preparation_state]})</span></p>
                           <p className="mt-1 text-sm text-muted">{(macro_g_per_kcal * 100).toFixed(1)} g {roleHeadings[group.role].macro} per 100 kcal</p>
                           <p className="mt-1 text-sm text-muted">Per 100 g: {describeNutrition(itemNutrition(food.nutrition, 100))}</p>

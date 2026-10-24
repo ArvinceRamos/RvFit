@@ -163,10 +163,10 @@ export function ProfileForm({ profile, current, latestWeightKg, suggestedKcal = 
   return (
     <div className="mt-8 grid gap-[30px]">
       <section className="card">
-        <h2 className="text-xl font-medium">Current target</h2>
+        <h2 className="section-title">Current target</h2>
         {current ? (
           <>
-            <p className="mt-3 text-3xl font-medium tracking-tight">{current.kcal.toLocaleString("en-US")} kcal</p>
+            <p className="mt-3 metric">{current.kcal.toLocaleString("en-US")} kcal</p>
             <p className="mt-1 text-sm text-muted">
               {current.source === "calculated" ? "Calculated from your details" : "Entered by you"} · saved{" "}
               {new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(current.created_at))}
@@ -189,7 +189,7 @@ export function ProfileForm({ profile, current, latestWeightKg, suggestedKcal = 
       </section>
 
       <div className="scroll-mt-20" id="update-target">
-        <h2 className="text-xl font-medium">Update your target</h2>
+        <h2 className="section-title">Update your target</h2>
         {suggestedKcal && (
           <p className="alert-success mt-2" role="status">
             The check-in suggestion ({suggestedKcal.toLocaleString("en-US")} kcal) is filled in under Enter my own target. Review it, then press Save to use it, or recalculate instead.
@@ -324,8 +324,8 @@ export function ProfileForm({ profile, current, latestWeightKg, suggestedKcal = 
 
       {showPreview && (
         <section aria-live="polite" className="card scroll-mt-6" ref={resultRef}>
-          <h2 className="text-xl font-medium">New target</h2>
-          <p className="mt-3 text-3xl font-medium tracking-tight">{targetKcal.toLocaleString("en-US")} kcal</p>
+          <h2 className="section-title">New target</h2>
+          <p className="mt-3 metric">{targetKcal.toLocaleString("en-US")} kcal</p>
           <p className="mt-1 text-sm text-muted">Not saved yet. This is a starting estimate, not an exact number.</p>
           {preview.computed.floor_explanation && <p className="mt-3 alert-warn">{preview.computed.floor_explanation}</p>}
           {preview.computed.body_log && <p className="mt-3 text-sm text-muted">Your new weight will be saved as a weigh-in.</p>}

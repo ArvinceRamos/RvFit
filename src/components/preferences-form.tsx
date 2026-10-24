@@ -69,7 +69,7 @@ export function PreferencesForm({ initial, isSaved, offeredTags, foods }: {
     <form className="mt-8 grid items-start gap-[30px] lg:grid-cols-2 lg:grid-rows-[auto_1fr]" onSubmit={submit}>
       <div className="grid gap-[30px] lg:col-start-2 lg:row-span-2 lg:row-start-1">
       <fieldset className="card">
-        <legend className="float-left text-xl font-medium">Allergies</legend>
+        <legend className="float-left section-title">Allergies</legend>
         <p className="mt-2 clear-both text-sm text-muted">{allergenNotice}</p>
         {offeredTags.length === 0 ? (
           <p className="mt-3 text-sm text-muted">No allergy options are available yet.</p>
@@ -90,7 +90,7 @@ export function PreferencesForm({ initial, isSaved, offeredTags, foods }: {
       </fieldset>
 
       <fieldset className="card">
-        <legend className="float-left text-xl font-medium">Foods to avoid</legend>
+        <legend className="float-left section-title">Foods to avoid</legend>
         <p className="mt-2 clear-both text-sm text-muted">These foods will not be suggested. This is separate from allergies.</p>
         <div className="mt-3 grid gap-2">
           {foodRoles.map((role) => {
@@ -124,7 +124,7 @@ export function PreferencesForm({ initial, isSaved, offeredTags, foods }: {
       </div>
 
       <section className="card grid gap-4 lg:col-start-1">
-        <h2 className="text-xl font-medium">Training</h2>
+        <h2 className="section-title">Training</h2>
         <label className="grid gap-1 text-sm font-semibold">
           Experience
           <select className="field" onChange={(event) => changeExperience(event.target.value as Experience)} value={values.experience}>
@@ -161,7 +161,7 @@ export function PreferencesForm({ initial, isSaved, offeredTags, foods }: {
               {savedMessage} <Link className="font-semibold text-ink underline" href="/workouts">See your workout plan</Link>
             </p>
           ) : (
-            message && <p className="text-sm text-danger" role="alert">{message}</p>
+            message && <p className="alert-danger" role="alert">{message}</p>
           )}
         </div>
         <button className="btn-primary w-fit disabled:cursor-not-allowed disabled:opacity-60" disabled={saving} type="submit">
