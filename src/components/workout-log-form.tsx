@@ -7,7 +7,7 @@ import { isCalendarDate } from "@/lib/meal";
 import type { PreferredUnits } from "@/lib/weigh-in";
 import { clearWorkoutDraft, readWorkoutDraft, workoutDraftKey, writeWorkoutDraft, type WorkoutDraft } from "@/lib/workout-draft";
 import { convertWeightText, maxSetsPerExercise, weightUnit, type LogSlot, type SetFields } from "@/lib/workouts/log";
-import { lastTimeText, progressionPrompt } from "@/lib/workouts/progression";
+import { lastSessionSets, lastTimeText, progressionPrompt } from "@/lib/workouts/progression";
 
 export type WorkoutLogInitial = {
   logId: string | null;
@@ -228,6 +228,16 @@ function LogForm({ initial, slots, units: savedUnits, showHistory, inBrowser }: 
               return (
                 <>
                   <p className="mt-1 text-sm text-muted">Last time: {last ? lastTimeText(last, choice.measure, units) : "not logged yet"}</p>
+                  {last && (
+                    <button
+                      aria-label={`Use last time for ${choice.label}`}
+                      className="btn-secondary btn-sm mt-2"
+                      onClick={() => updateEntry(slot.slotKey, (current) => ({ ...current, sets: lastSessionSets(last, choice, units) }))}
+                      type="button"
+                    >
+                      Use last time
+                    </button>
+                  )}
                   {prompt && <p className="mt-1 text-sm font-semibold text-ink">{prompt}</p>}
                 </>
               );

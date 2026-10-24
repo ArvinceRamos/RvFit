@@ -1,7 +1,7 @@
 import { calculationConfig } from "@/lib/calc/config";
 import type { PreferredUnits } from "@/lib/weigh-in";
 import { formatCalendarDate } from "./format";
-import { formatWeight, weightUnit, type LogChoice } from "./log";
+import { convertWeightText, formatWeight, maxSetsPerExercise, weightUnit, type LogChoice, type SetFields } from "./log";
 
 const limits = calculationConfig.workouts;
 const lowerBodyPatterns: readonly string[] = ["squat", "hinge", "single_leg"];
@@ -48,6 +48,22 @@ export function lastTimeText(last: LastSession, measure: LogChoice["measure"], u
     return set.weightKg === null ? amount : `${amount} × ${formatWeight(set.weightKg, units)} ${weightUnit(units)}`;
   });
   return `${formatCalendarDate(last.performedOn)}: ${sets.join(", ")}`;
+}
+
+/**
+ * The last session as form sets, for "Use last time". Weights are shown in the user's units
+ * (kg keeps the stored 2 decimals, lb keeps 1) and dropped for an unloaded exercise.
+ */
+export function lastSessionSets(
+  last: LastSession,
+  choice: Pick<LogChoice, "measure" | "loaded">,
+  units: PreferredUnits,
+): SetFields[] {
+  return last.sets.slice(0, maxSetsPerExercise).map((set) => {
+    const amount = choice.measure === "seconds" ? set.seconds ?? set.reps : set.reps ?? set.seconds;
+    const weight = choice.loaded && set.weightKg !== null ? convertWeightText(String(set.weightKg), "metric", units) : "";
+    return { amount: amount === null ? "" : String(amount), weight };
+  });
 }
 
 function roundTo(value: number, step: number): number {

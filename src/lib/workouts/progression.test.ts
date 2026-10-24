@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lastTimeText, pickLastSessions, progressionPrompt, type EarlierLog, type LastSession } from "./progression";
+import { lastSessionSets, lastTimeText, pickLastSessions, progressionPrompt, type EarlierLog, type LastSession } from "./progression";
 
 function session(sets: [number | null, number | null, number | null][]): LastSession {
   return {
@@ -43,6 +43,36 @@ describe("lastTimeText", () => {
   it("shows bodyweight reps and hold seconds", () => {
     expect(lastTimeText(session([[12, null, null], [10, null, null]]), "reps", "metric")).toBe("Oct 5, 2026: 12, 10");
     expect(lastTimeText(session([[null, 30, null], [null, 35, null]]), "seconds", "metric")).toBe("Oct 5, 2026: 30 s, 35 s");
+  });
+});
+
+describe("lastSessionSets", () => {
+  it("copies reps and weights, keeping kg at the stored precision", () => {
+    expect(lastSessionSets(session([[10, null, 61.23], [9, null, 100]]), upperLoaded, "metric")).toEqual([
+      { amount: "10", weight: "61.23" },
+      { amount: "9", weight: "100" },
+    ]);
+  });
+
+  it("shows weights in pounds for imperial users", () => {
+    expect(lastSessionSets(session([[10, null, 61.23]]), upperLoaded, "imperial")).toEqual([{ amount: "10", weight: "135" }]);
+  });
+
+  it("leaves weight empty for an unloaded exercise or a set saved without one", () => {
+    expect(lastSessionSets(session([[12, null, 20]]), bodyweight, "metric")).toEqual([{ amount: "12", weight: "" }]);
+    expect(lastSessionSets(session([[8, null, null]]), upperLoaded, "metric")).toEqual([{ amount: "8", weight: "" }]);
+  });
+
+  it("copies seconds for a hold", () => {
+    expect(lastSessionSets(session([[null, 30, null], [null, 35, null]]), hold, "metric")).toEqual([
+      { amount: "30", weight: "" },
+      { amount: "35", weight: "" },
+    ]);
+  });
+
+  it("keeps no more sets than the form allows", () => {
+    const many = session(Array.from({ length: 12 }, () => [5, null, 50] as [number, null, number]));
+    expect(lastSessionSets(many, upperLoaded, "metric")).toHaveLength(10);
   });
 });
 
