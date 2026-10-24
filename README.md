@@ -60,9 +60,12 @@ npm run typecheck
 npm run lint
 npm test
 npm run build
+npm run test:db
 ```
 
-CI runs the same four on every push and pull request (`.github/workflows/ci.yml`). Copy `.env.example` to `.env.local` for local settings.
+`npm run test:db` runs the database tests in `supabase/tests/database` (pgTAP: grants, row-level security and the save functions) against local Supabase, so start it first with `npx supabase start`. Each test file runs in one transaction and is rolled back.
+
+CI runs the same checks on every push and pull request (`.github/workflows/ci.yml`); the database tests run in their own job on a fresh database with the migrations and `supabase/seed.sql`. Copy `.env.example` to `.env.local` for local settings.
 
 ## Deploying
 

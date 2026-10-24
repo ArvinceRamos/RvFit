@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:db": "supabase test db --local"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

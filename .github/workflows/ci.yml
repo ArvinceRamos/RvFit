@@ -35,3 +35,18 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Starts only Postgres on a fresh database, applies every migration and supabase/seed.sql.
+      - run: npx supabase db start
+      # pgTAP tests in supabase/tests/database: grants, row-level security and the save functions.
+      - run: npx supabase test db

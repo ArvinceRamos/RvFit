@@ -32,7 +32,7 @@ How to deploy, watch, back up and recover RvFit. Planned hosting: Vercel (app) a
 3. Merge to `main`. Vercel deploys production.
 4. Smoke test: sign up, confirm the email, log in, save a meal, log a workout, add a weigh-in, then log out. Check `/api/health`.
 
-**First launch only:** after migrations, load the food catalog into each project. The import script only runs against local Supabase on purpose. Export the reviewed local catalog tables (`foods`, `food_measures`) with `npx supabase db dump --local --data-only --table public.foods --table public.food_measures` and apply that SQL once per project.
+**First launch only:** after migrations, load the food catalog into each project. The import script only runs against local Supabase on purpose. The reviewed catalog (`foods`, `food_measures`) is committed as `supabase/seed.sql`; apply it once per project (SQL editor or `psql`). It skips rows that already exist. After a catalog change, regenerate it from local Supabase with `docker exec supabase_db_rvfit pg_dump -U postgres -d postgres --data-only --no-owner --no-privileges --table=public.foods --table=public.food_measures --column-inserts --rows-per-insert=50 --on-conflict-do-nothing`, then drop the `--`, `SET`, `set_config` and `\restrict` lines and keep the file's header comment.
 
 ## 3. When something breaks
 
