@@ -43,6 +43,7 @@ How to deploy, watch, back up and recover RvFit. Planned hosting: Vercel (app) a
   - `"scope"`, for example `meals.save`, `dashboard.load`, `auth.exchangeCode`;
   - the `digest` a user sees as "Error code" on the error page.
 - Database and Auth errors also show in Supabase → Logs.
+- Error code `54000` ("Too many … rows") is a per-user limit (migration `20261025020000_per_user_limits`, placeholders: for example 100 meals or 50 weigh-ins in 24 hours). Real use should never reach one, so it points to a script or abuse.
 - The logs hold only the error code, message and path: no emails, tokens or user input.
 
 **Recover:**
