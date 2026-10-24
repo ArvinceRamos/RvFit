@@ -11,24 +11,25 @@ const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium" });
 
 export function CheckInCard({ checkIn, units }: { checkIn: CheckIn; units: PreferredUnits }) {
   if (checkIn.status === "no_goal") return null;
-  const { window_days, min_weigh_ins_per_window, compare_gap_days } = calculationConfig.check_in;
+  const { window_days, settle_days, min_weigh_in_days, min_span_days } = calculationConfig.check_in;
 
   let body: React.ReactNode;
   if (checkIn.status === "not_enough_data") {
     body = (
       <p className="mt-2 text-sm text-muted">
-        This compares your weight trend with the pace you chose. It needs at least {min_weigh_ins_per_window} weigh-ins
-        in your latest {window_days} days and in the week {compare_gap_days / 7} weeks before, both after this target was set.{" "}
+        This compares your weight trend with the pace you chose. It needs weigh-ins on at least {min_weigh_in_days} different
+        days in the last {window_days} days, spread over at least {min_span_days} days. The first {settle_days} days after a new
+        target are skipped, because they are the noisiest.{" "}
         {checkIn.availableFrom
           ? `The earliest check-in is ${dateFormat.format(new Date(checkIn.availableFrom))}.`
-          : `You have ${checkIn.thisWeek} this week and ${checkIn.earlierWeek} in that earlier week.`}{" "}
+          : `So far you have ${checkIn.weighInDays} ${checkIn.weighInDays === 1 ? "day" : "days"} with a weigh-in, over ${checkIn.spanDays} ${checkIn.spanDays === 1 ? "day" : "days"}.`}{" "}
         <Link className="font-semibold text-ink underline" href="/progress">Log a weigh-in</Link>
       </p>
     );
   } else {
     const trend = (
       <p className="mt-2 text-sm text-muted">
-        Your weekly average changed by about <span className="font-semibold text-ink">{formatWeeklyRate(checkIn.observedKgPerWeek, units)}</span>.
+        Over your last {window_days} days, your weight trend is about <span className="font-semibold text-ink">{formatWeeklyRate(checkIn.observedKgPerWeek, units)}</span>.
         Your {checkIn.expectedKgPerWeek === 0 ? "goal" : "pace"} aims for about <span className="font-semibold text-ink">{formatWeeklyRate(checkIn.expectedKgPerWeek, units)}</span>.
       </p>
     );
@@ -37,6 +38,16 @@ export function CheckInCard({ checkIn, units }: { checkIn: CheckIn; units: Prefe
         <>
           {trend}
           <p className="alert-success mt-3">That is close to your plan. No change needed. Keep going.</p>
+        </>
+      );
+    } else if (checkIn.status === "holding") {
+      body = (
+        <>
+          {trend}
+          <p className="alert-warn mt-3">
+            Holding: not enough data to tell yet. Your weigh-ins move around more than the gap from your plan, so RvFit is not
+            suggesting a change. Keep your target and keep weighing in; more weigh-ins make the trend clearer.
+          </p>
         </>
       );
     } else if (checkIn.status === "at_floor") {

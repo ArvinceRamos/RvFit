@@ -4,13 +4,11 @@ import { AuthFrame } from "@/components/auth-frame";
 import { CheckInCard } from "@/components/check-in-card";
 import { DeleteAccountSection } from "@/components/delete-account-section";
 import { ProfileForm, type SavedProfile, type CurrentTarget } from "@/components/profile-form";
-import { calculationConfig, type ActivityLevel, type FormulaBranch } from "@/lib/calc/config";
-import { targetCheckIn, type CheckInGoal, type CheckInPace } from "@/lib/check-in";
+import { type ActivityLevel, type FormulaBranch } from "@/lib/calc/config";
+import { checkInHistoryDays, targetCheckIn, type CheckInGoal, type CheckInPace } from "@/lib/check-in";
 import { savedDisplayName } from "@/lib/display-name";
 import { requireUser } from "@/lib/supabase/auth";
 
-// Enough history for the check-in's two weeks plus the gap between them.
-const checkInHistoryDays = calculationConfig.check_in.window_days * 2 + calculationConfig.check_in.compare_gap_days;
 // Recent targets, so a manual target can still use the goal and pace of the last calculated one.
 const recentTargets = 10;
 

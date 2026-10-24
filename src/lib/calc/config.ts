@@ -78,11 +78,17 @@ export const calculationConfig = {
   // Placeholder progress rules pending qualified review. The trend is a plain average, not medical advice.
   // Placeholder target check-in rules pending qualified review (src/lib/check-in.ts). It only suggests;
   // it never changes a target. 7,700 kcal per kg is a rough rule of thumb, and real change slows over time.
+  // 2026-10-24 audit H6 (also placeholders): the trend is a straight-line fit over the last window_days,
+  // weigh-ins in the first settle_days after a new target are skipped, and a change is only suggested when
+  // the gap from the pace is at least clear_trend_std_errors standard errors of the fitted trend; otherwise
+  // the check-in holds.
   check_in: {
-    window_days: 7,
-    compare_gap_days: 14,
-    min_weigh_ins_per_window: 3,
+    window_days: 21,
+    settle_days: 7,
+    min_weigh_in_days: 8,
+    min_span_days: 14,
     on_track_tolerance_kg_per_week: 0.15,
+    clear_trend_std_errors: 2,
     kcal_per_kg: 7700,
     change_kcal: { min: 100, max: 200, step: 50 },
   },

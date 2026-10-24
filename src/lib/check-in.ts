@@ -2,7 +2,8 @@ import { calculationConfig, type FormulaBranch } from "@/lib/calc/config";
 
 // Target check-in: compares the weight trend with the pace the user chose and, when they clearly
 // differ, suggests a small calorie change. It is advice only. It never changes a target, never
-// suggests going below the calorie floor, and says nothing until there is enough data.
+// suggests going below the calorie floor, and says nothing until there is enough data. The trend is a
+// straight-line fit over the latest weigh-ins, and it holds instead of suggesting when the weigh-ins are too noisy.
 // Values live in calculationConfig.check_in and are placeholders pending qualified review.
 
 export type CheckInGoal = "lose" | "maintain" | "gain";
@@ -26,13 +27,18 @@ export type CheckInInput = {
 
 export type CheckIn =
   | { status: "no_goal" }
-  | { status: "not_enough_data"; availableFrom: number | null; thisWeek: number; earlierWeek: number }
+  | { status: "not_enough_data"; availableFrom: number | null; weighInDays: number; spanDays: number }
+  // The trend is off the pace, but the weigh-ins vary too much to be sure, so no change is suggested yet.
+  | { status: "holding"; observedKgPerWeek: number; expectedKgPerWeek: number }
   | { status: "on_track"; observedKgPerWeek: number; expectedKgPerWeek: number }
   | { status: "adjust"; observedKgPerWeek: number; expectedKgPerWeek: number; changeKcal: number; suggestedKcal: number }
   | { status: "at_floor"; observedKgPerWeek: number; expectedKgPerWeek: number; floorKcal: number };
 
 const rules = calculationConfig.check_in;
 const dayMs = 24 * 60 * 60 * 1000;
+
+/** How many days of weigh-ins a check-in reads. Pages load this much history. */
+export const checkInHistoryDays = rules.window_days;
 
 /** The weekly change the chosen pace aims for, in kg (negative = loss). A rough estimate. */
 export function expectedKgPerWeek(goal: CheckInGoal, pace: CheckInPace | null): number {
@@ -47,36 +53,61 @@ function floorFor(branch: FormulaBranch | null): number {
   return branch ? floors[branch] : Math.min(...Object.values(floors));
 }
 
-function average(values: readonly number[]): number {
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
+// Straight-line fit of weight over time, in kg a week, with its standard error. Needs 3+ points at 2+ times.
+export function trendSlope(points: readonly { time: number; kg: number }[]): { kgPerWeek: number; standardError: number } {
+  const weekMs = 7 * dayMs;
+  const n = points.length;
+  const meanTime = points.reduce((sum, p) => sum + p.time, 0) / n;
+  const meanKg = points.reduce((sum, p) => sum + p.kg, 0) / n;
+  let sxx = 0;
+  let sxy = 0;
+  for (const p of points) {
+    const x = (p.time - meanTime) / weekMs;
+    sxx += x * x;
+    sxy += x * (p.kg - meanKg);
+  }
+  const slope = sxy / sxx;
+  let residuals = 0;
+  for (const p of points) {
+    const fitted = meanKg + slope * ((p.time - meanTime) / weekMs);
+    residuals += (p.kg - fitted) ** 2;
+  }
+  return { kgPerWeek: slope, standardError: Math.sqrt(residuals / (n - 2) / sxx) };
 }
 
 export function targetCheckIn(input: CheckInInput): CheckIn {
   if (!input.goal) return { status: "no_goal" };
 
-  const windowMs = rules.window_days * dayMs;
-  const gapMs = rules.compare_gap_days * dayMs;
-  const valid = input.weighIns.filter((point) => Number.isFinite(point.time) && Number.isFinite(point.kg) && point.time >= input.targetSetAt);
-  const thisWeek = valid.filter((point) => point.time > input.now - windowMs && point.time <= input.now);
-  const earlierWeek = valid.filter((point) => point.time > input.now - gapMs - windowMs && point.time <= input.now - gapMs);
+  // Skip the first days after a new target, then read the latest window.
+  const usableFrom = Math.max(input.targetSetAt + rules.settle_days * dayMs, input.now - rules.window_days * dayMs);
+  const points = input.weighIns.filter(
+    (point) => Number.isFinite(point.time) && Number.isFinite(point.kg) && point.time >= usableFrom && point.time <= input.now,
+  );
+  // Days count from now, so several weigh-ins on one day count once.
+  const weighInDays = new Set(points.map((point) => Math.floor((input.now - point.time) / dayMs))).size;
+  const times = points.map((point) => point.time);
+  const spanDays = points.length > 0 ? (Math.max(...times) - Math.min(...times)) / dayMs : 0;
 
-  // Two weeks with enough weigh-ins, two weeks apart, both after the target was set.
-  if (thisWeek.length < rules.min_weigh_ins_per_window || earlierWeek.length < rules.min_weigh_ins_per_window) {
-    const earliest = input.targetSetAt + gapMs + windowMs;
+  if (weighInDays < rules.min_weigh_in_days || spanDays < rules.min_span_days) {
+    const earliest = input.targetSetAt + (rules.settle_days + rules.min_span_days) * dayMs;
     return {
       status: "not_enough_data",
       availableFrom: earliest > input.now ? earliest : null,
-      thisWeek: thisWeek.length,
-      earlierWeek: earlierWeek.length,
+      weighInDays,
+      spanDays: Math.floor(spanDays),
     };
   }
 
-  const weeksApart = rules.compare_gap_days / 7;
-  const observed = (average(thisWeek.map((p) => p.kg)) - average(earlierWeek.map((p) => p.kg))) / weeksApart;
+  const trend = trendSlope(points);
+  const observed = trend.kgPerWeek;
   const expected = expectedKgPerWeek(input.goal, input.pace);
   const difference = observed - expected;
   if (Math.abs(difference) <= rules.on_track_tolerance_kg_per_week) {
     return { status: "on_track", observedKgPerWeek: observed, expectedKgPerWeek: expected };
+  }
+  // Off the pace, but within the noise of the weigh-ins: wait for a clearer trend.
+  if (Math.abs(difference) < rules.clear_trend_std_errors * trend.standardError) {
+    return { status: "holding", observedKgPerWeek: observed, expectedKgPerWeek: expected };
   }
 
   // Gaining faster (or losing slower) than planned means eating a little less, and the other way round.
