@@ -45,3 +45,23 @@ export function takenMealLabels(labels: readonly string[]): string[] {
 export function firstFreeMealLabel(usedLabels: readonly string[]): string | null {
   return mealLabels.find((label) => !usedLabels.includes(label)) ?? null;
 }
+
+// Labels for copying one day's meals onto a date that already uses usedLabels, in the same order.
+// A meal keeps its "Meal N" label when that label is free; the others take the next free labels.
+// Null when there are not enough free labels for all of them.
+export function copyDayLabels(fromLabels: readonly string[], usedLabels: readonly string[]): string[] | null {
+  const taken = new Set(usedLabels);
+  const kept = fromLabels.map((label) => {
+    if (!isMealLabel(label) || taken.has(label)) return null;
+    taken.add(label);
+    return label;
+  });
+  const labels: string[] = [];
+  for (const label of kept) {
+    const next = label ?? firstFreeMealLabel([...taken]);
+    if (!next) return null;
+    taken.add(next);
+    labels.push(next);
+  }
+  return labels;
+}

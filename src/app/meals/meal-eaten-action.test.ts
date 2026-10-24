@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mocked client only. These tests never touch a real account.
-type Response = { data: unknown; error: unknown };
+type Response = { data: unknown; error: unknown; count?: number };
 const getUser = vi.fn();
 const update = vi.fn();
 let response: Response = { data: null, error: null };
@@ -108,6 +108,12 @@ describe("loadMealDaysAction", () => {
     expect(result.days[0].meals[0].items).toEqual([{ name: "Rice", grams: 150 }]);
     expect(result.days[0].planned_kcal).toBe(200);
     expect(result.days[0].eaten.kcal).toBe(0);
+  });
+
+  it("counts yesterday's meals for the Today view only", async () => {
+    response = { data: [], error: null, count: 2 };
+    expect(await loadMealDaysAction("today", "2026-10-07")).toEqual({ ok: true, days: [], yesterdayMeals: 2 });
+    expect(await loadMealDaysAction("past", "2026-10-07")).toEqual({ ok: true, days: [], yesterdayMeals: 0 });
   });
 
   it("fails when meals cannot be read", async () => {

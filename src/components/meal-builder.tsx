@@ -19,7 +19,7 @@ import {
 } from "@/lib/meal";
 import type { SuggestionContext } from "@/lib/meal-context";
 import type { BuilderFood } from "@/lib/meal-foods";
-import { mapItemsToSlots, mealLabels, mealSlots, takenMealLabels, type MealSlotKey } from "@/lib/meal-slots";
+import { mapItemsToSlots, mealLabels, mealSlots, slotForRole, takenMealLabels, type MealSlotKey } from "@/lib/meal-slots";
 import { remainingTargets, suggestFoodsByRole } from "@/lib/suggestions";
 
 export type MealBuilderInitial = {
@@ -110,9 +110,11 @@ function ItemCard({ item, grams, focus, onChange, onRemove }: {
   );
 }
 
-export function MealBuilder({ foods, initial, suggestionContext }: {
+export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionContext }: {
   foods: BuilderFood[];
   initial: MealBuilderInitial;
+  // Foods from the user's latest saved meals, newest first, shown as quick picks.
+  recentFoodIds?: string[];
   suggestionContext: SuggestionContext;
 }) {
   const router = useRouter();
@@ -136,6 +138,12 @@ export function MealBuilder({ foods, initial, suggestionContext }: {
   const usable = checked.flatMap(({ item, grams }) => (grams.ok ? [{ food: item.food.nutrition, grams: grams.grams }] : []));
   const totals = mealTotals(usable);
   const hasUnusableItem = checked.some(({ grams }) => !grams.ok);
+  // Recent foods already in this meal are not offered again.
+  const inMeal = new Set(checked.map(({ item }) => item.food.id));
+  const recentFoods = recentFoodIds.flatMap((id) => {
+    const food = foodsById.get(id);
+    return food && !inMeal.has(id) ? [food] : [];
+  });
 
   // Saved meals on the chosen date (not counting this one), fetched again when the date changes.
   const target = suggestionContext.status === "ready" ? suggestionContext.target : null;
@@ -181,6 +189,14 @@ export function MealBuilder({ foods, initial, suggestionContext }: {
     setFocusKey(key);
     setMessage(undefined);
     return { key, food, amount: "", unit: gramsUnit };
+  }
+
+  // A recent food fills its group's box when that is empty; otherwise it goes under Other foods.
+  function addRecentFood(food: BuilderFood) {
+    const item = newItem(food);
+    const key = slotForRole(food.role);
+    if (key && !slots[key].item) updateSlot(key, { item, search: "" });
+    else setExtras((current) => [...current, item]);
   }
 
   function updateSlot(key: MealSlotKey, changes: Partial<SlotState>) {
@@ -264,6 +280,20 @@ export function MealBuilder({ foods, initial, suggestionContext }: {
         <section>
           <h2 className="section-title">Foods</h2>
           <p className="mt-1 text-sm text-muted">Fill any of these. Leave the rest empty. A meal needs at least one food.</p>
+          {recentFoods.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm font-semibold">Recent foods</p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {recentFoods.map((food) => (
+                  <li key={food.id}>
+                    <button aria-label={`Add ${food.name}`} className="btn-ghost btn-sm" onClick={() => addRecentFood(food)} type="button">
+                      + {food.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="mt-4 grid gap-5">
             {mealSlots.map((slot) => {
               const state = slots[slot.key];

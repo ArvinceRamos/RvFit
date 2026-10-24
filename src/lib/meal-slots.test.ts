@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { firstFreeMealLabel, isMealLabel, mapItemsToSlots, mealLabels, slotForRole, takenMealLabels } from "./meal-slots";
+import { copyDayLabels, firstFreeMealLabel, isMealLabel, mapItemsToSlots, mealLabels, slotForRole, takenMealLabels } from "./meal-slots";
 import type { FoodRole } from "./food-catalog";
 
 const item = (id: string, role: FoodRole | null) => ({ id, role });
@@ -61,5 +61,21 @@ describe("firstFreeMealLabel", () => {
     expect(firstFreeMealLabel([])).toBe("Meal 1");
     expect(firstFreeMealLabel(["Meal 1", "Meal 3"])).toBe("Meal 2");
     expect(firstFreeMealLabel(["Meal 1", "Meal 2", "Meal 3", "Meal 4", "Meal 5", "Meal 6"])).toBeNull();
+  });
+});
+
+describe("copyDayLabels", () => {
+  it("keeps labels that are free on the new date", () => {
+    expect(copyDayLabels(["Meal 1", "Meal 3"], [])).toEqual(["Meal 1", "Meal 3"]);
+  });
+
+  it("moves taken or free-text labels to the next free ones, in order", () => {
+    expect(copyDayLabels(["Meal 1", "Meal 2"], ["Meal 1"])).toEqual(["Meal 3", "Meal 2"]);
+    expect(copyDayLabels(["Breakfast", "Meal 1"], [])).toEqual(["Meal 2", "Meal 1"]);
+  });
+
+  it("is null when there are not enough free labels", () => {
+    expect(copyDayLabels(["Meal 1", "Meal 2"], ["Meal 1", "Meal 2", "Meal 3", "Meal 4", "Meal 5"])).toBeNull();
+    expect(copyDayLabels(["Meal 1", "Meal 2", "Meal 3", "Meal 4", "Meal 5", "Meal 6"], ["Meal 1", "Meal 2", "Meal 3", "Meal 4", "Meal 5", "Meal 6"])).toBeNull();
   });
 });

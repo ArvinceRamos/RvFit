@@ -11,9 +11,9 @@ export default async function EditMealPage({ params }: PageProps<"/meals/[id]">)
   if (!isUuid(id)) notFound();
 
   // Row-level security means only the owner can read a meal, so another user's id finds nothing.
-  const [{ data: meal }, { foods, suggestionContext }] = await Promise.all([
+  const [{ data: meal }, { foods, suggestionContext, recentFoodIds }] = await Promise.all([
     supabase.from("meals").select("id, meal_date, label, meal_items(food_id, grams)").eq("id", id).maybeSingle(),
-    loadMealContext(supabase),
+    loadMealContext(supabase, { recentFoods: true }),
   ]);
   if (!meal) notFound();
 
@@ -22,6 +22,7 @@ export default async function EditMealPage({ params }: PageProps<"/meals/[id]">)
       <h1 className="page-title">Edit meal</h1>
       <MealBuilder
         foods={foods}
+        recentFoodIds={recentFoodIds}
         suggestionContext={suggestionContext}
         initial={{
           mealId: meal.id,

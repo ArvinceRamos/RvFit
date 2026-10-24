@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { loadMealDaysAction, type MealDaysResult } from "@/app/meals/actions";
 import { CopyMealButton } from "@/components/copy-meal-button";
+import { CopyYesterdayButton } from "@/components/copy-yesterday-button";
 import { DeleteMealButton } from "@/components/delete-meal-button";
 import { MealEatenToggle } from "@/components/meal-eaten-toggle";
 import { localToday, TodaySummary } from "@/components/today-summary";
@@ -115,6 +116,8 @@ export function MealDaysView({ target, view }: { target: DailyTargets | null; vi
 
   const reload = () => setVersion((count) => count + 1);
   const current = state && state.key.startsWith(`${view}:`) ? state : undefined;
+  // Yesterday's meals do not change after a copy, so the button (and its message) stays while the days reload.
+  const showCopy = view === "today" && current?.result.ok === true && current.result.yesterdayMeals > 0;
 
   return (
     <>
@@ -123,6 +126,8 @@ export function MealDaysView({ target, view }: { target: DailyTargets | null; vi
         <Link className="btn-primary" href="/meals/new">New meal</Link>
         <Link className="btn-secondary text-base" href="/meals/plan">Plan meals</Link>
       </div>
+
+      {showCopy && current && <CopyYesterdayButton onCopied={reload} today={current.today} />}
 
       <nav aria-label="Meal days" className="mt-8 flex gap-2">
         {tabs.map((tab) => (

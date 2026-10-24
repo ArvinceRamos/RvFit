@@ -46,6 +46,8 @@ export const calculationConfig = {
   meal_limits: { max_item_grams: 2000, max_items: 30 },
   // Placeholder: how many foods to suggest for each of protein, carb, and fat.
   suggestions: { foods_per_role: 5 },
+  // Placeholder: how many "Recent foods" the meal builder shows, taken from this many latest saved meals.
+  recent_foods: { max_foods: 8, meals_scanned: 20 },
   // Placeholder meal planner limits and portion ranges (docs/MEAL-PLANNER.md "Realistic portions").
   meal_planner: {
     max_days: 7,

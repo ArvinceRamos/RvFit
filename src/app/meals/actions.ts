@@ -13,7 +13,7 @@ import {
   type PlanFood,
 } from "@/lib/meal-plan-save";
 import type { LoggedDay } from "@/lib/meal-planner";
-import { firstFreeMealLabel } from "@/lib/meal-slots";
+import { copyDayLabels, firstFreeMealLabel } from "@/lib/meal-slots";
 import { eatenAndPlanned, itemRowsTotals, loadMeals } from "@/lib/overview-data";
 import { addDays } from "@/lib/week";
 import { logError } from "@/lib/log";
@@ -71,6 +71,51 @@ export async function copyMealToDateAction(mealId: unknown, date: unknown): Prom
   const items = (meal.meal_items as { food_id: string; grams: number | string }[]).map((item) => ({ foodId: item.food_id, grams: Number(item.grams) }));
   const saved = await saveMealAction({ mealId: null, date, label, items });
   return saved.ok ? { ok: true, label } : { ok: false, error: saved.error };
+}
+
+export type CopyMealDayResult = { ok: true; count: number } | { ok: false; error: string };
+
+// "Copy yesterday": copies every meal on one date to another date with the same foods and grams,
+// all or nothing. Each meal keeps its label when it is free on the new date, otherwise it takes the
+// next free one. It saves through save_meal_plan, so the copies start unticked and are marked from_plan.
+export async function copyMealDayAction(fromDate: unknown, toDate: unknown): Promise<CopyMealDayResult> {
+  const auth = await getActionUser();
+  if (!auth) return { ok: false, error: "You must be signed in to copy meals." };
+  const { supabase } = auth;
+  if (typeof fromDate !== "string" || !isCalendarDate(fromDate) || typeof toDate !== "string" || !isCalendarDate(toDate) || fromDate === toDate) {
+    return { ok: false, error: "Meal details are invalid." };
+  }
+
+  const [{ data: fromMeals, error: fromError }, { data: toMeals, error: toError }] = await Promise.all([
+    supabase.from("meals").select("label, meal_items(food_id, grams)").eq("meal_date", fromDate).order("label").order("created_at"),
+    supabase.from("meals").select("label").eq("meal_date", toDate),
+  ]);
+  if (fromError || toError || !fromMeals || !toMeals) {
+    logError("meals.copyDay", fromError, toError);
+    return { ok: false, error: "Those meals could not be copied. Please try again." };
+  }
+
+  const meals = (fromMeals as { label: string; meal_items: { food_id: string; grams: number | string }[] }[]).filter(
+    (meal) => meal.meal_items.length > 0,
+  );
+  if (meals.length === 0) return { ok: false, error: "There are no meals to copy." };
+  const labels = copyDayLabels(meals.map((meal) => meal.label), toMeals.map((row) => row.label as string));
+  if (!labels) return { ok: false, error: "There are not enough free meal labels to copy every meal. Nothing was copied." };
+
+  const { data: mealIds, error } = await supabase.rpc("save_meal_plan", {
+    p_meals: meals.map((meal, index) => ({
+      meal_date: toDate,
+      label: labels[index],
+      items: meal.meal_items.map((item) => ({ food_id: item.food_id, grams: Number(item.grams) })),
+    })),
+  });
+  // A meal saved elsewhere since the read above still hits the unique label index.
+  if (error?.code === "23505") return { ok: false, error: "A meal was saved on that day at the same time. Nothing was copied. Please try again." };
+  if (error || !Array.isArray(mealIds) || mealIds.length !== meals.length) {
+    logError("meals.copyDay", error);
+    return { ok: false, error: "Those meals could not be copied. Please try again." };
+  }
+  return { ok: true, count: meals.length };
 }
 
 export type SaveMealPlanResult = { ok: true; mealIds: string[] } | { ok: false; error: string };
@@ -213,7 +258,8 @@ export async function loadPlanDaysAction(startDate: unknown, days: unknown): Pro
   return { ok: true, logged };
 }
 
-export type MealDaysResult = { ok: true; days: MealDay[] } | { ok: false };
+// yesterdayMeals is only counted for the Today view, for "Copy yesterday".
+export type MealDaysResult = { ok: true; days: MealDay[]; yesterdayMeals: number } | { ok: false };
 
 // Meals for the Meals page tabs, grouped by day with food names and grams. "today" is the browser's local date.
 export async function loadMealDaysAction(view: unknown, today: unknown): Promise<MealDaysResult> {
@@ -222,15 +268,21 @@ export async function loadMealDaysAction(view: unknown, today: unknown): Promise
   const { supabase } = auth;
   if (typeof today !== "string" || !isCalendarDate(today)) return { ok: false };
 
-  const range = mealDaysRange(readMealDayView(view), today);
-  const { data, error } = await supabase
-    .from("meals")
-    .select(`id, label, meal_date, from_plan, eaten, created_at, meal_items(grams, foods(name, ${nutritionColumns}))`)
-    .gte("meal_date", range.from)
-    .lte("meal_date", range.to)
-    .order("meal_date")
-    .order("label")
-    .order("created_at");
+  const dayView = readMealDayView(view);
+  const range = mealDaysRange(dayView, today);
+  const [{ data, error }, yesterday] = await Promise.all([
+    supabase
+      .from("meals")
+      .select(`id, label, meal_date, from_plan, eaten, created_at, meal_items(grams, foods(name, ${nutritionColumns}))`)
+      .gte("meal_date", range.from)
+      .lte("meal_date", range.to)
+      .order("meal_date")
+      .order("label")
+      .order("created_at"),
+    dayView === "today"
+      ? supabase.from("meals").select("id", { count: "exact", head: true }).eq("meal_date", addDays(today, -1))
+      : Promise.resolve({ count: 0, error: null }),
+  ]);
   if (error || !data) return { ok: false };
 
   const meals = data.map((meal) => {
@@ -245,5 +297,6 @@ export async function loadMealDaysAction(view: unknown, today: unknown): Promise
       items: items.map((item) => ({ name: item.foods.name, grams: Number(item.grams) })),
     };
   });
-  return { ok: true, days: groupMealDays(meals, range.newestFirst) };
+  // If yesterday cannot be counted, the page just leaves out "Copy yesterday".
+  return { ok: true, days: groupMealDays(meals, range.newestFirst), yesterdayMeals: yesterday.error ? 0 : (yesterday.count ?? 0) };
 }
