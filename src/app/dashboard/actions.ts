@@ -16,6 +16,7 @@ import {
 import { weightTrend, type WeightTrend } from "@/lib/progress";
 import type { SetupFlags } from "@/lib/setup-steps";
 import { weekStart } from "@/lib/week";
+import { reviewStart, weeklyReview, type WeeklyReview } from "@/lib/weekly-review";
 import { nextWorkout, type NextUp } from "@/lib/workouts/next-up";
 import { resolveTemplate } from "@/lib/workouts/templates";
 import type { CheckIn } from "@/lib/check-in";
@@ -40,6 +41,8 @@ export type DashboardResult =
       nextUp: NextUp | null;
       // The target check-in; null without a saved target.
       checkIn: CheckIn | null;
+      // The last 7 days in plain numbers.
+      review: WeeklyReview;
     }
   | { ok: false; error: string };
 
@@ -51,10 +54,12 @@ export async function loadDashboardAction(today: unknown): Promise<DashboardResu
   if (typeof today !== "string" || !isCalendarDate(today)) return { ok: false, error: "Choose a valid date." };
 
   const now = new Date();
-  const since = new Date(now.getTime() - calculationConfig.progress.trend_window_days * 24 * 60 * 60 * 1000);
-  const [target, meals, workouts, weighIns, units, anyPreferences, anyMeal, anyWeighIn, weekWorkouts, checkInData] = await Promise.all([
+  // Two trend windows: this week for the trend, and the week before for the review's weight change.
+  const since = new Date(now.getTime() - 2 * calculationConfig.progress.trend_window_days * 24 * 60 * 60 * 1000);
+  const [target, reviewMeals, workouts, weighIns, units, anyPreferences, anyMeal, anyWeighIn, weekWorkouts, checkInData, reviewWorkouts] = await Promise.all([
     loadSavedTarget(supabase),
-    loadMeals(supabase, today, today),
+    // The review's 7 days; today's meals are the last of them.
+    loadMeals(supabase, reviewStart(today), today),
     loadWorkouts(supabase, today, today),
     loadWeighInsSince(supabase, since),
     loadUnits(supabase),
@@ -64,11 +69,13 @@ export async function loadDashboardAction(today: unknown): Promise<DashboardResu
     supabase.from("body_logs").select("id").not("weight_kg", "is", null).limit(1),
     loadWorkouts(supabase, weekStart(today), today),
     loadCheckInData(supabase, now.getTime()),
+    loadWorkouts(supabase, reviewStart(today), today),
   ]);
-  if (target === "error" || checkInData === "error" || !meals || !workouts || !weighIns || !units || anyPreferences.error || anyMeal.error || anyWeighIn.error || !weekWorkouts) {
+  if (target === "error" || checkInData === "error" || !reviewMeals || !reviewWorkouts || !workouts || !weighIns || !units || anyPreferences.error || anyMeal.error || anyWeighIn.error || !weekWorkouts) {
     logError("dashboard.load", anyPreferences.error, anyMeal.error, anyWeighIn.error);
     return { ok: false, error: "Your dashboard could not be loaded. Please try again." };
   }
+  const meals = reviewMeals.filter((meal) => meal.meal_date === today);
   const { totals, planned } = eatenAndPlanned(meals);
   const preferences = anyPreferences.data?.[0];
   const template = preferences ? resolveTemplate(preferences.experience, preferences.training_days, preferences.equipment) : null;
@@ -98,5 +105,13 @@ export async function loadDashboardAction(today: unknown): Promise<DashboardResu
     },
     nextUp,
     checkIn: checkInData?.checkIn ?? null,
+    review: weeklyReview({
+      today,
+      meals: reviewMeals.map((meal) => ({ meal_date: meal.meal_date, eaten: meal.eaten, kcal: meal.totals.kcal })),
+      workoutDates: reviewWorkouts.map((workout) => workout.performed_on),
+      plannedWorkouts: preferences?.training_days ?? null,
+      weighIns,
+      now,
+    }),
   };
 }

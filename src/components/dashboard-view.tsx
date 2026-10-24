@@ -7,6 +7,7 @@ import { CheckInCard } from "@/components/check-in-card";
 import { Icon } from "@/components/icon";
 import { MealEatenToggle } from "@/components/meal-eaten-toggle";
 import { SetupCard } from "@/components/setup-card";
+import { WeeklyReviewCard } from "@/components/weekly-review-card";
 import { DayTotals, localToday } from "@/components/today-summary";
 import { calculationConfig } from "@/lib/calc/config";
 import { checkInReady } from "@/lib/check-in";
@@ -52,7 +53,7 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
     );
   }
 
-  const { target, totals, planned_kcal, meals, workouts, trend, units, setup, nextUp, checkIn } = state.result;
+  const { target, totals, planned_kcal, meals, workouts, trend, units, setup, nextUp, checkIn, review } = state.result;
   return (
     <div className="mt-8 grid gap-[30px] md:grid-cols-2 lg:grid-cols-3">
       <SetupCard flags={setup} />
@@ -67,6 +68,8 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
         </div>
         <DayTotals plannedKcal={planned_kcal} target={target} totals={totals} />
       </section>
+
+      <WeeklyReviewCard checkIn={checkIn} className="md:col-span-2 lg:col-span-3" review={review} targetKcal={target?.kcal ?? null} units={units} />
 
       {/* Shown only when the check-in has a result; Profile shows it while it waits for weigh-ins. */}
       {checkIn && (keepCheckIn || checkInReady(checkIn)) && (
