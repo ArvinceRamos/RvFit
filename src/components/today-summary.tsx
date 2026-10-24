@@ -5,7 +5,7 @@ import Link from "next/link";
 import { loadDayTotalsAction, type DayTotalsResult } from "@/app/meals/actions";
 import { useAnimatedNumber } from "@/lib/animated-number";
 import type { MealTotals } from "@/lib/meal";
-import { describeRemaining, progressPercent } from "@/lib/remaining-format";
+import { describeRemaining, formatGrams, progressPercent } from "@/lib/remaining-format";
 import { remainingTargets, type DailyTargets } from "@/lib/suggestions";
 
 export function localToday(): string {
@@ -49,10 +49,12 @@ function DayTotalsBody({ target, totals, plannedKcal }: { target: DailyTargets; 
   const left = remainingTargets(target, totals);
   const kcalShown = useAnimatedNumber(totals.kcal);
   const kcalLeftShown = target.kcal - kcalShown;
-  const caloriesOver = left.kcal < 0;
+  // Rounded like the text, so a colour never says "over" next to "Target reached".
+  const caloriesOver = Math.round(left.kcal) < 0;
   // Fiber is null when any food that day has no fiber value, so a partial total is never shown.
+  // Protein comes first and is shown larger; carbs, fat and fiber are second.
   const tiles = [
-    { name: "Protein", eaten: totals.protein_g as number | null, goal: target.protein_g, left: left.protein_g as number | null },
+    { name: "Protein", eaten: totals.protein_g as number | null, goal: target.protein_g, left: left.protein_g as number | null, primary: true },
     { name: "Carbs", eaten: totals.carbs_g as number | null, goal: target.carbs_g, left: left.carbs_g as number | null },
     { name: "Fat", eaten: totals.fat_g as number | null, goal: target.fat_g, left: left.fat_g as number | null },
     { name: "Fiber", eaten: totals.fiber_incomplete ? null : totals.fiber_g, goal: target.fiber_g, left: left.fiber_g },
@@ -76,7 +78,7 @@ function DayTotalsBody({ target, totals, plannedKcal }: { target: DailyTargets; 
 
       <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {tiles.map((tile) => (
-          <MacroTile eaten={tile.eaten} goal={tile.goal} key={tile.name} left={tile.left} name={tile.name} />
+          <MacroTile eaten={tile.eaten} goal={tile.goal} key={tile.name} left={tile.left} name={tile.name} primary={tile.primary} />
         ))}
       </dl>
       {totals.fiber_incomplete && <p className="mt-3 text-sm text-muted">Some foods have no fiber listed, so fiber is not totalled.</p>}
@@ -85,14 +87,14 @@ function DayTotalsBody({ target, totals, plannedKcal }: { target: DailyTargets; 
 }
 
 // One macro tile. Its own component because each animated number needs its own hook.
-function MacroTile({ name, eaten, goal, left }: { name: string; eaten: number | null; goal: number; left: number | null }) {
+function MacroTile({ name, eaten, goal, left, primary = false }: { name: string; eaten: number | null; goal: number; left: number | null; primary?: boolean }) {
   const eatenShown = useAnimatedNumber(eaten ?? 0);
-  const over = left !== null && left < 0;
+  const over = left !== null && Math.round(left) < 0;
   return (
     <div className="tile p-3">
       <dt className="text-sm text-muted">{name}</dt>
-      <dd className={`mt-1 font-bold ${eaten === null ? "text-base" : "text-lg"}`}>{eaten === null ? "Incomplete" : `${eatenShown.toFixed(1)} g`}</dd>
-      <dd className="text-sm text-muted">of {goal} g</dd>
+      <dd className={`mt-1 font-bold tabular-nums ${eaten === null ? "text-base" : primary ? "text-2xl" : "text-lg"}`}>{eaten === null ? "Incomplete" : formatGrams(eatenShown)}</dd>
+      <dd className="text-sm text-muted">of {formatGrams(goal)}</dd>
       {eaten !== null && (
         <>
           <dd><Bar over={over} percent={progressPercent(eaten, goal)} /></dd>

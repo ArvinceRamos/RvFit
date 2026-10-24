@@ -1,12 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { describeRemaining, progressPercent } from "./remaining-format";
+import { describeRemaining, formatGrams, formatKcal, progressPercent } from "./remaining-format";
+
+describe("formatKcal", () => {
+  it("rounds to a whole number with a thousands comma", () => {
+    expect(formatKcal(1250)).toBe("1,250 kcal");
+    expect(formatKcal(2460.6)).toBe("2,461 kcal");
+    expect(formatKcal(612.4)).toBe("612 kcal");
+    expect(formatKcal(0)).toBe("0 kcal");
+  });
+
+  it("never shows -0", () => {
+    expect(formatKcal(-0.4)).toBe("0 kcal");
+  });
+});
+
+describe("formatGrams", () => {
+  it("rounds to whole grams", () => {
+    expect(formatGrams(42.6)).toBe("43 g");
+    expect(formatGrams(42.4)).toBe("42 g");
+    expect(formatGrams(1530)).toBe("1,530 g");
+    expect(formatGrams(-0.2)).toBe("0 g");
+  });
+});
 
 describe("describeRemaining", () => {
-  it("shows what is left, a reached target, and what is over", () => {
-    expect(describeRemaining(109, "g")).toBe("109.0 g left");
+  it("shows what is left, a reached target, and what is over, in whole numbers", () => {
+    expect(describeRemaining(109, "g")).toBe("109 g left");
+    expect(describeRemaining(108.6, "g")).toBe("109 g left");
     expect(describeRemaining(2525.4, "kcal")).toBe("2,525 kcal left");
     expect(describeRemaining(0, "g")).toBe("Target reached");
-    expect(describeRemaining(-12, "g")).toBe("12.0 g over target");
+    expect(describeRemaining(-12, "g")).toBe("12 g over target");
+  });
+
+  it("calls anything that rounds to 0 a reached target", () => {
+    expect(describeRemaining(0.4, "g")).toBe("Target reached");
+    expect(describeRemaining(-0.4, "kcal")).toBe("Target reached");
   });
 });
 

@@ -8,8 +8,8 @@ import { CopyYesterdayButton } from "@/components/copy-yesterday-button";
 import { DeleteMealButton } from "@/components/delete-meal-button";
 import { MealEatenToggle } from "@/components/meal-eaten-toggle";
 import { localToday, TodaySummary } from "@/components/today-summary";
-import { formatFiber } from "@/lib/food-catalog";
 import { dayPrepList, describeMealDay, mealDaysWindow, type MealDay, type MealDayMeal, type MealDayView } from "@/lib/meal-days";
+import { formatGrams, formatKcal } from "@/lib/remaining-format";
 import type { DailyTargets } from "@/lib/suggestions";
 
 const tabs: { view: MealDayView; label: string }[] = [
@@ -41,7 +41,7 @@ function MealRow({ meal, date, today, onChanged }: { meal: MealDayMeal; date: st
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
           <p>
             <span className="font-bold">{meal.label}</span>
-            <span className="text-muted"> · {Math.round(meal.totals.kcal)} kcal</span>
+            <span className="text-muted"> · {formatKcal(meal.totals.kcal)} · {formatGrams(meal.totals.protein_g)} protein</span>
             {status && <span className="ml-2 rounded-full border border-line px-2 py-0.5 text-xs text-muted">{status}</span>}
           </p>
           <div className="flex flex-wrap items-start gap-4">
@@ -52,8 +52,8 @@ function MealRow({ meal, date, today, onChanged }: { meal: MealDayMeal; date: st
         </div>
         <p className="mt-1 text-sm">{meal.items.map((item) => `${item.name} ${item.grams} g`).join(" · ")}</p>
         <p className="mt-1 text-xs text-muted">
-          Protein {meal.totals.protein_g.toFixed(1)} g · Carbs {meal.totals.carbs_g.toFixed(1)} g · Fat {meal.totals.fat_g.toFixed(1)} g · Fiber{" "}
-          {meal.totals.fiber_incomplete ? "Incomplete" : formatFiber(meal.totals.fiber_g)}
+          Carbs {formatGrams(meal.totals.carbs_g)} · Fat {formatGrams(meal.totals.fat_g)} · Fiber{" "}
+          {meal.totals.fiber_g === null ? "Incomplete" : formatGrams(meal.totals.fiber_g)}
         </p>
       </div>
     </li>

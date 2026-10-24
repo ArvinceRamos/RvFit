@@ -24,6 +24,7 @@ import {
   updateGuestDraft,
   type GuestDraft,
 } from "@/lib/guest-draft";
+import { formatKcal } from "@/lib/remaining-format";
 import { createClient } from "@/lib/supabase/client";
 import { activityOptions, goalOptions, paceOptions } from "@/lib/target-options";
 import { AuthFrame } from "./auth-frame";
@@ -446,12 +447,12 @@ function Results() {
     <Frame>
       <Link className="text-sm font-semibold text-muted underline" href="/start">Start over</Link>
       <p className="mt-5 text-sm font-semibold uppercase tracking-wide text-accent-text">Your starting estimate</p>
-      <h1 className="mt-2 text-4xl font-bold tracking-tight">{draft.target.target_kcal.toLocaleString()} kcal</h1>
+      <h1 className="mt-2 text-4xl font-bold tracking-tight">{formatKcal(draft.target.target_kcal)}</h1>
       <p className="mt-3 leading-7 text-muted">This is a starting estimate, not an exact number. Compare it with your weight trend over time, then decide whether to edit your target.</p>
       {draft.target.floor_explanation && <p className="mt-4 alert-warn" role="note">{draft.target.floor_explanation}</p>}
       <section className="mt-8">
         <h2 className="text-xl font-bold">Daily macros</h2>
-        <p className="mt-1 text-sm text-muted">These are suggested grams. Editing is optional. Your calorie target stays at {draft.target.target_kcal.toLocaleString()} kcal.</p>
+        <p className="mt-1 text-sm text-muted">These are suggested grams. Editing is optional. Your calorie target stays at {formatKcal(draft.target.target_kcal)}.</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {([["protein_g", "Protein"], ["carbs_g", "Carbohydrates"], ["fat_g", "Fat"], ["fiber_g", "Fiber"]] as [keyof MacroEdit, string][]).map(([name, label]) => (
             <div key={name}>

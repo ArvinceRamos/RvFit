@@ -8,6 +8,7 @@ import { MealEatenToggle } from "@/components/meal-eaten-toggle";
 import { SetupCard } from "@/components/setup-card";
 import { DayTotals, localToday } from "@/components/today-summary";
 import { calculationConfig } from "@/lib/calc/config";
+import { formatKcal } from "@/lib/remaining-format";
 import { goalPaceLabel } from "@/lib/target-options";
 import { formatWeightKg } from "@/lib/weigh-in";
 
@@ -73,7 +74,7 @@ export function DashboardView({ refreshKey }: { refreshKey: string }) {
               <li className="flex items-center justify-between gap-3 text-sm" key={meal.id}>
                 <span className="flex items-center gap-2">
                   <MealEatenToggle eaten={meal.eaten} future={false} label={meal.label} mealId={meal.id} onChanged={() => setReloads((count) => count + 1)} />
-                  <span><span className="font-bold">{meal.label}</span> <span className="text-muted">· {Math.round(meal.totals.kcal)} kcal{meal.eaten ? "" : " · planned"}</span></span>
+                  <span><span className="font-bold">{meal.label}</span> <span className="text-muted">· {formatKcal(meal.totals.kcal)}{meal.eaten ? "" : " · planned"}</span></span>
                 </span>
                 <Link className="font-semibold underline" href={`/meals/${meal.id}`}>Edit</Link>
               </li>

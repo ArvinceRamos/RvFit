@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { loadDayTotalsAction, saveMealAction, type DayTotalsResult } from "@/app/meals/actions";
 import { FoodAutocomplete } from "@/components/food-autocomplete";
 import { SuggestionsPanel, type SuggestionsView } from "@/components/suggestions-panel";
-import { formatFiber, stateLabels, type FoodRole } from "@/lib/food-catalog";
+import { stateLabels, type FoodRole } from "@/lib/food-catalog";
 import {
   addTotals,
   describeNutrition,
@@ -21,6 +21,7 @@ import {
 import type { SuggestionContext } from "@/lib/meal-context";
 import type { BuilderFood } from "@/lib/meal-foods";
 import { mapItemsToSlots, mealLabels, mealSlots, slotForRole, takenMealLabels, type MealSlotKey } from "@/lib/meal-slots";
+import { formatGrams, formatKcal } from "@/lib/remaining-format";
 import { remainingTargets, suggestFoodsByRole } from "@/lib/suggestions";
 
 export type MealBuilderInitial = {
@@ -408,12 +409,15 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
       <aside className="grid gap-6 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
         <section className="rounded-xl border border-line bg-card p-5">
           <h2 className="section-title">Meal totals</h2>
-          <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-5 lg:grid-cols-3">
-            <div><dt className="text-muted">Calories</dt><dd className="font-bold">{Math.round(totals.kcal)} kcal</dd></div>
-            <div><dt className="text-muted">Protein</dt><dd className="font-bold">{totals.protein_g.toFixed(1)} g</dd></div>
-            <div><dt className="text-muted">Carbs</dt><dd className="font-bold">{totals.carbs_g.toFixed(1)} g</dd></div>
-            <div><dt className="text-muted">Fat</dt><dd className="font-bold">{totals.fat_g.toFixed(1)} g</dd></div>
-            <div><dt className="text-muted">Fiber</dt><dd className="font-bold">{totals.fiber_incomplete ? "Incomplete" : formatFiber(totals.fiber_g)}</dd></div>
+          {/* Calories and protein first, carbs, fat and fiber second. */}
+          <dl className="mt-4 grid grid-cols-2 gap-4">
+            <div><dt className="text-sm text-muted">Calories</dt><dd className="text-2xl font-bold tabular-nums">{formatKcal(totals.kcal)}</dd></div>
+            <div><dt className="text-sm text-muted">Protein</dt><dd className="text-2xl font-bold tabular-nums">{formatGrams(totals.protein_g)}</dd></div>
+          </dl>
+          <dl className="mt-3 grid grid-cols-3 gap-4 text-sm">
+            <div><dt className="text-muted">Carbs</dt><dd className="font-semibold tabular-nums">{formatGrams(totals.carbs_g)}</dd></div>
+            <div><dt className="text-muted">Fat</dt><dd className="font-semibold tabular-nums">{formatGrams(totals.fat_g)}</dd></div>
+            <div><dt className="text-muted">Fiber</dt><dd className="font-semibold tabular-nums">{totals.fiber_g === null ? "Incomplete" : formatGrams(totals.fiber_g)}</dd></div>
           </dl>
           {totals.fiber_incomplete && <p className="mt-3 text-sm text-muted">Some foods have no fiber listed, so the fiber total is not shown.</p>}
           {hasUnusableItem && <p className="mt-3 text-sm text-muted">Foods with an unfinished amount are left out of these totals.</p>}
@@ -423,7 +427,8 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
         <SuggestionsPanel date={date} view={suggestionsView} />
       </aside>
 
-      <div className="grid gap-3 lg:col-start-1 lg:row-start-2 lg:self-start">
+      {/* Under 1024px the Save bar sticks to the bottom of the screen, edge to edge, so it is never buried under totals and suggestions. */}
+      <div className="sticky bottom-0 z-10 -mx-4 grid gap-3 border-t border-line bg-page px-4 py-3 sm:-mx-5 sm:px-5 lg:static lg:col-start-1 lg:row-start-2 lg:mx-0 lg:self-start lg:border-0 lg:bg-transparent lg:p-0">
         <div aria-live="polite">
           {message === savedMessage ? (
             <p className="alert-success">
@@ -436,7 +441,7 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
             message && <p className="alert-danger" role="alert">{message}</p>
           )}
         </div>
-        <button className="btn-primary w-fit" disabled={saving || checked.length === 0} type="submit">
+        <button className="btn-primary w-full lg:w-fit" disabled={saving || checked.length === 0} type="submit">
           {saving ? "Saving…" : "Save meal"}
         </button>
       </div>

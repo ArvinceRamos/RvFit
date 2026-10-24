@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { loadPlanDaysAction, saveMealPlanAction } from "@/app/meals/actions";
 import { FoodAutocomplete } from "@/components/food-autocomplete";
 import { calculationConfig, type PortionClass } from "@/lib/calc/config";
-import { formatFiber } from "@/lib/food-catalog";
 import { isCalendarDate, type MealTotals } from "@/lib/meal";
 import type { BuilderFood } from "@/lib/meal-foods";
 import {
@@ -18,6 +17,7 @@ import {
   type PlannerGroup,
   type Rotation,
 } from "@/lib/meal-planner";
+import { formatGrams, formatKcal } from "@/lib/remaining-format";
 import { suggestFoodsByRole, type DailyTargets, type Exclusions } from "@/lib/suggestions";
 
 const limits = calculationConfig.meal_planner;
@@ -63,7 +63,7 @@ function describeAmount(item: PlannedItem<BuilderFood>): string {
 }
 
 function describeTotals(totals: MealTotals): string {
-  return `${Math.round(totals.kcal)} kcal · Protein ${totals.protein_g.toFixed(1)} g · Carbs ${totals.carbs_g.toFixed(1)} g · Fat ${totals.fat_g.toFixed(1)} g`;
+  return `${formatKcal(totals.kcal)} · Protein ${formatGrams(totals.protein_g)} · Carbs ${formatGrams(totals.carbs_g)} · Fat ${formatGrams(totals.fat_g)}`;
 }
 
 function Choice({ name, checked, onChange, children }: {
@@ -115,16 +115,16 @@ function DayCard({ day, logged }: { day: PlannedDay<BuilderFood>; logged: Logged
 
       {day.status === "planned" && (
         <div className="border-t border-line pt-3 text-sm">
-          <p className="font-semibold">Day plan: {Math.round(day.totals.kcal)} kcal</p>
+          <p className="font-semibold">Day plan: {formatKcal(day.totals.kcal)}</p>
           <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
             {rows.map((row) => (
               <div className="contents" key={row.name}>
                 <dt className="text-muted">{row.name}</dt>
-                <dd className="text-right">{Math.round(row.planned)} / {Math.round(row.budget)} g</dd>
+                <dd className="text-right">{Math.round(row.planned)} / {formatGrams(row.budget)}</dd>
               </div>
             ))}
             <dt className="text-muted">Fiber</dt>
-            <dd className="text-right">{day.totals.fiber_incomplete ? "Incomplete" : formatFiber(day.totals.fiber_g)}</dd>
+            <dd className="text-right">{day.totals.fiber_g === null ? "Incomplete" : formatGrams(day.totals.fiber_g)}</dd>
           </dl>
           {day.notes.length > 0 && (
             <ul className="mt-3 grid gap-1 text-muted">
