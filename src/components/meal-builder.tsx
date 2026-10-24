@@ -12,6 +12,7 @@ import {
   describeNutrition,
   isCalendarDate,
   itemNutrition,
+  mealFormEaten,
   mealTotals,
   measureToGrams,
   parseAmount,
@@ -26,6 +27,8 @@ export type MealBuilderInitial = {
   mealId: string | null;
   date: string;
   label: string;
+  // The saved tick when editing; null for a new meal.
+  eaten: boolean | null;
   items: { foodId: string; grams: number }[];
 };
 
@@ -122,6 +125,8 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
   const foodsById = new Map(foods.map((food) => [food.id, food]));
   const [label, setLabel] = useState(initial.label);
   const [date, setDate] = useState(initial.date || localToday());
+  // "I ate this": null until the user (or a saved meal) sets it, so the default follows the date.
+  const [eatenChoice, setEatenChoice] = useState<boolean | null>(initial.eaten);
   const [slots, setSlots] = useState<Slots>(() => initialState(initial, foodsById).slots);
   const [extras, setExtras] = useState<ItemState[]>(() => initialState(initial, foodsById).extras);
   const [showExtraSearch, setShowExtraSearch] = useState(false);
@@ -148,6 +153,8 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
   // Saved meals on the chosen date (not counting this one), fetched again when the date changes.
   const target = suggestionContext.status === "ready" ? suggestionContext.target : null;
   const validDate = isCalendarDate(date);
+  const futureDate = validDate && date > localToday();
+  const eaten = mealFormEaten(eatenChoice, date, localToday());
   const [day, setDay] = useState<{ date: string; result: DayTotalsResult }>();
   useEffect(() => {
     if (!validDate) return;
@@ -217,6 +224,7 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
 
   function resetForm() {
     setLabel("");
+    setEatenChoice(null);
     setSlots(emptySlots());
     setExtras([]);
     setSearch("");
@@ -242,6 +250,7 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
       mealId: initial.mealId,
       date,
       label,
+      eaten,
       items: checked.flatMap(({ item, grams }) => (grams.ok ? [{ foodId: item.food.id, grams: grams.grams }] : [])),
     });
     setSaving(false);
@@ -275,6 +284,22 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
             Date
             <input className={fieldClass} onChange={(event) => setDate(event.target.value)} required suppressHydrationWarning type="date" value={date} />
           </label>
+          <div className="sm:col-span-2">
+            <label className="flex w-fit items-center gap-2 text-sm font-semibold">
+              <input
+                checked={eaten}
+                className="h-4 w-4 accent-accent"
+                disabled={futureDate}
+                onChange={(event) => setEatenChoice(event.target.checked)}
+                suppressHydrationWarning
+                type="checkbox"
+              />
+              I ate this
+            </label>
+            <p className="mt-1 text-xs text-muted">
+              {futureDate ? "A future meal is saved as planned. Tick it on the Meals page once you eat it." : "Only meals ticked as eaten count toward the day's totals."}
+            </p>
+          </div>
         </section>
 
         <section>

@@ -12,7 +12,7 @@ export default async function EditMealPage({ params }: PageProps<"/meals/[id]">)
 
   // Row-level security means only the owner can read a meal, so another user's id finds nothing.
   const [{ data: meal }, { foods, suggestionContext, recentFoodIds }] = await Promise.all([
-    supabase.from("meals").select("id, meal_date, label, meal_items(food_id, grams)").eq("id", id).maybeSingle(),
+    supabase.from("meals").select("id, meal_date, label, eaten, meal_items(food_id, grams)").eq("id", id).maybeSingle(),
     loadMealContext(supabase, { recentFoods: true }),
   ]);
   if (!meal) notFound();
@@ -28,6 +28,7 @@ export default async function EditMealPage({ params }: PageProps<"/meals/[id]">)
           mealId: meal.id,
           date: meal.meal_date,
           label: meal.label,
+          eaten: meal.eaten,
           items: meal.meal_items.map((item: { food_id: string; grams: number | string }) => ({
             foodId: item.food_id,
             grams: Number(item.grams),

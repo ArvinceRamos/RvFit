@@ -10,6 +10,7 @@ import {
   parseAmount,
   roundGrams,
   validateGrams,
+  mealFormEaten,
   validateMeal,
   type NutritionPer100g,
 } from "./meal";
@@ -141,8 +142,14 @@ describe("validateMeal", () => {
   it("accepts a valid new meal", () => {
     expect(validateMeal(validMeal)).toEqual({
       ok: true,
-      data: { meal_id: null, meal_date: "2026-10-06", label: "Meal 2", items: [{ food_id: foodId, grams: 150 }] },
+      data: { meal_id: null, meal_date: "2026-10-06", label: "Meal 2", items: [{ food_id: foodId, grams: 150 }], eaten: null },
     });
+  });
+
+  it("passes the eaten tick through and refuses anything but true or false", () => {
+    expect(validateMeal({ ...validMeal, eaten: true })).toMatchObject({ ok: true, data: { eaten: true } });
+    expect(validateMeal({ ...validMeal, eaten: false })).toMatchObject({ ok: true, data: { eaten: false } });
+    expect(validateMeal({ ...validMeal, eaten: "yes" })).toMatchObject({ ok: false });
   });
 
   it("accepts an existing meal id and trims the label", () => {
@@ -243,5 +250,22 @@ describe("describeNutrition", () => {
     expect(describeNutrition(itemNutrition(noFiber, 150))).toBe(
       "248 kcal · Protein 46.5 g · Carbs 0.0 g · Fat 5.4 g · Fiber Not listed",
     );
+  });
+});
+
+describe("mealFormEaten", () => {
+  it("starts ticked for today or a past date", () => {
+    expect(mealFormEaten(null, "2026-10-24", "2026-10-24")).toBe(true);
+    expect(mealFormEaten(null, "2026-10-20", "2026-10-24")).toBe(true);
+  });
+
+  it("keeps the user's choice for today or a past date", () => {
+    expect(mealFormEaten(false, "2026-10-24", "2026-10-24")).toBe(false);
+    expect(mealFormEaten(true, "2026-10-20", "2026-10-24")).toBe(true);
+  });
+
+  it("is never ticked for a future date", () => {
+    expect(mealFormEaten(null, "2026-10-25", "2026-10-24")).toBe(false);
+    expect(mealFormEaten(true, "2026-10-25", "2026-10-24")).toBe(false);
   });
 });

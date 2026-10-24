@@ -113,6 +113,8 @@ export type ValidMeal = {
   meal_date: string;
   label: string;
   items: { food_id: string; grams: number }[];
+  // The "I ate this" tick from the meal form, or null to leave it as it is (new meals start unticked).
+  eaten: boolean | null;
 };
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -165,5 +167,15 @@ export function validateMeal(raw: unknown): Result<ValidMeal> {
     items.push({ food_id: item.foodId, grams: grams.data });
   }
 
-  return { ok: true, data: { meal_id: mealId, meal_date: input.date, label, items } };
+  const eaten = input.eaten ?? null;
+  if (eaten !== null && typeof eaten !== "boolean") return failure("Meal details are invalid.");
+
+  return { ok: true, data: { meal_id: mealId, meal_date: input.date, label, items, eaten } };
+}
+
+// The meal form's "I ate this" tick. A future meal cannot be eaten yet. Otherwise it is the user's
+// choice, or ticked when they have not chosen (choice null).
+export function mealFormEaten(choice: boolean | null, date: string, today: string): boolean {
+  if (date > today) return false;
+  return choice ?? true;
 }

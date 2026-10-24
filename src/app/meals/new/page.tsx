@@ -15,7 +15,7 @@ export default async function NewMealPage() {
         foods={foods}
         recentFoodIds={recentFoodIds}
         suggestionContext={suggestionContext}
-        initial={{ mealId: null, date: "", label: "", items: [] }}
+        initial={{ mealId: null, date: "", label: "", eaten: null, items: [] }}
       />
     </AuthFrame>
   );

@@ -118,7 +118,7 @@ Per meal. "Unit" classes count whole units of `portion_unit_g`, taken from a cat
 ## Eaten checklist (MP-10, MP-11)
 
 The user's decisions (2026-10-08):
-- Meals saved by the planner start as planned (`from_plan` true, `eaten` false). Since AU-43 (2026-10-08, the user's choice) meals from "New meal" and "Log again" also start unticked, so nothing counts until it is ticked. Meals saved before AU-43 keep their tick.
+- Meals saved by the planner start as planned (`from_plan` true, `eaten` false). Since AU-43 (2026-10-08, the user's choice) meals from "New meal" and "Log again" also start unticked, so nothing counts until it is ticked. Meals saved before AU-43 keep their tick. Since AU-54 (2026-10-24, the user's choice "Ask on the form") the New meal and Edit meal form has an "I ate this" tick: ticked by default for today or a past date, unticked and disabled for a future date. Planner meals, "Copy yesterday" and "Log again" still start unticked.
 - Day totals (Today card, Dashboard, Week, kcal left) count only meals ticked as eaten. Planned meals are shown apart, for example "+1,225 kcal planned".
 - Every meal gets an "I ate this" checkbox on the Meals page and the Dashboard (AU-43; before, only planner meals had one). Future days cannot be ticked.
 - The planner still counts every saved meal, planned or eaten, so a day is never planned twice.

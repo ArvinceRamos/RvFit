@@ -54,8 +54,9 @@ describe("validateMealPlan", () => {
           { food_id: ids.rice, grams: 250 },
           { food_id: ids.oil, grams: 12 },
         ],
+        eaten: null,
       },
-      { meal_id: null, meal_date: "2026-10-08", label: "Meal 2", items: [{ food_id: ids.whey, grams: 40 }] },
+      { meal_id: null, meal_date: "2026-10-08", label: "Meal 2", items: [{ food_id: ids.whey, grams: 40 }], eaten: null },
     ]);
   });
 
@@ -64,10 +65,11 @@ describe("validateMealPlan", () => {
     expect(saved.meal_id).toBeNull();
   });
 
-  it("ignores client nutrition", () => {
-    const withNutrition = { ...meal("2026-10-08", "Meal 1"), totals: { kcal: 1 } };
+  it("ignores client nutrition and a client eaten tick", () => {
+    const withNutrition = { ...meal("2026-10-08", "Meal 1"), totals: { kcal: 1 }, eaten: true };
     const [saved] = valid([withNutrition]);
-    expect(Object.keys(saved)).toEqual(["meal_id", "meal_date", "label", "items"]);
+    expect(Object.keys(saved)).toEqual(["meal_id", "meal_date", "label", "items", "eaten"]);
+    expect(saved.eaten).toBeNull();
   });
 
   it("rejects bad shapes and plan sizes", () => {

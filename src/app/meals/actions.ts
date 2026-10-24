@@ -42,6 +42,15 @@ export async function saveMealAction(rawMeal: unknown): Promise<SaveMealResult> 
     return { ok: false, error: "Your meal could not be saved. Please try again." };
   }
 
+  // save_meal does not take the tick, so it is set straight after. If that fails, the meal is still saved.
+  if (meal.eaten !== null) {
+    const { error: eatenError } = await supabase.from("meals").update({ eaten: meal.eaten }).eq("id", mealId);
+    if (eatenError) {
+      logError("meals.saveEaten", eatenError);
+      return { ok: false, error: "Meal saved, but it could not be ticked as eaten. Tick it on the Meals page." };
+    }
+  }
+
   return { ok: true, mealId };
 }
 
