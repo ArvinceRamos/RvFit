@@ -25,8 +25,8 @@ export function ribbonQuality(width: number): RibbonQuality {
 // The ribbon sits behind every page (root layout). What it does depends on the page:
 // journey: the landing page, the 3D ribbon with one stop per section as you scroll.
 // hero: the auth pages, the 3D ribbon in its hero pose behind the card.
-// calm: everything else, the still CSS ribbon only (AU-77). A moving canvas under the frosted cards jumped
-// and stuttered on phones while scrolling, so app pages run no WebGL at all.
+// calm: everything else, no ribbon at all (AU-77). A moving canvas under the frosted cards jumped on phones
+// while scrolling, and the user found the app pages cleaner without any ribbon.
 export type RibbonRoute = "journey" | "hero" | "calm";
 
 const HERO_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password"];
@@ -36,7 +36,7 @@ export function ribbonRoute(pathname: string): RibbonRoute {
   return HERO_PATHS.includes(pathname) ? "hero" : "calm";
 }
 
-// True on the pages that run the 3D scene. Calm pages keep the static ribbon.
+// True on the pages that show the ribbon (the 3D scene, or the static one as a fallback). Calm pages show none.
 export function ribbonRuns3D(route: RibbonRoute): boolean {
   return route !== "calm";
 }

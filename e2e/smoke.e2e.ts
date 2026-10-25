@@ -121,13 +121,13 @@ test.describe("signed in", () => {
     });
   }
 
-  // App pages keep the still CSS ribbon: no WebGL canvas, even after the auth page started the scene.
-  test("an app page renders no ribbon canvas", async ({ page }) => {
+  // App pages have no ribbon at all, even after the auth page started the scene.
+  test("an app page renders no ribbon", async ({ page }) => {
     await open(page, "/meals");
     // Longer than the idle wait (up to 2 s) before the scene would start.
     await page.waitForTimeout(2500);
     await expect(page.locator("canvas.ribbon-canvas")).toHaveCount(0);
-    await expect(page.locator(".ribbon-static")).toHaveCount(1);
+    await expect(page.locator(".ribbon-static")).toHaveCount(0);
   });
 
   test("a workout whose reply was lost is saved once when Save is pressed again", async ({ page }) => {

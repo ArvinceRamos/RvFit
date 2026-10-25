@@ -5,10 +5,11 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { RibbonHandle } from "./ribbon-scene";
 import { RIBBON_MIN_WIDTH, ribbonQuality, ribbonRoute, ribbonRuns3D, shouldRun3D, stopIndex, type RibbonQuality } from "@/lib/ribbon-gate";
 
-// Decorative light ribbon behind every page (root layout), so it is not restarted on each navigation.
-// Everyone first gets the static CSS ribbon. App pages keep only that (see ribbonRuns3D). On the landing page
-// and the auth pages, with motion allowed, WebGL 2 and no data-saver, the three scene loads after first paint
-// and fades in over it; the landing page scrolls through its stops and the auth pages hold the hero pose.
+// Decorative light ribbon behind the landing page and the auth pages only (root layout, so it is not restarted
+// when moving between them). Every other page has no ribbon at all, the user's choice for a cleaner look (AU-77).
+// Those two first get the static CSS ribbon. With motion allowed, WebGL 2 and no data-saver, the three scene
+// loads after first paint and fades in over it; the landing page scrolls through its stops and the auth pages
+// hold the hero pose.
 // Phones and tablets get the lite scene. If it fails, the static ribbon stays. No page ever waits for it.
 
 const WIDE = `(min-width: ${RIBBON_MIN_WIDTH}px)`;
@@ -57,7 +58,8 @@ export function RibbonBackground() {
   const mode = useSyncExternalStore(subscribe, ribbonMode, () => "off" as const);
   const [failed, setFailed] = useState(false);
   const [live, setLive] = useState(false);
-  const quality = mode === "off" || failed || !ribbonRuns3D(route) ? null : mode;
+  const shown = ribbonRuns3D(route);
+  const quality = mode === "off" || failed || !shown ? null : mode;
   const run = quality !== null;
 
   // Starts the scene when a 3D page opens and stops it when leaving for an app page.
@@ -110,6 +112,8 @@ export function RibbonBackground() {
     });
     return () => cancelAnimationFrame(frame);
   }, [route]);
+
+  if (!shown) return null;
 
   // The static ribbon sits behind the top of the page. The canvas stays fixed behind the whole page.
   return (
