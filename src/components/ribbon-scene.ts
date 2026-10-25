@@ -11,7 +11,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { GLIDE_DEFAULT, RIBBON_KEYFRAMES, RIBBON_KEYFRAMES_NARROW, poseAt, ribbonSettled, type RibbonQuality } from "@/lib/ribbon-gate";
+import { GLIDE_DEFAULT, RIBBON_KEYFRAMES, RIBBON_KEYFRAMES_NARROW, poseAt, type RibbonQuality } from "@/lib/ribbon-gate";
 
 // The landing page light ribbon. Only RibbonBackground loads this file, with a dynamic import,
 // so three stays out of every other page's bundle.
@@ -42,6 +42,9 @@ const SETTINGS = {
   lite: { segments: 240, maxPixelRatio: 1, antialias: false, frameMs: 1000 / 30, keyframes: RIBBON_KEYFRAMES_NARROW },
 };
 
+// Height changes smaller than this, with the same width, are the phone address bar (see resize below).
+const ADDRESS_BAR_PX = 160;
+
 // Fit Green and pale Fit Green, as sRGB 0 to 1.
 const GREEN = [175 / 255, 250 / 255, 0];
 const PALE = [207 / 255, 237 / 255, 137 / 255];
@@ -58,24 +61,24 @@ const vertexShader = /* glsl */ `
   }
 `;
 
-// uSoft 0 shows fine bright lines across the ribbon; 1 melts them into a dim glow.
-// The glow dims quickly as soon as the hero scrolls away, so grey body text on top keeps its contrast.
+// Fine bright lines across the ribbon at every stop. uBright dims the whole ribbon once the hero scrolls away,
+// so grey body text on top keeps its contrast without melting the lines into a blur.
 const fragmentShader = /* glsl */ `
   uniform float uTime;
-  uniform float uSoft;
+  uniform float uBright;
   uniform float uOpacity;
   uniform vec3 uGreen;
   uniform vec3 uPale;
   varying vec2 vUv;
   void main() {
     float across = 1.0 - abs(vUv.y * 2.0 - 1.0);
-    float body = pow(across, mix(1.4, 0.7, uSoft));
+    float body = pow(across, 1.4);
     float lines = pow(0.5 + 0.5 * cos(vUv.y * 6.2832 * 12.0), 8.0);
-    float detail = mix(lines * 1.3 + 0.12, 0.45, uSoft);
+    float detail = lines * 1.3 + 0.12;
     float sheen = 0.6 + 0.4 * sin(vUv.x * 30.0 - uTime * 0.9);
     float ends = smoothstep(0.0, 0.1, vUv.x) * smoothstep(1.0, 0.9, vUv.x);
     vec3 color = mix(uGreen, uPale, clamp(vUv.y * 0.7 + 0.3 * sin(vUv.x * 5.0 + uTime * 0.2), 0.0, 1.0));
-    float a = clamp(body * detail * sheen * ends * uOpacity * mix(1.0, 0.12, smoothstep(0.0, 0.4, uSoft)), 0.0, 1.0);
+    float a = clamp(body * detail * sheen * ends * uOpacity * uBright, 0.0, 1.0);
     gl_FragColor = vec4(color * a, a);
   }
 `;
@@ -134,26 +137,17 @@ type Callbacks = {
   // WebGL went away; go back to the static fallback.
   onLost: () => void;
   quality: RibbonQuality;
-  // Softness for this frame (0 sharp, 1 dim glow). Defaults to the keyframe value.
-  getSoft?: (keyframeSoft: number) => number;
-  // How fast the camera glides toward the scroll position. Defaults to GLIDE_DEFAULT.
-  getGlide?: () => number;
-  // True on pages where the ribbon holds still (see ribbonMoves). Defaults to animating.
-  getStill?: () => boolean;
 };
 
 export type RibbonHandle = {
   // Stops the scene and frees the GPU memory.
   stop: () => void;
-  // Restarts the frame loop if it stopped (a still ribbon settled, or the browser stopped it).
-  wake: () => void;
 };
 
 // Starts the scene on the canvas. Throws if WebGL cannot start; the caller keeps the static fallback.
-// It animates continuously on the landing and auth pages (the user's choice; see docs/UI-REFRESH.md). On still
-// pages it stops drawing once the camera settles, and a scroll, resize or wake() draws again.
-// Reduced motion, data saver and no WebGL 2 still get the static ribbon instead.
-export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLost, quality, getSoft, getGlide, getStill }: Callbacks): RibbonHandle {
+// It runs only on the landing and auth pages and animates continuously there (the user's choice; see
+// docs/UI-REFRESH.md). App pages, reduced motion, data saver and no WebGL 2 get the static ribbon instead.
+export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLost, quality }: Callbacks): RibbonHandle {
   const settings = SETTINGS[quality];
   const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: settings.antialias, powerPreference: "low-power" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, settings.maxPixelRatio));
@@ -171,7 +165,7 @@ export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLo
         uniforms: {
           uTime: { value: 0 },
           uPhase: { value: strand.phase },
-          uSoft: { value: 0 },
+          uBright: { value: 1 },
           uOpacity: { value: strand.opacity },
           uGreen: { value: GREEN },
           uPale: { value: PALE },
@@ -186,19 +180,20 @@ export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLo
   const geometries = STRANDS.map((strand) => strandGeometry(curve, strand, settings.segments));
   geometries.forEach((geometry, i) => scene.add(new Mesh(geometry, materials[i])));
 
+  let width = 0;
+  let height = 0;
   const resize = () => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    // A phone's address bar showing or hiding changes only the height a little. Redrawing the canvas for that
+    // made the ribbon jump while scrolling, so the canvas just stretches to fit until the width or a big
+    // height change comes along.
+    if (width === window.innerWidth && Math.abs(height - window.innerHeight) < ADDRESS_BAR_PX) return;
+    width = window.innerWidth;
+    height = window.innerHeight;
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
   };
   resize();
-  // A resize clears the canvas, so a settled ribbon draws again.
-  const handleResize = () => {
-    resize();
-    wake();
-  };
 
   const handleLost = (event: Event) => {
     event.preventDefault();
@@ -212,7 +207,6 @@ export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLo
   let last = performance.now();
   let clock = 0;
   let frame = 0;
-  let running = false;
   let ready = false;
 
   const draw = (now: number) => {
@@ -221,55 +215,35 @@ export function startRibbon(canvas: HTMLCanvasElement, { getIndex, onReady, onLo
     if (settings.frameMs && ready && now - last < settings.frameMs - 1) return;
     const dt = Math.min((now - last) / 1000, 0.1);
     last = now;
-    const still = getStill ? getStill() : false;
-    // A still ribbon keeps its waves where they are.
-    if (!still) clock += dt;
+    clock += dt;
     // Glide toward the scroll position instead of jumping.
-    const target = getIndex();
-    index += (target - index) * (1 - Math.exp(-dt * (getGlide ? getGlide() : GLIDE_DEFAULT)));
-    const settled = still && ribbonSettled(index, target);
-    if (settled) index = target;
+    index += (getIndex() - index) * (1 - Math.exp(-dt * GLIDE_DEFAULT));
     const pose = poseAt(index, settings.keyframes);
     curve.getPointAt(pose.t, point);
     look.set(point.x + pose.shift[0], point.y + pose.shift[1], point.z + pose.shift[2]);
     camera.position.set(point.x + pose.offset[0], point.y + pose.offset[1], point.z + pose.offset[2]);
     camera.lookAt(look);
-    const soft = getSoft ? getSoft(pose.soft) : pose.soft;
     for (const material of materials) {
       material.uniforms.uTime.value = clock;
-      material.uniforms.uSoft.value = soft;
+      material.uniforms.uBright.value = pose.bright;
     }
     renderer.render(scene, camera);
     if (!ready) {
       ready = true;
       onReady();
     }
-    // Nothing left to move: stop until the next scroll, resize or page change.
-    if (settled) {
-      cancelAnimationFrame(frame);
-      running = false;
-    }
   };
-  const wake = () => {
-    if (running) return;
-    running = true;
-    last = performance.now();
-    frame = requestAnimationFrame(draw);
-  };
-  window.addEventListener("resize", handleResize);
-  window.addEventListener("scroll", wake, { passive: true });
-  wake();
+  window.addEventListener("resize", resize);
+  frame = requestAnimationFrame(draw);
 
   const stop = () => {
     cancelAnimationFrame(frame);
-    running = false;
-    window.removeEventListener("resize", handleResize);
-    window.removeEventListener("scroll", wake);
+    window.removeEventListener("resize", resize);
     canvas.removeEventListener("webglcontextlost", handleLost);
     geometries.forEach((geometry) => geometry.dispose());
     materials.forEach((material) => material.dispose());
     renderer.dispose();
     renderer.forceContextLoss();
   };
-  return { stop, wake };
+  return { stop };
 }

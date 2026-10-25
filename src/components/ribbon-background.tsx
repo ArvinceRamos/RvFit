@@ -3,14 +3,13 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { RibbonHandle } from "./ribbon-scene";
-import { CALM_SOFT, calmIndex, GLIDE_CALM, GLIDE_DEFAULT, RIBBON_MIN_WIDTH, ribbonMoves, ribbonQuality, ribbonRoute, shouldRun3D, stopIndex, type RibbonQuality } from "@/lib/ribbon-gate";
+import { RIBBON_MIN_WIDTH, ribbonQuality, ribbonRoute, ribbonRuns3D, shouldRun3D, stopIndex, type RibbonQuality } from "@/lib/ribbon-gate";
 
 // Decorative light ribbon behind every page (root layout), so it is not restarted on each navigation.
-// The landing page scrolls through its stops; other pages use the hero or calm pose (see ribbonRoute).
-// App (calm) pages hold still and draw only on scroll, resize or page change (see ribbonMoves).
-// No page ever waits for it.
-// Everyone first gets the static CSS ribbon. With motion allowed, WebGL 2 and no data-saver, the three scene
-// loads after first paint and fades in over it. Phones and tablets get the lite scene. If it fails, the static ribbon stays.
+// Everyone first gets the static CSS ribbon. App pages keep only that (see ribbonRuns3D). On the landing page
+// and the auth pages, with motion allowed, WebGL 2 and no data-saver, the three scene loads after first paint
+// and fades in over it; the landing page scrolls through its stops and the auth pages hold the hero pose.
+// Phones and tablets get the lite scene. If it fails, the static ribbon stays. No page ever waits for it.
 
 const WIDE = `(min-width: ${RIBBON_MIN_WIDTH}px)`;
 const CALM = "(prefers-reduced-motion: reduce)";
@@ -38,12 +37,8 @@ function canRun3D() {
 }
 
 // Scroll positions where the hero, each stage preview, and the closing sit in the middle of the screen.
-function maxScroll(): number {
-  return Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
-}
-
 function measureStops(): number[] {
-  const max = maxScroll();
+  const max = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
   const stages = Array.from(document.querySelectorAll<HTMLElement>("[data-preview-slot]"), (el) => {
     const rect = el.getBoundingClientRect();
     return rect.top + window.scrollY + rect.height / 2 - window.innerHeight / 2;
@@ -59,13 +54,14 @@ export function RibbonBackground() {
   const route = ribbonRoute(usePathname());
   const routeRef = useRef(route);
   const stopsRef = useRef<number[]>([0]);
-  const handleRef = useRef<RibbonHandle | undefined>(undefined);
   const mode = useSyncExternalStore(subscribe, ribbonMode, () => "off" as const);
   const [failed, setFailed] = useState(false);
   const [live, setLive] = useState(false);
-  const quality = mode === "off" || failed ? null : mode;
+  const quality = mode === "off" || failed || !ribbonRuns3D(route) ? null : mode;
   const run = quality !== null;
 
+  // Starts the scene when a 3D page opens and stops it when leaving for an app page.
+  // Moving between the landing and auth pages keeps the same scene.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!quality || !canvas) return;
@@ -83,19 +79,11 @@ export function RibbonBackground() {
         .then(({ startRibbon }) => {
           if (cancelled) return;
           handle = startRibbon(canvas, {
-            getIndex: () => {
-              if (routeRef.current === "hero") return 0;
-              if (routeRef.current === "calm") return calmIndex(window.scrollY, maxScroll());
-              return stopIndex(window.scrollY, stopsRef.current);
-            },
+            getIndex: () => (routeRef.current === "journey" ? stopIndex(window.scrollY, stopsRef.current) : 0),
             onReady: () => setLive(true),
             onLost: () => setFailed(true),
             quality,
-            getSoft: (soft) => (routeRef.current === "calm" ? CALM_SOFT : soft),
-            getGlide: () => (routeRef.current === "calm" ? GLIDE_CALM : GLIDE_DEFAULT),
-            getStill: () => !ribbonMoves(routeRef.current),
           });
-          handleRef.current = handle;
         })
         .catch(() => {
           if (!cancelled) setFailed(true);
@@ -110,7 +98,6 @@ export function RibbonBackground() {
       if (timer !== undefined) clearTimeout(timer);
       observer.disconnect();
       handle?.stop();
-      handleRef.current = undefined;
       setLive(false);
     };
   }, [quality]);
@@ -120,16 +107,14 @@ export function RibbonBackground() {
     routeRef.current = route;
     const frame = requestAnimationFrame(() => {
       stopsRef.current = measureStops();
-      // A settled ribbon moves to the new page's pose.
-      handleRef.current?.wake();
     });
     return () => cancelAnimationFrame(frame);
   }, [route]);
 
-  // The static ribbon sits behind the hero only. The canvas stays fixed behind the whole page.
+  // The static ribbon sits behind the top of the page. The canvas stays fixed behind the whole page.
   return (
     <>
-      <div aria-hidden="true" className={`ribbon-static transition-opacity duration-1000 ${live ? "opacity-0" : "opacity-100"}`} />
+      <div aria-hidden="true" className={`ribbon-static transition-opacity duration-1000 ${live && run ? "opacity-0" : "opacity-100"}`} />
       {run && (
         // A new canvas per quality: the old one lost its WebGL context when its scene stopped.
         <canvas

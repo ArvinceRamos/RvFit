@@ -305,10 +305,11 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
           {recentFoods.length > 0 && (
             <div className="mt-4">
               <p className="text-sm font-semibold">Recent foods</p>
+              {/* Chips with an edge, so each food reads as a button, not a loose word. */}
               <ul className="mt-2 flex flex-wrap gap-2">
                 {recentFoods.map((food) => (
                   <li key={food.id}>
-                    <button aria-label={`Add ${food.name}`} className="btn-ghost btn-sm" onClick={() => addRecentFood(food)} type="button">
+                    <button aria-label={`Add ${food.name}`} className="chip" onClick={() => addRecentFood(food)} type="button">
                       + {food.name}
                     </button>
                   </li>

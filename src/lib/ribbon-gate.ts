@@ -22,10 +22,11 @@ export function ribbonQuality(width: number): RibbonQuality {
   return width >= RIBBON_MIN_WIDTH ? "full" : "lite";
 }
 
-// The ribbon sits behind every page (root layout). How the camera moves depends on the page:
-// journey: the landing page, one stop per section as you scroll.
-// hero: the auth pages, the sharp hero pose behind the card.
-// calm: everything else, a soft dim glow that drifts slowly as you scroll, so text stays easy to read.
+// The ribbon sits behind every page (root layout). What it does depends on the page:
+// journey: the landing page, the 3D ribbon with one stop per section as you scroll.
+// hero: the auth pages, the 3D ribbon in its hero pose behind the card.
+// calm: everything else, the still CSS ribbon only (AU-77). A moving canvas under the frosted cards jumped
+// and stuttered on phones while scrolling, so app pages run no WebGL at all.
 export type RibbonRoute = "journey" | "hero" | "calm";
 
 const HERO_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password"];
@@ -35,66 +36,48 @@ export function ribbonRoute(pathname: string): RibbonRoute {
   return HERO_PATHS.includes(pathname) ? "hero" : "calm";
 }
 
-// The landing and auth pages animate nonstop (AU-37). App pages hold still (H9, the user's choice on 2026-10-25):
-// the waves stop and the scene draws only until the camera has glided to the scroll position, then waits
-// for the next scroll, resize or page change. That saves the GPU and battery under the frosted cards.
-export function ribbonMoves(route: RibbonRoute): boolean {
+// True on the pages that run the 3D scene. Calm pages keep the static ribbon.
+export function ribbonRuns3D(route: RibbonRoute): boolean {
   return route !== "calm";
 }
 
-// How close the camera must be to its target (in stop index units) before a still ribbon stops drawing.
-export const SETTLE_EPSILON = 0.001;
-
-export function ribbonSettled(index: number, target: number): boolean {
-  return Math.abs(target - index) < SETTLE_EPSILON;
-}
-
-// Calm pages drift only one pose (stop 1 to stop 2, both soft) from the top to the bottom of the page,
-// so a short scroll never sweeps the ribbon across the screen.
-export const CALM_DRIFT = 1;
-
-// How fast the camera glides toward the scroll position. Calm pages use a slow glide.
+// How fast the camera glides toward the scroll position.
 export const GLIDE_DEFAULT = 4;
-export const GLIDE_CALM = 1.5;
-
-export function calmIndex(scrollY: number, maxScroll: number): number {
-  const progress = maxScroll > 0 ? Math.min(Math.max(scrollY / maxScroll, 0), 1) : 0;
-  return 1 + CALM_DRIFT * progress;
-}
-
-// App pages show the ribbon a little brighter than the landing stages, so it reads through the glass cards,
-// but still blurred enough that text between the cards stays easy to read.
-export const CALM_SOFT = 0.22;
 
 // One keyframe per stop: the hero, the five stages, then the closing.
 // t is the point on the ribbon the camera looks at (0 to 1). offset is where the camera sits from that point.
-// shift moves the look point so the ribbon sits to one side. soft 0 is sharp lines (hero only),
-// 1 is a dim blurred glow that keeps body text readable on top of it.
+// shift moves the look point so the ribbon sits to one side: on wide screens it sits on the right, behind
+// the stage previews, away from the text. bright scales the glow (1 is the hero). The fine lines stay sharp
+// at every stop (the user's choice, AU-77); only the brightness drops so body text keeps its contrast.
 export type RibbonKeyframe = {
   t: number;
   offset: [number, number, number];
   shift: [number, number, number];
-  soft: number;
+  bright: number;
 };
 
 export const RIBBON_KEYFRAMES: RibbonKeyframe[] = [
-  { t: 0.12, offset: [0, 1, 10], shift: [-4.5, -1.5, 0], soft: 0 },
-  { t: 0.25, offset: [-3, 3, 10], shift: [-4, 0, 0], soft: 1 },
-  { t: 0.37, offset: [3, -2, 10], shift: [-4, 1, 0], soft: 1 },
-  { t: 0.49, offset: [-2, 4, 11], shift: [-4, -1, 0], soft: 1 },
-  { t: 0.61, offset: [4, 1, 10], shift: [-4, 0, 0], soft: 1 },
-  { t: 0.73, offset: [-3, -3, 11], shift: [-4, 1, 0], soft: 1 },
-  { t: 0.86, offset: [0, 2, 12], shift: [-5, 0, 0], soft: 1 },
+  { t: 0.12, offset: [0, 1, 10], shift: [-4.5, -1.5, 0], bright: 1 },
+  { t: 0.25, offset: [-3, 3, 10], shift: [-5, 0, 0], bright: 0.55 },
+  { t: 0.37, offset: [3, -2, 10], shift: [-5, 1, 0], bright: 0.55 },
+  { t: 0.49, offset: [-2, 4, 11], shift: [-5, -1, 0], bright: 0.55 },
+  { t: 0.61, offset: [4, 1, 10], shift: [-5, 0, 0], bright: 0.55 },
+  { t: 0.73, offset: [-3, -3, 11], shift: [-5, 1, 0], bright: 0.55 },
+  { t: 0.86, offset: [0, 2, 12], shift: [-5, 0, 0], bright: 0.55 },
 ];
+
+// Phones and tablets have one column, so text always sits on top of the ribbon after the hero. The lines stay,
+// dimmed further than on wide screens.
+export const NARROW_BRIGHT = 0.35;
 
 // The same path for narrow screens: the camera sits further back and looks closer to the ribbon,
 // so it crosses the middle of a tall screen instead of leaving it.
-export const RIBBON_KEYFRAMES_NARROW: RibbonKeyframe[] = RIBBON_KEYFRAMES.map((frame) => ({
+export const RIBBON_KEYFRAMES_NARROW: RibbonKeyframe[] = RIBBON_KEYFRAMES.map((frame, i) => ({
   t: frame.t,
   offset: [frame.offset[0] * 0.5, frame.offset[1] * 0.5, frame.offset[2] + 6],
   // Looking a little above the ribbon puts it lower on screen, under the hero text on a phone.
   shift: [frame.shift[0] * 0.25, frame.shift[1] * 0.5 + 1.8, frame.shift[2]],
-  soft: frame.soft,
+  bright: i === 0 ? frame.bright : NARROW_BRIGHT,
 }));
 
 function ease(x: number): number {
@@ -121,7 +104,7 @@ export function poseAt(index: number, keyframes: RibbonKeyframe[] = RIBBON_KEYFR
     t: mix(a.t, b.t, k),
     offset: mix3(a.offset, b.offset, k),
     shift: mix3(a.shift, b.shift, k),
-    soft: mix(a.soft, b.soft, k),
+    bright: mix(a.bright, b.bright, k),
   };
 }
 

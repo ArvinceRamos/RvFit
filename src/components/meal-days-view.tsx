@@ -5,6 +5,7 @@ import { CopyMealButton } from "@/components/copy-meal-button";
 import { CopyYesterdayButton } from "@/components/copy-yesterday-button";
 import { DeleteMealButton } from "@/components/delete-meal-button";
 import { MealEatenToggle } from "@/components/meal-eaten-toggle";
+import { Icon } from "@/components/icon";
 import { TodaySummary } from "@/components/today-summary";
 import { dayPrepList, describeMealDay, mealDaysWindow, type MealDay, type MealDayMeal, type MealDayView } from "@/lib/meal-days";
 import type { DayTotalsResult, MealDaysResult } from "@/lib/meal-days-data";
@@ -116,17 +117,20 @@ export function MealDaysView({ target, view, today, result, todayTotals }: {
         <Link className="btn-primary" href="/meals/new">New meal</Link>
         <Link className="btn-secondary text-base" href="/meals/plan">Plan meals</Link>
         <Link className="btn-secondary text-base" href="/foods">Browse foods</Link>
-        {/* Allergies and avoided foods live on Preferences, under Me. */}
-        <Link className="btn-ghost text-base" href="/preferences">Food settings</Link>
+        {/* Allergies and avoided foods live on Preferences, under Me. A gear and an underline so it reads as a link. */}
+        <Link className="inline-flex min-h-11 items-center gap-2 px-1 text-sm font-semibold underline underline-offset-4 hover:text-accent-text" href="/preferences">
+          <Icon name="settings" />
+          Food settings
+        </Link>
       </div>
 
       {showCopy && <CopyYesterdayButton count={result.yesterdayToCopy} today={today} />}
 
-      <nav aria-label="Meal days" className="mt-8 flex gap-2">
+      {/* One connected tab bar. Each tab is its own URL, so they stay links. */}
+      <nav aria-label="Meal days" className="segmented mt-8">
         {tabs.map((tab) => (
           <Link
             aria-current={tab.view === view ? "page" : undefined}
-            className="btn-ghost"
             href={tab.view === "today" ? "/meals" : `/meals?view=${tab.view}`}
             key={tab.view}
           >

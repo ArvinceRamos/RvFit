@@ -43,6 +43,19 @@ test.describe("guest", () => {
     }
   });
 
+  test("the landing FAQ shows the plan line and opens an answer from the keyboard", async ({ page }) => {
+    await open(page, "/");
+    const faq = page.getByRole("region", { name: "Before you start" });
+    await expect(faq.getByText("A starting estimate, not a promise. Review your weight trend over time, then decide whether to edit your target.", { exact: true })).toBeVisible();
+    const question = faq.locator("summary", { hasText: "Do I need an account?" });
+    const answer = faq.getByText("A free account saves your targets", { exact: false });
+    await expect(answer).toBeHidden();
+    await question.focus();
+    await page.keyboard.press("Enter");
+    await expect(answer).toBeVisible();
+    await expect(faq.getByRole("link", { name: "Get my starting estimate" })).toBeVisible();
+  });
+
   test("a signed-in page sends a guest to log in", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/\/login/);
@@ -107,6 +120,15 @@ test.describe("signed in", () => {
       await expectNoAxeViolations(page);
     });
   }
+
+  // App pages keep the still CSS ribbon: no WebGL canvas, even after the auth page started the scene.
+  test("an app page renders no ribbon canvas", async ({ page }) => {
+    await open(page, "/meals");
+    // Longer than the idle wait (up to 2 s) before the scene would start.
+    await page.waitForTimeout(2500);
+    await expect(page.locator("canvas.ribbon-canvas")).toHaveCount(0);
+    await expect(page.locator(".ribbon-static")).toHaveCount(1);
+  });
 
   test("a workout whose reply was lost is saved once when Save is pressed again", async ({ page }) => {
     const user = readTestUser();

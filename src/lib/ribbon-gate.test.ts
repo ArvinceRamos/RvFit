@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calmIndex, ribbonMoves, ribbonRoute, ribbonSettled, RIBBON_KEYFRAMES, RIBBON_KEYFRAMES_NARROW, RIBBON_MIN_WIDTH, poseAt, ribbonQuality, SETTLE_EPSILON, shouldRun3D, stopIndex, type RibbonEnv } from "./ribbon-gate";
+import { NARROW_BRIGHT, ribbonRoute, ribbonRuns3D, RIBBON_KEYFRAMES, RIBBON_KEYFRAMES_NARROW, RIBBON_MIN_WIDTH, poseAt, ribbonQuality, shouldRun3D, stopIndex, type RibbonEnv } from "./ribbon-gate";
 
 const desktop: RibbonEnv = { width: 1440, reducedMotion: false, saveData: false, webgl2: true };
 
@@ -35,32 +35,12 @@ describe("ribbonRoute", () => {
   });
 });
 
-describe("ribbonMoves", () => {
-  it("animates on the landing and auth pages and holds still on app pages", () => {
-    expect(ribbonMoves("journey")).toBe(true);
-    expect(ribbonMoves("hero")).toBe(true);
-    expect(ribbonMoves("calm")).toBe(false);
-    expect(ribbonMoves(ribbonRoute("/dashboard"))).toBe(false);
-  });
-});
-
-describe("ribbonSettled", () => {
-  it("settles only once the camera has reached its target", () => {
-    expect(ribbonSettled(1.5, 1.5)).toBe(true);
-    expect(ribbonSettled(1.5, 1.5 + SETTLE_EPSILON / 2)).toBe(true);
-    expect(ribbonSettled(1.5, 1.5 + SETTLE_EPSILON * 2)).toBe(false);
-    expect(ribbonSettled(2, 1)).toBe(false);
-  });
-});
-
-describe("calmIndex", () => {
-  it("drifts through the soft stops only", () => {
-    expect(calmIndex(0, 1000)).toBe(1);
-    expect(calmIndex(500, 1000)).toBe(1.5);
-    expect(calmIndex(1000, 1000)).toBe(2);
-    expect(calmIndex(5000, 1000)).toBe(2);
-    expect(calmIndex(200, 0)).toBe(1);
-    for (const i of [1, 2]) expect(RIBBON_KEYFRAMES[i].soft).toBe(1);
+describe("ribbonRuns3D", () => {
+  it("runs the 3D scene on the landing and auth pages only", () => {
+    expect(ribbonRuns3D("journey")).toBe(true);
+    expect(ribbonRuns3D("hero")).toBe(true);
+    expect(ribbonRuns3D("calm")).toBe(false);
+    for (const path of ["/dashboard", "/meals", "/workouts", "/profile"]) expect(ribbonRuns3D(ribbonRoute(path))).toBe(false);
   });
 });
 
@@ -79,9 +59,16 @@ describe("narrow keyframes", () => {
     RIBBON_KEYFRAMES_NARROW.forEach((frame, i) => {
       const wide = RIBBON_KEYFRAMES[i];
       expect(frame.t).toBe(wide.t);
-      expect(frame.soft).toBe(wide.soft);
       expect(frame.offset[2]).toBeGreaterThan(wide.offset[2]);
       expect(Math.abs(frame.shift[0])).toBeLessThan(Math.abs(wide.shift[0]));
+    });
+  });
+
+  it("keeps the hero bright and dims every later stop more than on wide screens", () => {
+    expect(RIBBON_KEYFRAMES_NARROW[0].bright).toBe(RIBBON_KEYFRAMES[0].bright);
+    RIBBON_KEYFRAMES_NARROW.slice(1).forEach((frame, i) => {
+      expect(frame.bright).toBe(NARROW_BRIGHT);
+      expect(frame.bright).toBeLessThan(RIBBON_KEYFRAMES[i + 1].bright);
     });
   });
 
@@ -102,14 +89,18 @@ describe("keyframes", () => {
     for (const frame of RIBBON_KEYFRAMES) {
       expect(frame.t).toBeGreaterThanOrEqual(0);
       expect(frame.t).toBeLessThanOrEqual(1);
-      expect(frame.soft).toBeGreaterThanOrEqual(0);
-      expect(frame.soft).toBeLessThanOrEqual(1);
+      expect(frame.bright).toBeGreaterThan(0);
+      expect(frame.bright).toBeLessThanOrEqual(1);
     }
   });
 
-  it("is sharp in the hero and soft behind the stages", () => {
-    expect(RIBBON_KEYFRAMES[0].soft).toBe(0);
-    for (const frame of RIBBON_KEYFRAMES.slice(1, 6)) expect(frame.soft).toBeGreaterThanOrEqual(0.5);
+  it("is brightest in the hero and dimmer behind the stages", () => {
+    expect(RIBBON_KEYFRAMES[0].bright).toBe(1);
+    for (const frame of RIBBON_KEYFRAMES.slice(1)) expect(frame.bright).toBeLessThan(1);
+  });
+
+  it("keeps the ribbon on the preview side (right) after the hero on wide screens", () => {
+    for (const frame of RIBBON_KEYFRAMES.slice(1)) expect(frame.shift[0]).toBeLessThan(0);
   });
 });
 
@@ -132,7 +123,7 @@ describe("poseAt", () => {
     const mid = poseAt(1.5);
     expect(mid.t).toBeCloseTo((a.t + b.t) / 2);
     expect(mid.offset[0]).toBeCloseTo((a.offset[0] + b.offset[0]) / 2);
-    expect(mid.soft).toBeCloseTo((a.soft + b.soft) / 2);
+    expect(mid.bright).toBeCloseTo((a.bright + b.bright) / 2);
   });
 });
 
