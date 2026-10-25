@@ -18,7 +18,7 @@ async function open(page: Page, path: string): Promise<void> {
   await expect(page.locator("h1").first()).toBeVisible();
 }
 
-const publicPages = ["/", "/login", "/signup", "/forgot-password", "/start", "/calculate", "/manual", "/privacy", "/terms"];
+const publicPages = ["/", "/login", "/signup", "/forgot-password", "/start", "/calculate", "/manual", "/privacy", "/terms", "/glossary"];
 const signedInPages = ["/dashboard", "/week", "/meals", "/meals/new", "/foods", "/workouts", "/progress", "/profile", "/preferences", "/account"];
 
 test.describe("guest", () => {

@@ -7,6 +7,7 @@ import { isCalendarDate } from "@/lib/meal";
 import type { PreferredUnits } from "@/lib/weigh-in";
 import { clearWorkoutDraft, readWorkoutDraft, workoutDraftKey, writeWorkoutDraft, type WorkoutDraft } from "@/lib/workout-draft";
 import { convertWeightText, maxSetsPerExercise, weightUnit, type LogSlot, type SetFields } from "@/lib/workouts/log";
+import { isBarbellExercise, plateText } from "@/lib/workouts/plates";
 import { lastSessionSets, lastTimeText, progressionPrompt } from "@/lib/workouts/progression";
 
 export type WorkoutLogInitial = {
@@ -274,21 +275,25 @@ function LogForm({ initial, slots, units: savedUnits, showHistory, inBrowser }: 
             })()}
 
             <ol className="mt-3 grid gap-2">
-              {entry.sets.map((set, index) => (
-                <li className="flex flex-wrap items-end gap-3" key={index}>
-                  <span className="w-12 pb-2 text-sm font-semibold">Set {index + 1}</span>
-                  <label className="grid w-24 grid-cols-1 gap-1 text-sm">
-                    {amountLabel}
-                    <input className={fieldClass} inputMode="numeric" onChange={(event) => updateSet(slot.slotKey, index, { amount: event.target.value })} type="text" value={set.amount} />
-                  </label>
-                  {choice.loaded && (
-                    <label className="grid w-28 grid-cols-1 gap-1 text-sm">
-                      Weight ({weightUnit(units)})
-                      <input className={fieldClass} inputMode="decimal" onChange={(event) => updateSet(slot.slotKey, index, { weight: event.target.value })} type="text" value={set.weight} />
+              {entry.sets.map((set, index) => {
+                const plates = choice.loaded && isBarbellExercise(choice.key) ? plateText(set.weight, units) : null;
+                return (
+                  <li className="flex flex-wrap items-end gap-3" key={index}>
+                    <span className="w-12 pb-2 text-sm font-semibold">Set {index + 1}</span>
+                    <label className="grid w-24 grid-cols-1 gap-1 text-sm">
+                      {amountLabel}
+                      <input className={fieldClass} inputMode="numeric" onChange={(event) => updateSet(slot.slotKey, index, { amount: event.target.value })} type="text" value={set.amount} />
                     </label>
-                  )}
-                </li>
-              ))}
+                    {choice.loaded && (
+                      <label className="grid w-28 grid-cols-1 gap-1 text-sm">
+                        Weight ({weightUnit(units)})
+                        <input className={fieldClass} inputMode="decimal" onChange={(event) => updateSet(slot.slotKey, index, { weight: event.target.value })} type="text" value={set.weight} />
+                      </label>
+                    )}
+                    {plates && <p className="basis-full text-sm text-muted">{plates}</p>}
+                  </li>
+                );
+              })}
             </ol>
             {entry.sets.length < maxSetsPerExercise && (
               <button

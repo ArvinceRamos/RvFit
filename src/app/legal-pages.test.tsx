@@ -5,6 +5,8 @@ vi.mock("@/components/frame-shell", () => ({ PlainFrame: ({ children }: { childr
 
 import PrivacyPage from "./privacy/page";
 import TermsPage from "./terms/page";
+import GlossaryPage from "./glossary/page";
+import { calculationConfig } from "@/lib/calc/config";
 import { AppFooter } from "@/components/app-footer";
 
 describe("legal pages", () => {
@@ -41,5 +43,21 @@ describe("footer disclaimer", () => {
     const html = renderToStaticMarkup(<AppFooter />);
     expect(html).toContain("These are estimates for healthy adults and are not medical advice. If you are pregnant, breastfeeding, or have a medical condition, talk to a doctor before changing your diet.");
     expect(html).toContain("If you have or have had an eating disorder, talk to a professional before tracking calories.");
+  });
+});
+
+describe("glossary", () => {
+  it("is linked from the footer", () => {
+    expect(renderToStaticMarkup(<AppFooter />)).toContain('href="/glossary"');
+  });
+
+  it("explains food, training and progress words with the app's own numbers", () => {
+    const html = renderToStaticMarkup(<GlossaryPage />);
+    for (const word of ["Maintenance", "Macros", "Rep range", "Progression", "Plates each side", "Weight trend", "Check-in"]) {
+      expect(html).toContain(word);
+    }
+    expect(html).toContain(`${calculationConfig.macros.kcal_per_gram.fat} kcal per gram`);
+    expect(html).toContain(`last ${calculationConfig.progress.trend_window_days} days`);
+    expect(html).not.toContain("Draft, not yet reviewed");
   });
 });
