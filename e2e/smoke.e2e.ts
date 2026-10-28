@@ -210,6 +210,78 @@ test.describe("signed in", () => {
     await expect(box).toHaveValue(String(kcal));
   });
 
+  test("steps and sleep save on today's date, keep each other, and stay after a reload", async ({ page }) => {
+    const user = readTestUser();
+    const admin = adminClient();
+    // The browser runs in Asia/Manila, so the app's today is Manila's.
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
+    // Each project (phone, desktop) starts with nothing saved today.
+    await admin.from("daily_activity").delete().eq("user_id", user.id).eq("on_date", today);
+    const savedDay = async () =>
+      (await admin.from("daily_activity").select("steps, sleep_minutes").eq("user_id", user.id).eq("on_date", today)).data;
+
+    await open(page, "/dashboard");
+    const stepsForm = page.getByRole("form", { name: "Steps today" });
+    const sleepForm = page.getByRole("form", { name: "Sleep last night" });
+    await stepsForm.getByLabel("Steps today").fill("8500");
+    await stepsForm.getByRole("button", { name: "Save" }).click();
+    await expect(stepsForm.getByText("Saved.")).toBeVisible();
+    expect(await savedDay()).toEqual([{ steps: 8500, sleep_minutes: null }]);
+
+    await sleepForm.getByLabel("Hours").fill("7");
+    await sleepForm.getByLabel("Minutes").fill("30");
+    await sleepForm.getByRole("button", { name: "Save" }).click();
+    await expect(sleepForm.getByText("Saved.")).toBeVisible();
+    // Saving sleep kept the steps.
+    expect(await savedDay()).toEqual([{ steps: 8500, sleep_minutes: 450 }]);
+
+    // Saving steps again replaces them and keeps the sleep, still in one row.
+    await stepsForm.getByLabel("Steps today").fill("9000");
+    await stepsForm.getByRole("button", { name: "Save" }).click();
+    await expect.poll(savedDay).toEqual([{ steps: 9000, sleep_minutes: 450 }]);
+
+    await page.reload();
+    await expect(page.locator("h1").first()).toBeVisible();
+    await expect(stepsForm.getByLabel("Steps today")).toHaveValue("9000");
+    await expect(sleepForm.getByLabel("Hours")).toHaveValue("7");
+    await expect(sleepForm.getByLabel("Minutes")).toHaveValue("30");
+  });
+
+  test("Burned today shows the estimate, and asks for profile details when they are missing", async ({ page }) => {
+    const user = readTestUser();
+    const admin = adminClient();
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
+    const steps = 6000;
+    await admin.from("daily_activity").upsert({ user_id: user.id, on_date: today, steps }, { onConflict: "user_id,on_date" });
+    // The latest weigh-in, as the app reads it, so the steps part can be checked against the formula.
+    const { data: latest } = await admin
+      .from("body_logs").select("weight_kg").eq("user_id", user.id).not("weight_kg", "is", null)
+      .order("logged_at", { ascending: false }).limit(1).single();
+    // steps × kg × 0.0004 (calculationConfig.activity.kcal_per_step_per_kg, a placeholder).
+    const stepsKcal = Math.round(steps * Number(latest!.weight_kg) * 0.0004).toLocaleString("en-US");
+
+    const card = page.locator("section", { has: page.getByRole("heading", { name: "Burned today (estimate)" }) });
+    const part = (name: string) => card.locator("div.tile", { has: page.getByText(name, { exact: true }) }).locator("dd");
+
+    // The e2e user has a manual target and no height, age or sex.
+    await open(page, "/dashboard");
+    await expect(part("Resting").getByRole("link", { name: "Add your details in Profile" })).toHaveAttribute("href", "/profile");
+    await expect(part("Steps")).toHaveText(`${stepsKcal} kcal`);
+    await expect(card.getByText(/by end of day/)).toHaveCount(0);
+    await expect(card.getByText("Burned calories are rough estimates. They do not change your calorie target.")).toBeVisible();
+
+    try {
+      await admin.from("profiles").update({ age_years: 30, height_cm: 180, sex_formula_branch: "male" }).eq("user_id", user.id);
+      await page.reload();
+      await expect(part("Resting")).toHaveText(/^[\d,]+ kcal$/);
+      await expect(part("Steps")).toHaveText(`${stepsKcal} kcal`);
+      await expect(card.locator(".metric")).toHaveText(/^[\d,]+$/);
+      await expect(card.getByText(/^About [\d,]+ kcal by end of day$/)).toBeVisible();
+    } finally {
+      await admin.from("profiles").update({ age_years: null, height_cm: null, sex_formula_branch: null }).eq("user_id", user.id);
+    }
+  });
+
   test("a weigh-in saves and log out ends the session", async ({ page }) => {
     await open(page, "/progress");
     await page.getByLabel(/^Weight \(kg\)/).fill("74.5");

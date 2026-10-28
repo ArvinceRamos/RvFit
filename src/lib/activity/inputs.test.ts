@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  sleepFields,
   validateActivityKey,
   validateActivityMinutes,
   validateSleep,
@@ -42,6 +43,27 @@ describe("validateSleep", () => {
     expect(validateSleep("25", "0")).toEqual({ ok: false, error: "Hours must be between 0 and 24." });
     expect(validateSleep("7", "60")).toEqual({ ok: false, error: "Minutes must be between 0 and 59." });
     expect(validateSleep("24", "30")).toEqual({ ok: false, error: "Sleep must be between 0 and 24 hours." });
+  });
+});
+
+describe("sleepFields", () => {
+  it("splits saved minutes into the form's hours and minutes", () => {
+    expect(sleepFields(450)).toEqual({ hours: "7", minutes: "30" });
+    expect(sleepFields(480)).toEqual({ hours: "8", minutes: "0" });
+    expect(sleepFields(45)).toEqual({ hours: "0", minutes: "45" });
+    expect(sleepFields(1440)).toEqual({ hours: "24", minutes: "0" });
+  });
+
+  it("gives blank fields when nothing is saved", () => {
+    expect(sleepFields(null)).toEqual({ hours: "", minutes: "" });
+    expect(sleepFields(Number.NaN)).toEqual({ hours: "", minutes: "" });
+  });
+
+  it("round-trips through validateSleep", () => {
+    for (const minutes of [0, 1, 59, 60, 451, 1440]) {
+      const fields = sleepFields(minutes);
+      expect(validateSleep(fields.hours, fields.minutes)).toEqual({ ok: true, data: minutes });
+    }
   });
 });
 

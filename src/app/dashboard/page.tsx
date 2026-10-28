@@ -5,9 +5,10 @@ import { loadDashboard } from "@/lib/dashboard-data";
 import { greeting } from "@/lib/display-name";
 import { requestClock } from "@/lib/request-clock";
 import { requireUser } from "@/lib/supabase/auth";
+import { minutesSinceMidnightIn } from "@/lib/time-zone";
 
 export default async function DashboardPage() {
-  const [{ supabase, user }, { today, now }] = await Promise.all([requireUser(), requestClock()]);
+  const [{ supabase, user }, { today, now, timeZone }] = await Promise.all([requireUser(), requestClock()]);
   const result = await loadDashboard(supabase, today, now);
 
   return (
@@ -16,7 +17,7 @@ export default async function DashboardPage() {
       <p className="mt-3 text-sm text-muted">{greeting(user.user_metadata)}</p>
       {/* Saves a guest draft from this browser after sign-in. Its action re-renders this page when it saves one. */}
       <AccountDraftSave />
-      <DashboardView result={result} />
+      <DashboardView result={result} serverMinutes={minutesSinceMidnightIn(timeZone, new Date(now))} />
     </AuthFrame>
   );
 }

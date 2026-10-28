@@ -24,6 +24,15 @@ export function todayIn(timeZone: string, now: Date): string {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
+// Whole minutes since midnight at this moment in the time zone, by the clock (as minutesSinceLocalMidnight
+// in src/lib/activity/burn.ts does in the browser). The server renders Today's resting burn with it, so the
+// first paint matches what the browser then shows.
+export function minutesSinceMidnightIn(timeZone: string, now: Date): number {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
+  const part = (type: string) => Number(parts.find((item) => item.type === type)?.value ?? 0);
+  return (part("hour") % 24) * 60 + part("minute");
+}
+
 // A year, the whole site, never sent to other sites.
 const COOKIE_ATTRIBUTES = ";path=/;max-age=31536000;samesite=lax";
 

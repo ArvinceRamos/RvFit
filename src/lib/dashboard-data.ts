@@ -1,8 +1,10 @@
 // Today's data for the Dashboard, read on the server when the page renders.
+import { todayBurnInput, type TodayBurnBase } from "@/lib/activity/today";
 import { calculationConfig } from "@/lib/calc/config";
 import type { MealTotals } from "@/lib/meal";
 import {
   eatenAndPlanned,
+  loadChartWeighIns,
   loadMeals,
   loadSavedTarget,
   loadUnits,
@@ -42,6 +44,9 @@ export type DashboardResult =
       checkIn: CheckIn | null;
       // The last 7 days in plain numbers.
       review: WeeklyReview;
+      // Today's steps and sleep (null when not saved), and the Burned today card's input.
+      // Burned calories are for information only: nothing else on the page uses them.
+      activity: { steps: number | null; sleep_minutes: number | null; burn: TodayBurnBase };
     }
   | { ok: false; error: string };
 
@@ -50,7 +55,10 @@ export async function loadDashboard(supabase: Awaited<ReturnType<typeof createCl
   const now = new Date(nowMs);
   // Two trend windows: this week for the trend, and the week before for the review's weight change.
   const since = new Date(now.getTime() - 2 * calculationConfig.progress.trend_window_days * 24 * 60 * 60 * 1000);
-  const [target, reviewMeals, workouts, weighIns, units, anyPreferences, anyMeal, anyWeighIn, weekWorkouts, checkInData, reviewWorkouts] = await Promise.all([
+  const [
+    target, reviewMeals, workouts, weighIns, units, anyPreferences, anyMeal, anyWeighIn, weekWorkouts, checkInData, reviewWorkouts,
+    details, latestWeight, daily, activities,
+  ] = await Promise.all([
     loadSavedTarget(supabase),
     // The review's 7 days; today's meals are the last of them.
     loadMeals(supabase, reviewStart(today), today),
@@ -64,9 +72,17 @@ export async function loadDashboard(supabase: Awaited<ReturnType<typeof createCl
     loadWorkouts(supabase, weekStart(today), today),
     loadCheckInData(supabase, now.getTime()),
     loadWorkouts(supabase, reviewStart(today), today),
+    // For the Burned today card: the resting burn needs height, age and sex, and every estimate the latest weight.
+    supabase.from("profiles").select("age_years, height_cm, sex_formula_branch").maybeSingle(),
+    loadChartWeighIns(supabase, null, 1),
+    supabase.from("daily_activity").select("steps, sleep_minutes").eq("on_date", today).maybeSingle(),
+    supabase.from("activity_logs").select("activity_key, minutes").eq("performed_on", today),
   ]);
-  if (target === "error" || checkInData === "error" || !reviewMeals || !reviewWorkouts || !workouts || !weighIns || !units || anyPreferences.error || anyMeal.error || anyWeighIn.error || !weekWorkouts) {
-    logError("dashboard.load", anyPreferences.error, anyMeal.error, anyWeighIn.error);
+  if (
+    target === "error" || checkInData === "error" || !reviewMeals || !reviewWorkouts || !workouts || !weighIns || !units || anyPreferences.error ||
+    anyMeal.error || anyWeighIn.error || !weekWorkouts || details.error || !latestWeight || daily.error || activities.error
+  ) {
+    logError("dashboard.load", anyPreferences.error, anyMeal.error, anyWeighIn.error, details.error, daily.error, activities.error);
     return { ok: false, error: "Your dashboard could not be loaded. Please try again." };
   }
   const meals = reviewMeals.filter((meal) => meal.meal_date === today);
@@ -107,5 +123,16 @@ export async function loadDashboard(supabase: Awaited<ReturnType<typeof createCl
       weighIns,
       now,
     }),
+    activity: {
+      steps: daily.data?.steps ?? null,
+      sleep_minutes: daily.data?.sleep_minutes ?? null,
+      burn: todayBurnInput({
+        profile: details.data,
+        weightKg: latestWeight[0]?.weight_kg ?? null,
+        workouts,
+        daily: daily.data,
+        activities: activities.data ?? [],
+      }),
+    },
   };
 }

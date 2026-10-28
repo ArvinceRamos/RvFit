@@ -68,13 +68,15 @@ export type LoggedWorkout = {
   day_name: string;
   performed_on: string;
   set_count: number;
+  // Null when no duration was given; the burned estimate then uses the set count.
+  duration_min: number | null;
 };
 
 // A saved key that no longer matches any template shows its raw day key instead of failing.
 export async function loadWorkouts(supabase: Client, from: string, to: string): Promise<LoggedWorkout[] | null> {
   const { data, error } = await supabase
     .from("workout_logs")
-    .select("id, template_key, day_key, performed_on, created_at, workout_log_sets(count)")
+    .select("id, template_key, day_key, performed_on, duration_min, created_at, workout_log_sets(count)")
     .gte("performed_on", from)
     .lte("performed_on", to)
     .order("performed_on")
@@ -88,6 +90,7 @@ export async function loadWorkouts(supabase: Client, from: string, to: string): 
     performed_on: log.performed_on as string,
     // PostgREST returns the set count as a one-item list.
     set_count: (log.workout_log_sets as unknown as { count: number }[])[0]?.count ?? 0,
+    duration_min: log.duration_min === null || log.duration_min === undefined ? null : Number(log.duration_min),
   }));
 }
 

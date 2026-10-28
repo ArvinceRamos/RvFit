@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { BurnedTodayCard } from "@/components/burned-today-card";
 import { CheckInCard } from "@/components/check-in-card";
 import { Icon } from "@/components/icon";
 import { MealEatenToggle } from "@/components/meal-eaten-toggle";
 import { SetupCard } from "@/components/setup-card";
+import { StepsSleepCard } from "@/components/steps-sleep-card";
 import { WeeklyReviewCard } from "@/components/weekly-review-card";
 import { DayTotals } from "@/components/today-summary";
 import { calculationConfig } from "@/lib/calc/config";
@@ -16,8 +18,9 @@ import { goalPaceLabel } from "@/lib/target-options";
 import { formatWeightKg } from "@/lib/weigh-in";
 
 // Today at a glance, rendered on the server with the user's today (see requestClock). Saves on this page
-// (a meal tick, a check-in, a guest draft) re-render it from their server actions.
-export function DashboardView({ result }: { result: DashboardResult }) {
+// (a meal tick, a check-in, steps or sleep, a guest draft) re-render it from their server actions.
+// serverMinutes: minutes since midnight in the user's time zone at render, for Burned today's first paint.
+export function DashboardView({ result, serverMinutes }: { result: DashboardResult; serverMinutes: number }) {
   // After a check-in is accepted, its card stays to show the confirmation while today reloads.
   const [keepCheckIn, setKeepCheckIn] = useState(false);
 
@@ -42,7 +45,7 @@ export function DashboardView({ result }: { result: DashboardResult }) {
     );
   }
 
-  const { target, totals, planned_kcal, meals, workouts, trend, units, setup, nextUp, checkIn, review } = result;
+  const { target, totals, planned_kcal, meals, workouts, trend, units, setup, nextUp, checkIn, review, activity } = result;
   return (
     <div className="mt-8 grid gap-[30px] md:grid-cols-2 lg:grid-cols-3">
       <SetupCard flags={setup} />
@@ -130,6 +133,10 @@ export function DashboardView({ result }: { result: DashboardResult }) {
           </p>
         )}
       </section>
+
+      {/* For information only: burned calories never change the target or the "left" numbers above. */}
+      <BurnedTodayCard burn={activity.burn} className="md:col-span-2" serverMinutes={serverMinutes} />
+      <StepsSleepCard className="md:col-span-2 lg:col-span-1" sleepMinutes={activity.sleep_minutes} steps={activity.steps} />
 
       <div className="md:col-span-2 lg:col-span-3">{quickActions}</div>
     </div>

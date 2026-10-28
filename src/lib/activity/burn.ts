@@ -57,10 +57,17 @@ function netKcal(met: number, weightKg: number, hours: number): number {
 // Full-day resting burn: Mifflin–St Jeor BMR from the calorie module, no activity multiplier.
 // Null when height, age, sex or weight is missing (for example a manual-target user).
 export function restingPerDay(profile: RestingProfile, weightKg: number | null): number | null {
+  if (!hasRestingDetails(profile) || !positiveFinite(weightKg)) return null;
   const { age_years, height_cm, sex_formula_branch } = profile;
-  if (!positiveFinite(age_years) || !positiveFinite(height_cm) || !positiveFinite(weightKg)) return null;
-  if (sex_formula_branch !== "male" && sex_formula_branch !== "female") return null;
   return nonNegative(basalMetabolicRate({ age_years, height_cm, weight_kg: weightKg }, sex_formula_branch));
+}
+
+// Whether the profile has the height, age and sex the resting burn needs. A manual-target user may have none.
+export function hasRestingDetails(
+  profile: RestingProfile,
+): profile is { age_years: number; height_cm: number; sex_formula_branch: FormulaBranch } {
+  const { age_years, height_cm, sex_formula_branch } = profile;
+  return positiveFinite(age_years) && positiveFinite(height_cm) && (sex_formula_branch === "male" || sex_formula_branch === "female");
 }
 
 // The share of the day's resting burn up to now: per day × minutes ÷ 1440, kept within 0..per day.

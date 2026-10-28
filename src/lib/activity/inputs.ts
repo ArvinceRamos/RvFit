@@ -61,6 +61,13 @@ export function validateSleep(hours: string, minutes: string): Result<number> {
   return { ok: true, data: total };
 }
 
+// Saved sleep minutes back into the form's hours and minutes fields. Nothing saved gives two blank fields.
+export function sleepFields(totalMinutes: number | null): { hours: string; minutes: string } {
+  if (totalMinutes === null || !Number.isFinite(totalMinutes) || totalMinutes < 0) return { hours: "", minutes: "" };
+  const whole = Math.round(totalMinutes);
+  return { hours: String(Math.floor(whole / MINUTES_PER_HOUR)), minutes: String(whole % MINUTES_PER_HOUR) };
+}
+
 export function validateActivityMinutes(value: string): Result<number> {
   return requiredWhole(value, "Minutes", limits.activity_minutes, " minutes");
 }

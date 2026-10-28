@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readTimeZone, timeZoneCookie, timeZoneCookieScript, TIME_ZONE_COOKIE, todayIn } from "./time-zone";
+import { minutesSinceMidnightIn, readTimeZone, timeZoneCookie, timeZoneCookieScript, TIME_ZONE_COOKIE, todayIn } from "./time-zone";
 
 describe("readTimeZone", () => {
   it("accepts real IANA time zones", () => {
@@ -47,5 +47,23 @@ describe("timeZoneCookieScript", () => {
     expect(script).toContain(`${TIME_ZONE_COOKIE}=`);
     expect(script).toContain("path=/");
     expect(script).toContain("samesite=lax");
+  });
+});
+
+describe("minutesSinceMidnightIn", () => {
+  // 16:30 UTC on 25 October 2026.
+  const now = new Date("2026-10-25T16:30:00Z");
+
+  it("counts the clock minutes in the user's time zone", () => {
+    expect(minutesSinceMidnightIn("UTC", now)).toBe(16 * 60 + 30);
+    // 00:30 on the 26th in Manila (UTC+8).
+    expect(minutesSinceMidnightIn("Asia/Manila", now)).toBe(30);
+    // 06:30 in Honolulu (UTC-10).
+    expect(minutesSinceMidnightIn("Pacific/Honolulu", now)).toBe(6 * 60 + 30);
+  });
+
+  it("gives 0 at midnight, never 1440", () => {
+    expect(minutesSinceMidnightIn("UTC", new Date("2026-10-25T00:00:00Z"))).toBe(0);
+    expect(minutesSinceMidnightIn("UTC", new Date("2026-10-25T23:59:59Z"))).toBe(1439);
   });
 });
