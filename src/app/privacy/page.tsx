@@ -12,7 +12,7 @@ export default function PrivacyPage() {
         <h2>What we collect</h2>
         <ul>
           <li>Your email address and, if you use Google sign-in, your name and profile picture from Google.</li>
-          <li>The details you enter: age, sex, height, weight, activity level, goal, food preferences, meals, workouts and weigh-ins.</li>
+          <li>The details you enter: age, sex, height, weight, activity level, goal, food preferences, meals, workouts, steps, sleep, other activity and weigh-ins.</li>
           <li>Your confirmation that you are 18 or older.</li>
         </ul>
       </section>

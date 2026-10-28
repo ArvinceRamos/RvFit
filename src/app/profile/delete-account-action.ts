@@ -12,7 +12,7 @@ const failed = "Your account could not be deleted. Nothing was removed. Please t
 // Deletes the signed-in user's account. It takes no user ID from the browser: the user is checked
 // with Supabase Auth first (getUser, not the token alone), and only that user is deleted. Every user table deletes its
 // rows when the account goes (profile, targets, weigh-ins, preferences, avoided foods, meals and
-// items, workout logs, sets, and swaps). On success it signs out and goes to the home page.
+// items, workout logs, sets, swaps, daily steps and sleep, and other activity). On success it signs out and goes to the home page.
 export async function deleteAccountAction(): Promise<DeleteAccountResult> {
   const auth = await getActionUserStrict();
   if (!auth) return { ok: false, error: "You must be signed in to delete your account." };

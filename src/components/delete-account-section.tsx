@@ -34,7 +34,7 @@ export function DeleteAccountSection() {
         <div className="mt-3 rounded-xl bg-danger-bg p-4" role="alertdialog" aria-labelledby="delete-account-title" aria-describedby="delete-account-detail">
           <p className="font-bold text-danger" id="delete-account-title">Delete everything?</p>
           <p className="mt-2 text-sm text-ink" id="delete-account-detail">
-            This deletes your account and all your saved data: profile, calorie targets, weigh-ins, preferences, meals, and workouts. It cannot be undone.
+            This deletes your account and all your saved data: profile, calorie targets, weigh-ins, preferences, meals, workouts, steps, sleep, and other activity. It cannot be undone.
           </p>
           {error && <p className="mt-3 text-sm font-semibold text-danger" role="alert">{error}</p>}
           <div className="mt-4 flex flex-wrap gap-3">

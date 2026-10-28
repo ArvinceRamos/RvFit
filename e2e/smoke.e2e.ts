@@ -116,6 +116,43 @@ test.describe("sign up", () => {
   });
 });
 
+test.describe("account deletion", () => {
+  test("Delete everything removes the account with its steps, sleep and other activity", async ({ page }) => {
+    const { email, password } = newTestUser();
+    const admin = adminClient();
+    const { data: created, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+    if (error) throw error;
+    const userId = created.user.id;
+    const rowCount = async (table: "daily_activity" | "activity_logs") =>
+      (await admin.from(table).select("id", { count: "exact", head: true }).eq("user_id", userId)).count;
+    try {
+      const today = new Date().toLocaleDateString("en-CA");
+      await admin.from("daily_activity").insert({ user_id: userId, on_date: today, steps: 5000, sleep_minutes: 420 });
+      await admin.from("activity_logs").insert({ user_id: userId, performed_on: today, activity_key: "cycling", minutes: 20 });
+      expect(await rowCount("daily_activity")).toBe(1);
+      expect(await rowCount("activity_logs")).toBe(1);
+
+      await page.goto("/login");
+      await page.getByLabel("Email").fill(email);
+      await page.getByLabel("Password", { exact: true }).fill(password);
+      await page.getByRole("button", { name: "Log in" }).click();
+      await expect(page).toHaveURL(/\/dashboard/);
+
+      await open(page, "/profile");
+      await page.getByRole("button", { name: "Delete my account and data" }).click();
+      await expect(page.getByText("steps, sleep, and other activity", { exact: false })).toBeVisible();
+      await page.getByRole("button", { name: "Delete everything" }).click();
+      await expect(page).toHaveURL(/\?account=deleted/);
+
+      expect((await admin.auth.admin.getUserById(userId)).data.user).toBeNull();
+      expect(await rowCount("daily_activity")).toBe(0);
+      expect(await rowCount("activity_logs")).toBe(0);
+    } finally {
+      await admin.auth.admin.deleteUser(userId).catch(() => undefined);
+    }
+  });
+});
+
 test.describe("signed in", () => {
   test.beforeEach(async ({ page }) => {
     const user = readTestUser();
