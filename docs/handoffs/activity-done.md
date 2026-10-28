@@ -4,8 +4,10 @@ Written 2026-10-28 at the end of the autopilot run. Replaces `AU-78.md` and `aut
 
 ## Status
 
-- All six Activity jobs are done and committed locally on `main`. **Nothing is pushed.** Pushing to `main` redeploys https://rv-fit.vercel.app, so ask first.
-- The migration `20261028010000_ac1_activity.sql` is applied to **local** Supabase only. The hosted database (rvfit-prod) doesn't have it, so the app would break there until the owner applies it. Push the code and the migration together, and only with the user's OK.
+- All six Activity jobs are done. **Pushed to `main` on 2026-10-28 with the user's OK** (`ddfbb7a..c9b5497`); Vercel redeployed https://rv-fit.vercel.app in about 45 s. `/api/health` is 200, public pages load, and signed-out `/dashboard` still redirects to `/login`. Signed-in pages on the live site were not checked (no test account on production).
+- Migrations: rvfit-staging was behind and got `20261024010000` to `20261028010000` first, all clean. Then rvfit-prod got `20261028010000_ac1_activity.sql`, after a backup.
+- Production backup taken before the migration: `C:/Users/arvince/RvFit-backups/2026-10-28-before-activity/` (schema and data dumps; they contain user data, so keep them private).
+- The CLI is signed in to the account that owns the RvFit org and linked to rvfit-prod.
 - Commits: plan `59ec634`, AC-1 `6728708`, AC-2 `c5f6465`, AC-3 `7571bf2`, AC-4 `c232103`, AC-5 `b3b03e5`, AC-6 (see `git log`).
 - Final checks: lint, typecheck, 866 unit tests, 194 database tests, 70 e2e runs (build included), `npm audit --omit=dev` 0 vulnerabilities.
 
@@ -25,7 +27,7 @@ Written 2026-10-28 at the end of the autopilot run. Replaces `AU-78.md` and `aut
 
 ## Still open
 
-- Whether CI run #10 (for `adc0217`) passed. It was never answered.
+- Whether CI passed for the push of `c9b5497` (and the older run #10 for `adc0217`). `gh` is not installed, so check GitHub Actions in the browser.
 - Qualified review of `docs/REVIEW-SHEET.md`, now including section 6. Never fill in its Decision column.
 - Domain and email provider (`docs/RUNBOOK.md`, "Email provider").
 - Seen during checks, existing behaviour: a browser still holding the session of a user deleted **outside** the app (admin delete) keeps rendering signed-in pages until the token expires, and Log out fails for it. Pages check the token with `getClaims` on purpose (`src/lib/supabase/auth.ts`). The app's own account deletion signs out first, so real users are not affected.
@@ -38,12 +40,12 @@ Written 2026-10-28 at the end of the autopilot run. Replaces `AU-78.md` and `aut
 
 ## Model and effort
 
-Sonnet 5.5 medium for a push-and-verify chat. Opus 5.5 high if the next job is applying the migration to the hosted database.
+Depends on the next job. Sonnet 5.5 medium for checks or small fixes; Opus 5.5 high for migrations.
 
 ## First steps for the new chat
 
 1. Read `CLAUDE.md`, this file, `docs/TASKS.md`, and `docs/ACTIVITY.md`.
-2. Ask what's next: push the Activity work (with the hosted migration), or something else.
+2. Ask what's next.
 
 ## Do not
 
