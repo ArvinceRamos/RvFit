@@ -3,14 +3,14 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(37);
+select plan(39);
 
 -- A new table or function must be added to these tests on purpose.
 select is(
   (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'public' and c.relkind = 'r'),
-  12,
-  'public has the 12 known tables'
+  14,
+  'public has the 14 known tables'
 );
 
 select is(
@@ -52,6 +52,9 @@ select table_privs_are('public', 'meal_items', 'authenticated', array['SELECT', 
 select table_privs_are('public', 'workout_logs', 'authenticated', array['SELECT', 'INSERT', 'UPDATE', 'DELETE']);
 select table_privs_are('public', 'workout_log_sets', 'authenticated', array['SELECT', 'INSERT', 'UPDATE', 'DELETE']);
 select table_privs_are('public', 'user_exercise_swaps', 'authenticated', array['SELECT', 'INSERT', 'UPDATE', 'DELETE']);
+select table_privs_are('public', 'daily_activity', 'authenticated', array['SELECT', 'INSERT', 'UPDATE', 'DELETE']);
+select table_privs_are('public', 'activity_logs', 'authenticated', array['SELECT', 'INSERT', 'DELETE'],
+  'activity logs are added or deleted, never changed');
 
 -- Policies are only for signed-in users.
 select is(
@@ -85,7 +88,7 @@ select function_privs_are('public', 'save_meal_plan', array['jsonb'],
   'authenticated', array['EXECUTE']);
 select function_privs_are('public', 'save_profile_and_target', array['jsonb', 'jsonb', 'jsonb'],
   'authenticated', array['EXECUTE']);
-select function_privs_are('public', 'save_workout_log', array['uuid', 'text', 'text', 'date', 'jsonb', 'uuid'],
+select function_privs_are('public', 'save_workout_log', array['uuid', 'text', 'text', 'date', 'jsonb', 'uuid', 'integer'],
   'authenticated', array['EXECUTE']);
 
 select function_privs_are('public', 'save_initial_guest_draft', array['uuid', 'uuid', 'jsonb', 'jsonb', 'jsonb'],
@@ -96,7 +99,7 @@ select function_privs_are('public', 'save_meal_plan', array['jsonb'],
   'anon', array[]::text[]);
 select function_privs_are('public', 'save_profile_and_target', array['jsonb', 'jsonb', 'jsonb'],
   'anon', array[]::text[]);
-select function_privs_are('public', 'save_workout_log', array['uuid', 'text', 'text', 'date', 'jsonb', 'uuid'],
+select function_privs_are('public', 'save_workout_log', array['uuid', 'text', 'text', 'date', 'jsonb', 'uuid', 'integer'],
   'anon', array[]::text[]);
 
 -- Deleting an account removes every row that belongs to it.
@@ -104,7 +107,7 @@ select is(
   (select array_agg(c.conrelid::regclass::text order by c.conrelid::regclass::text) from pg_constraint c
     where c.contype = 'f' and c.confrelid = 'auth.users'::regclass
       and c.connamespace = 'public'::regnamespace and c.confdeltype = 'c'),
-  array['body_logs', 'calorie_targets', 'meals', 'profiles', 'user_avoided_foods',
+  array['activity_logs', 'body_logs', 'calorie_targets', 'daily_activity', 'meals', 'profiles', 'user_avoided_foods',
     'user_exercise_swaps', 'user_preferences', 'workout_logs'],
   'every table with a user_id cascades when the user is deleted'
 );
