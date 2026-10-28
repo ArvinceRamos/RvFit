@@ -1,9 +1,9 @@
--- Grants and row-level security on every public table and save function.
+-- Grants and row-level security on every public table and function.
 -- Run with `npx supabase test db --local`. Everything runs in one transaction and is rolled back.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(39);
+select plan(42);
 
 -- A new table or function must be added to these tests on purpose.
 select is(
@@ -64,12 +64,13 @@ select is(
   'every public policy is for authenticated only'
 );
 
--- Save functions: run with the caller's permissions, a fixed search path, and only for signed-in users.
+-- Functions: run with the caller's permissions and a fixed search path. Save functions are only for signed-in users;
+-- keepalive (KA-1) is for the uptime check and reads no tables.
 select is(
   (select array_agg(p.proname::text order by p.proname) from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public'),
-  array['save_initial_guest_draft', 'save_meal', 'save_meal_plan', 'save_profile_and_target', 'save_workout_log'],
-  'public has the 5 known save functions'
+  array['keepalive', 'save_initial_guest_draft', 'save_meal', 'save_meal_plan', 'save_profile_and_target', 'save_workout_log'],
+  'public has the 5 known save functions and keepalive'
 );
 
 select is(
@@ -77,7 +78,7 @@ select is(
     join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and (p.prosecdef or p.proconfig is distinct from array['search_path=""'])),
   null,
-  'every save function is security invoker with an empty search path'
+  'every public function is security invoker with an empty search path'
 );
 
 select function_privs_are('public', 'save_initial_guest_draft', array['uuid', 'uuid', 'jsonb', 'jsonb', 'jsonb'],
@@ -101,6 +102,11 @@ select function_privs_are('public', 'save_profile_and_target', array['jsonb', 'j
   'anon', array[]::text[]);
 select function_privs_are('public', 'save_workout_log', array['uuid', 'text', 'text', 'date', 'jsonb', 'uuid', 'integer'],
   'anon', array[]::text[]);
+
+select function_privs_are('public', 'keepalive', array[]::text[], 'anon', array['EXECUTE'],
+  'anon can run keepalive');
+select function_privs_are('public', 'keepalive', array[]::text[], 'authenticated', array[]::text[],
+  'authenticated cannot run keepalive');
 
 -- Deleting an account removes every row that belongs to it.
 select is(
@@ -134,6 +140,7 @@ reset role;
 set local role anon;
 select throws_ok($$select 1 from public.foods limit 1$$, '42501', null, 'anon cannot read foods');
 select throws_ok($$select 1 from public.profiles limit 1$$, '42501', null, 'anon cannot read profiles');
+select is(public.keepalive(), 1, 'anon gets 1 from keepalive');
 reset role;
 
 select * from finish();

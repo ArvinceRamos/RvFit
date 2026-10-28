@@ -26,7 +26,7 @@ How to deploy, watch, back up and recover RvFit. Planned hosting: Vercel (app) a
      6. Supabase → Authentication → Rate Limits → raise "emails sent per hour" from the built-in default (for example to 30). Keep it low; it caps abuse too.
      7. On staging: sign up with a real address, confirm it from the email, log out, then use "Forgot password" and finish the reset. Check that the links open `https://<domain>/auth/callback`, not localhost, and look for the emails in the provider's log. Then repeat steps 5–6 on production.
      - Local Supabase never sends real email. Every email lands in Mailpit at http://127.0.0.1:54324. SMTP stays out of `supabase/config.toml` on purpose: the CLI is linked to production, and `supabase config push` would send local settings there.
-5. **Uptime monitor.** Point a free monitor (for example UptimeRobot or Better Stack) at `https://<domain>/api/health` every 5 minutes, with email alerts. 200 means the app and Supabase Auth answer; 503 means Supabase is down or slow.
+5. **Uptime monitor.** Point a free monitor (for example UptimeRobot or Better Stack) at `https://<domain>/api/health` every 5 minutes, with email alerts. 200 means the app, Supabase Auth and the database answer; 503 means Supabase is down or slow. Each check runs a tiny database query (`keepalive()`, migration `20261029010000_ka1_keepalive`), so it also keeps a Free project from pausing. It answers GET and HEAD, so UptimeRobot's default HEAD check works. If the browser shows `{"status":"ok"}` but the monitor says down, set the monitor's method to GET.
 
 ## 2. Deploying a change
 
@@ -64,7 +64,7 @@ How to deploy, watch, back up and recover RvFit. Planned hosting: Vercel (app) a
 
 ## 4. Backups and restore
 
-- **Supabase Free has no automatic backups** and pauses after a week without activity. The uptime monitor's requests reach Auth but may not count as database activity, so use **Supabase Pro** (daily backups kept 7 days, no pausing) for any real launch.
+- **Supabase Free has no automatic backups** and pauses after a week without database activity. The uptime monitor's `/api/health` check runs a database query every 5 minutes to prevent that (KA-1); check the Postgres chart on the Supabase dashboard for small regular bars. Staging is not monitored and may pause; restore it from the dashboard when needed. A paused project looks like an outage: the project URL stops resolving. Restore it in the dashboard, and on Windows run `ipconfig /flushdns` if the address still fails locally. Still use **Supabase Pro** (daily backups kept 7 days) for any real launch.
 - **Before every production migration, and weekly on Free**, take a dump and keep it off the laptop (a private cloud folder):
   ```bash
   npx supabase db dump --linked -f backup-schema.sql

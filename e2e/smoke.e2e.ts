@@ -55,6 +55,15 @@ test.describe("guest", () => {
     }
   });
 
+  test("the health check reaches the database and answers GET and HEAD for an uptime monitor", async ({ request }) => {
+    const get = await request.get("/api/health");
+    expect(get.status()).toBe(200);
+    expect(await get.json()).toEqual({ status: "ok" });
+    const head = await request.head("/api/health");
+    expect(head.status()).toBe(200);
+    expect(await head.text()).toBe("");
+  });
+
   test("the landing FAQ shows the plan line and opens an answer from the keyboard", async ({ page }) => {
     await open(page, "/");
     const faq = page.getByRole("region", { name: "Before you start" });
