@@ -34,7 +34,7 @@ export default async function NewWorkoutLogPage({ searchParams }: PageProps<"/wo
         <p className="alert-danger mt-6" role="alert">This workout could not be loaded. Please try again.</p>
       ) : (
         <WorkoutLogForm
-          initial={{ logId: null, templateKey: key, dayKey, date: "", entries: {} }}
+          initial={{ logId: null, templateKey: key, dayKey, date: "", duration: "", entries: {} }}
           slots={slots}
           showHistory
           units={rules.units}

@@ -42,7 +42,7 @@ export default async function EditWorkoutLogPage({ params }: PageProps<"/workout
         <p className="alert-danger mt-6" role="alert">This workout could not be loaded. Please try again.</p>
       ) : (
         <WorkoutLogForm
-          initial={{ logId: log.id, templateKey: log.template_key, dayKey: log.day_key, date: log.performed_on, entries }}
+          initial={{ logId: log.id, templateKey: log.template_key, dayKey: log.day_key, date: log.performed_on, duration: log.duration_min === null ? "" : String(log.duration_min), entries }}
           slots={slots}
           showHistory={false}
           units={rules.units}

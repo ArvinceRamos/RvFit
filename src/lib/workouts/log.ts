@@ -1,3 +1,4 @@
+import { validateWorkoutDuration } from "@/lib/activity/inputs";
 import type { Result } from "@/lib/calc/calculate";
 import { calculationConfig } from "@/lib/calc/config";
 import { isCalendarDate, isUuid } from "@/lib/meal";
@@ -48,6 +49,8 @@ export type ValidWorkoutLog = {
   template_key: string;
   day_key: string;
   performed_on: string;
+  /** Whole minutes, or null when the field was left blank. */
+  duration_min: number | null;
   sets: ValidSet[];
 };
 
@@ -194,6 +197,11 @@ export function validateWorkoutLog(raw: unknown, rules: LogRules): Result<ValidW
   const day = template.days.find((item) => item.key === input.dayKey);
   if (!day) return failure("This workout day was not found.");
 
+  // Optional: blank (or not sent) means no duration. A saved edit with a blank duration clears it.
+  if (input.duration !== undefined && input.duration !== null && typeof input.duration !== "string") return failure(invalid);
+  const duration = validateWorkoutDuration(input.duration ?? "");
+  if (!duration.ok) return duration;
+
   const entries = readEntries(input.entries);
   if (!entries) return failure(invalid);
 
@@ -248,6 +256,6 @@ export function validateWorkoutLog(raw: unknown, rules: LogRules): Result<ValidW
 
   return {
     ok: true,
-    data: { log_id: logId, template_key: template.key, day_key: day.key, performed_on: input.date, sets },
+    data: { log_id: logId, template_key: template.key, day_key: day.key, performed_on: input.date, duration_min: duration.data, sets },
   };
 }

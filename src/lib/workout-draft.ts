@@ -10,6 +10,8 @@ export type WorkoutDraft = {
   date: string;
   units: PreferredUnits;
   entries: Record<string, { exerciseKey: string; sets: SetFields[] }>;
+  // The Duration (minutes) text. Drafts saved before the field existed have none.
+  duration?: string;
   // A new workout's save key, kept once Save was pressed, so a retry after a reload is not saved twice.
   saveKey?: string;
 };
@@ -53,7 +55,13 @@ export function parseWorkoutDraft(value: unknown, slots: LogSlot[]): WorkoutDraf
     if (!Array.isArray(sets) || sets.length === 0 || sets.length > maxSetsPerExercise || !sets.every(isSet)) return null;
     entries[slot.slotKey] = { exerciseKey: entry.exerciseKey, sets: sets.map((set) => ({ amount: set.amount, weight: set.weight })) };
   }
-  return { date: draft.date, units: draft.units, entries, ...(isUuid(draft.saveKey) ? { saveKey: draft.saveKey } : {}) };
+  return {
+    date: draft.date,
+    units: draft.units,
+    entries,
+    ...(typeof draft.duration === "string" ? { duration: draft.duration } : {}),
+    ...(isUuid(draft.saveKey) ? { saveKey: draft.saveKey } : {}),
+  };
 }
 
 export function readWorkoutDraft(storage: Storage, key: string, slots: LogSlot[]): WorkoutDraft | null {

@@ -21,6 +21,7 @@ export type SavedLog = {
   template_key: string;
   day_key: string;
   performed_on: string;
+  duration_min: number | null;
   workout_log_sets: { slot_key: string; exercise_key: string; set_number: number; reps: number | null; seconds: number | null; weight_kg: number | string | null }[];
 };
 
@@ -28,7 +29,7 @@ export type SavedLog = {
 export async function loadSavedLog(supabase: Client, logId: string): Promise<SavedLog | null> {
   const { data } = await supabase
     .from("workout_logs")
-    .select("id, template_key, day_key, performed_on, workout_log_sets(slot_key, exercise_key, set_number, reps, seconds, weight_kg)")
+    .select("id, template_key, day_key, performed_on, duration_min, workout_log_sets(slot_key, exercise_key, set_number, reps, seconds, weight_kg)")
     .eq("id", logId)
     .maybeSingle();
   return (data as SavedLog | null) ?? null;

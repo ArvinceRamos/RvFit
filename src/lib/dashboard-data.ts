@@ -26,6 +26,8 @@ import type { createClient } from "@/lib/supabase/server";
 import type { PreferredUnits } from "@/lib/weigh-in";
 import { logError } from "@/lib/log";
 
+export type ActivityEntry = { id: string; activity_key: string; minutes: number };
+
 export type DashboardResult =
   | {
       ok: true;
@@ -46,7 +48,8 @@ export type DashboardResult =
       review: WeeklyReview;
       // Today's steps and sleep (null when not saved), and the Burned today card's input.
       // Burned calories are for information only: nothing else on the page uses them.
-      activity: { steps: number | null; sleep_minutes: number | null; burn: TodayBurnBase };
+      // entries: today's Other activity rows, oldest first, for the list with Delete.
+      activity: { steps: number | null; sleep_minutes: number | null; burn: TodayBurnBase; entries: ActivityEntry[] };
     }
   | { ok: false; error: string };
 
@@ -76,7 +79,7 @@ export async function loadDashboard(supabase: Awaited<ReturnType<typeof createCl
     supabase.from("profiles").select("age_years, height_cm, sex_formula_branch").maybeSingle(),
     loadChartWeighIns(supabase, null, 1),
     supabase.from("daily_activity").select("steps, sleep_minutes").eq("on_date", today).maybeSingle(),
-    supabase.from("activity_logs").select("activity_key, minutes").eq("performed_on", today),
+    supabase.from("activity_logs").select("id, activity_key, minutes").eq("performed_on", today).order("created_at"),
   ]);
   if (
     target === "error" || checkInData === "error" || !reviewMeals || !reviewWorkouts || !workouts || !weighIns || !units || anyPreferences.error ||
@@ -133,6 +136,7 @@ export async function loadDashboard(supabase: Awaited<ReturnType<typeof createCl
         daily: daily.data,
         activities: activities.data ?? [],
       }),
+      entries: (activities.data ?? []).map((row) => ({ id: row.id as string, activity_key: row.activity_key as string, minutes: Number(row.minutes) })),
     },
   };
 }

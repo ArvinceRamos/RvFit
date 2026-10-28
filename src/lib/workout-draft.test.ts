@@ -81,6 +81,13 @@ describe("workout drafts", () => {
     expect(readWorkoutDraft(storage, "new:full_body:a", slots)).toEqual(draft);
   });
 
+  it("keeps the duration text, and a draft saved before the field existed has none", () => {
+    writeWorkoutDraft(storage, "edit:log-1", { ...draft, duration: "45" });
+    expect(readWorkoutDraft(storage, "edit:log-1", slots)).toEqual({ ...draft, duration: "45" });
+    expect(parseWorkoutDraft({ ...draft, duration: 45 }, slots)).toEqual(draft);
+    expect(parseWorkoutDraft(draft, slots)?.duration).toBeUndefined();
+  });
+
   it("ignores broken storage", () => {
     storage.setItem(WORKOUT_DRAFTS_STORAGE_KEY, "{not json");
     expect(readWorkoutDraft(storage, "new:full_body:a", slots)).toBeNull();

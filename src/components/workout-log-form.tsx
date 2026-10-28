@@ -15,6 +15,8 @@ export type WorkoutLogInitial = {
   templateKey: string;
   dayKey: string;
   date: string;
+  /** The saved Duration (minutes) as text; blank when none. */
+  duration: string;
   /** Saved entries by slot key, when editing. Slots without one start from the plan. */
   entries: Record<string, { exerciseKey: string; sets: SetFields[] }>;
 };
@@ -72,6 +74,7 @@ function LogForm({ initial, slots, units: savedUnits, showHistory, inBrowser }: 
   const [baseline] = useState<WorkoutDraft>(() => ({
     date: initial.date || localToday(),
     units: savedUnits,
+    duration: initial.duration,
     entries: Object.fromEntries(
       slots.map((slot) => [
         slot.slotKey,
@@ -88,6 +91,8 @@ function LogForm({ initial, slots, units: savedUnits, showHistory, inBrowser }: 
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
   const [units, setUnits] = useState<PreferredUnits>((restored ?? baseline).units);
+  // A draft from before this field existed keeps the saved duration.
+  const [duration, setDuration] = useState((restored ?? baseline).duration ?? baseline.duration ?? "");
   // A new workout has one save key. Once Save is pressed it is kept in the draft, so pressing Save
   // again (after a lost reply or a reload) updates that workout instead of adding a second one.
   const [saveKey] = useState(() => restored?.saveKey ?? (initial.logId ? undefined : newSaveKey()));
@@ -96,19 +101,20 @@ function LogForm({ initial, slots, units: savedUnits, showHistory, inBrowser }: 
   // Keep the draft in step with the form. A form that matches its starting point keeps no draft.
   useEffect(() => {
     if (!inBrowser) return;
-    const current: WorkoutDraft = { date, units, entries };
+    const current: WorkoutDraft = { date, units, duration, entries };
     try {
       if (!keySent && JSON.stringify(current) === JSON.stringify(baseline)) clearWorkoutDraft(window.localStorage, draftKey);
       else writeWorkoutDraft(window.localStorage, draftKey, keySent && saveKey ? { ...current, saveKey } : current);
     } catch {
       // Storage can be blocked or full; the form still works without a draft.
     }
-  }, [inBrowser, date, units, entries, baseline, draftKey, keySent, saveKey]);
+  }, [inBrowser, date, units, entries, duration, baseline, draftKey, keySent, saveKey]);
 
   function discardDraft() {
     setDate(baseline.date);
     setUnits(baseline.units);
     setEntries(baseline.entries);
+    setDuration(baseline.duration ?? "");
     setRestored(null);
     setKeySent(false);
   }
@@ -169,7 +175,7 @@ function LogForm({ initial, slots, units: savedUnits, showHistory, inBrowser }: 
     if (saveKey) {
       setKeySent(true);
       try {
-        writeWorkoutDraft(window.localStorage, draftKey, { date, units, entries, saveKey });
+        writeWorkoutDraft(window.localStorage, draftKey, { date, units, duration, entries, saveKey });
       } catch {
         // Without storage the key still lasts until the page is closed.
       }
@@ -183,6 +189,7 @@ function LogForm({ initial, slots, units: savedUnits, showHistory, inBrowser }: 
         dayKey: initial.dayKey,
         date,
         units,
+        duration,
         entries: slots.map((slot) => ({ slotKey: slot.slotKey, ...entries[slot.slotKey] })),
       });
     } catch {
@@ -213,7 +220,7 @@ function LogForm({ initial, slots, units: savedUnits, showHistory, inBrowser }: 
           <button className="btn-secondary btn-sm" onClick={discardDraft} type="button">Discard draft</button>
         </div>
       )}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <label className="grid grid-cols-1 gap-1 text-sm font-semibold">
           Date
           <input className={fieldClass} onChange={(event) => setDate(event.target.value)} required suppressHydrationWarning type="date" value={date} />
@@ -233,6 +240,10 @@ function LogForm({ initial, slots, units: savedUnits, showHistory, inBrowser }: 
             ))}
           </div>
         </div>
+        <label className="grid grid-cols-1 gap-1 text-sm font-semibold">
+          Duration (minutes)
+          <input autoComplete="off" className={fieldClass} inputMode="numeric" name="duration" onChange={(event) => setDuration(event.target.value)} type="text" value={duration} />
+        </label>
       </div>
 
       <p className="text-sm text-muted">Fill in the sets you did. Leave a set empty to skip it.</p>

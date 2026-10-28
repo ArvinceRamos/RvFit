@@ -18,6 +18,18 @@ async function open(page: Page, path: string): Promise<void> {
   await expect(page.locator("h1").first()).toBeVisible();
 }
 
+// The workout form starts again from the browser's draft once it hydrates, which drops text typed before
+// that. Filling until the form's own draft holds the value proves the field is live.
+async function fillDuration(page: Page, value: string): Promise<void> {
+  const field = page.getByLabel("Duration (minutes)");
+  await expect(async () => {
+    await field.fill(value);
+    await expect
+      .poll(() => page.evaluate(() => window.localStorage.getItem("rvfit-workout-drafts")), { timeout: 1000 })
+      .toContain(`"duration":"${value}"`);
+  }).toPass();
+}
+
 const publicPages = ["/", "/login", "/signup", "/forgot-password", "/start", "/calculate", "/manual", "/privacy", "/terms", "/glossary"];
 const signedInPages = ["/dashboard", "/week", "/meals", "/meals/new", "/foods", "/workouts", "/progress", "/profile", "/preferences", "/account"];
 
@@ -140,7 +152,8 @@ test.describe("signed in", () => {
     await open(page, "/workouts");
     await page.locator('a[href^="/workouts/log/new?day="]').first().click();
     await expect(page.getByRole("button", { name: "Save workout" })).toBeVisible();
-    await page.locator('input[inputmode="numeric"]').first().fill("10");
+    // The Duration field is numeric too, so skip it.
+    await page.locator('input[inputmode="numeric"]:not([name="duration"])').first().fill("10");
     const weight = page.locator('input[inputmode="decimal"]').first();
     if (await weight.count()) await weight.fill("20");
 
@@ -279,6 +292,118 @@ test.describe("signed in", () => {
       await expect(card.getByText(/^About [\d,]+ kcal by end of day$/)).toBeVisible();
     } finally {
       await admin.from("profiles").update({ age_years: null, height_cm: null, sex_formula_branch: null }).eq("user_id", user.id);
+    }
+  });
+
+  test("a workout keeps its duration, and the edit form shows it, changes it and clears it", async ({ page }) => {
+    const user = readTestUser();
+    const admin = adminClient();
+    const savedDurations = async () =>
+      ((await admin.from("workout_logs").select("id, duration_min, created_at").eq("user_id", user.id).order("created_at", { ascending: false })).data ?? []);
+    const before = new Set((await savedDurations()).map((row) => row.id));
+    const created = async () => (await savedDurations()).filter((row) => !before.has(row.id));
+
+    try {
+      await open(page, "/workouts");
+      await page.locator('a[href^="/workouts/log/new?day="]').first().click();
+      await expect(page.getByRole("button", { name: "Save workout" })).toBeVisible();
+      await fillDuration(page, "40");
+      await page.locator('input[inputmode="numeric"]:not([name="duration"])').first().fill("10");
+      const weight = page.locator('input[inputmode="decimal"]').first();
+      if (await weight.count()) await weight.fill("20");
+      await page.getByRole("button", { name: "Save workout" }).click();
+      await expect(page).toHaveURL(/\/workouts\?saved=new/);
+      const [workout] = await created();
+      expect(workout.duration_min).toBe(40);
+
+      // Reopen: the saved duration is filled in.
+      await open(page, `/workouts/log/${workout.id}`);
+      const duration = page.getByLabel("Duration (minutes)");
+      await expect(duration).toHaveValue("40");
+
+      // Saving as it is keeps it; a new number replaces it.
+      await page.getByRole("button", { name: "Save workout" }).click();
+      await expect(page).toHaveURL(/\/workouts\?saved=updated/);
+      expect((await created())[0].duration_min).toBe(40);
+      await open(page, `/workouts/log/${workout.id}`);
+      await fillDuration(page, "55");
+      await page.getByRole("button", { name: "Save workout" }).click();
+      await expect(page).toHaveURL(/\/workouts\?saved=updated/);
+      expect((await created())[0].duration_min).toBe(55);
+
+      // A blank field clears it, and a bad number is refused.
+      await open(page, `/workouts/log/${workout.id}`);
+      await expect(duration).toHaveValue("55");
+      await fillDuration(page, "0");
+      await page.getByRole("button", { name: "Save workout" }).click();
+      await expect(page.getByText("Duration must be between 1 and 600 minutes.")).toBeVisible();
+      expect((await created())[0].duration_min).toBe(55);
+      await fillDuration(page, "");
+      await page.getByRole("button", { name: "Save workout" }).click();
+      await expect(page).toHaveURL(/\/workouts\?saved=updated/);
+      expect((await created())[0].duration_min).toBeNull();
+      await open(page, `/workouts/log/${workout.id}`);
+      await expect(duration).toHaveValue("");
+    } finally {
+      for (const row of await created()) await admin.from("workout_logs").delete().eq("id", row.id);
+    }
+  });
+
+  test("Other activity is added on Today, counts in Burned today, and is deleted after a Yes", async ({ page }) => {
+    const user = readTestUser();
+    const admin = adminClient();
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
+    await admin.from("activity_logs").delete().eq("user_id", user.id).eq("performed_on", today);
+    const savedToday = async () =>
+      (await admin.from("activity_logs").select("activity_key, minutes").eq("user_id", user.id).eq("performed_on", today)).data;
+    const { data: latest } = await admin
+      .from("body_logs").select("weight_kg").eq("user_id", user.id).not("weight_kg", "is", null)
+      .order("logged_at", { ascending: false }).limit(1).single();
+    // Running: (8.0 − 1) × kg × 0.5 hours (calculationConfig.activity.other_activities, placeholders).
+    const runningKcal = Math.round(7 * Number(latest!.weight_kg) * 0.5).toLocaleString("en-US");
+
+    const burned = page.locator("section", { has: page.getByRole("heading", { name: "Burned today (estimate)" }) });
+    const tile = burned.locator("div.tile", { has: page.getByText("Other activity", { exact: true }) }).locator("dd");
+    const card = page.locator("section", { has: page.getByRole("heading", { name: "Other activity", exact: true }) }).last();
+    const form = page.getByRole("form", { name: "Add activity" });
+    const list = card.getByRole("list");
+
+    try {
+      await open(page, "/dashboard");
+      await expect(tile).toHaveText("0 kcal");
+      await expect(card.getByText("No activity added today.")).toBeVisible();
+      // Walking is not an option: steps count it.
+      await expect(form.getByRole("option", { name: "Walking" })).toHaveCount(0);
+
+      // A bad number is refused and nothing is saved.
+      await form.getByLabel("Activity", { exact: true }).selectOption({ label: "Running" });
+      await form.getByLabel("Minutes", { exact: true }).fill("0");
+      await form.getByRole("button", { name: "Add activity" }).click();
+      await expect(form.getByText("Minutes must be between 1 and 600 minutes.")).toBeVisible();
+      expect(await savedToday()).toEqual([]);
+
+      await form.getByLabel("Minutes", { exact: true }).fill("30");
+      await form.getByRole("button", { name: "Add activity" }).click();
+      await expect(form.getByText("Saved.")).toBeVisible();
+      await expect(list.getByText("Running", { exact: true })).toBeVisible();
+      await expect(list.getByText("· 30 min")).toBeVisible();
+      await expect(tile).toHaveText(`${runningKcal} kcal`);
+      // The page does not scroll sideways.
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      expect(await savedToday()).toEqual([{ activity_key: "running", minutes: 30 }]);
+
+      // No keeps it; Yes deletes it and the tile goes back to zero.
+      await card.getByRole("button", { name: "Delete Running" }).click();
+      await expect(card.getByText("Delete this activity?")).toBeVisible();
+      await card.getByRole("button", { name: "No" }).click();
+      await expect(list.getByText("Running", { exact: true })).toBeVisible();
+      await card.getByRole("button", { name: "Delete Running" }).click();
+      await card.getByRole("button", { name: "Yes" }).click();
+      await expect(card.getByText("No activity added today.")).toBeVisible();
+      await expect(tile).toHaveText("0 kcal");
+      expect(await savedToday()).toEqual([]);
+    } finally {
+      await admin.from("activity_logs").delete().eq("user_id", user.id).eq("performed_on", today);
     }
   });
 

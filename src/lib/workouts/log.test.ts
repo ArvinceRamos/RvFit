@@ -64,6 +64,7 @@ describe("validateWorkoutLog", () => {
         template_key: templateKey,
         day_key: "a",
         performed_on: "2026-10-06",
+        duration_min: null,
         sets: [
           { slot_key: squat.key, exercise_key: "leg-press", set_number: 1, reps: 10, seconds: null, weight_kg: 100 },
           { slot_key: squat.key, exercise_key: "leg-press", set_number: 2, reps: 8, seconds: null, weight_kg: 102.5 },
@@ -202,5 +203,24 @@ describe("kg/lb switch", () => {
     expect(resolveUnits(null, "metric")).toEqual({ ok: true, data: "metric" });
     expect(resolveUnits("kg", "metric")).toMatchObject({ ok: false });
     expect(resolveUnits(5, "metric")).toMatchObject({ ok: false });
+  });
+});
+
+describe("validateWorkoutLog duration", () => {
+  const sets = [entry(squat.key, "leg-press", [["10", "100"]])];
+
+  it("reads a whole number of minutes, or null when blank or not sent", () => {
+    expect(validateWorkoutLog(log(sets, { duration: " 45 " }), metric)).toMatchObject({ ok: true, data: { duration_min: 45 } });
+    expect(validateWorkoutLog(log(sets, { duration: "" }), metric)).toMatchObject({ ok: true, data: { duration_min: null } });
+    expect(validateWorkoutLog(log(sets, { duration: null }), metric)).toMatchObject({ ok: true, data: { duration_min: null } });
+    expect(validateWorkoutLog(log(sets), metric)).toMatchObject({ ok: true, data: { duration_min: null } });
+  });
+
+  it("rejects fractions, words, out-of-range numbers and non-text values", () => {
+    expect(validateWorkoutLog(log(sets, { duration: "45.5" }), metric)).toEqual({ ok: false, error: "Duration must be a whole number." });
+    expect(validateWorkoutLog(log(sets, { duration: "long" }), metric)).toEqual({ ok: false, error: "Duration must be a whole number." });
+    expect(validateWorkoutLog(log(sets, { duration: "0" }), metric)).toEqual({ ok: false, error: "Duration must be between 1 and 600 minutes." });
+    expect(validateWorkoutLog(log(sets, { duration: "601" }), metric)).toEqual({ ok: false, error: "Duration must be between 1 and 600 minutes." });
+    expect(validateWorkoutLog(log(sets, { duration: 45 }), metric)).toEqual({ ok: false, error: "Workout details are invalid." });
   });
 });

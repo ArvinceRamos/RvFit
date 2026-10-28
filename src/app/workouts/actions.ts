@@ -158,6 +158,8 @@ export async function saveWorkoutLogAction(rawLog: unknown): Promise<SaveWorkout
     p_performed_on: log.performed_on,
     p_sets: log.sets,
     p_save_key: log.log_id === null ? saveKey : null,
+    // Null when the field was blank; on an edit it replaces the saved duration, so blank clears it.
+    p_duration_min: log.duration_min,
   });
   if (error || typeof savedId !== "string") return { ok: false, error: saveError };
   return { ok: true, logId: savedId };

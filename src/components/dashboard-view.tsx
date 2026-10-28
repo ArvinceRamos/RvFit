@@ -6,6 +6,7 @@ import { BurnedTodayCard } from "@/components/burned-today-card";
 import { CheckInCard } from "@/components/check-in-card";
 import { Icon } from "@/components/icon";
 import { MealEatenToggle } from "@/components/meal-eaten-toggle";
+import { OtherActivityCard } from "@/components/other-activity-card";
 import { SetupCard } from "@/components/setup-card";
 import { StepsSleepCard } from "@/components/steps-sleep-card";
 import { WeeklyReviewCard } from "@/components/weekly-review-card";
@@ -137,6 +138,7 @@ export function DashboardView({ result, serverMinutes }: { result: DashboardResu
       {/* For information only: burned calories never change the target or the "left" numbers above. */}
       <BurnedTodayCard burn={activity.burn} className="md:col-span-2" serverMinutes={serverMinutes} />
       <StepsSleepCard className="md:col-span-2 lg:col-span-1" sleepMinutes={activity.sleep_minutes} steps={activity.steps} />
+      <OtherActivityCard className="md:col-span-2 lg:col-span-3" entries={activity.entries} />
 
       <div className="md:col-span-2 lg:col-span-3">{quickActions}</div>
     </div>
