@@ -407,6 +407,73 @@ test.describe("signed in", () => {
     }
   });
 
+  test("Progress shows Steps and Sleep averages only from 3 days with a number, and lists the last 7 days", async ({ page }) => {
+    const user = readTestUser();
+    const admin = adminClient();
+    // The browser runs in Asia/Manila, so the app's today is Manila's. Earlier dates are counted back from it.
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
+    const daysAgo = (days: number) => new Date(Date.parse(`${today}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10);
+    const clean = () => admin.from("daily_activity").delete().eq("user_id", user.id).gte("on_date", daysAgo(10));
+    const put = (days: number, steps: number | null, sleep_minutes: number | null) =>
+      admin.from("daily_activity").upsert({ user_id: user.id, on_date: daysAgo(days), steps, sleep_minutes }, { onConflict: "user_id,on_date" });
+    const card = (name: string) => page.locator("section").filter({ has: page.getByRole("heading", { name, exact: true }) });
+    const stepsCard = card("Steps");
+    const sleepCard = card("Sleep");
+    const dayLine = (block: typeof stepsCard, days: number) =>
+      block.locator("li").filter({ has: page.locator(`time[datetime="${daysAgo(days)}"]`) });
+
+    await clean();
+    try {
+      // Nothing saved: no average, and a dash on every one of the 7 days.
+      await open(page, "/progress");
+      await expect(stepsCard.getByText("Not enough data yet.")).toBeVisible();
+      await expect(sleepCard.getByText("Not enough data yet.")).toBeVisible();
+      await expect(stepsCard.locator("li")).toHaveCount(7);
+      await expect(dayLine(stepsCard, 0)).toContainText("—");
+      await expect(dayLine(stepsCard, 6)).toContainText("—");
+
+      // Today's numbers come from the Today form.
+      await open(page, "/dashboard");
+      const stepsForm = page.getByRole("form", { name: "Steps today" });
+      const sleepForm = page.getByRole("form", { name: "Sleep last night" });
+      await stepsForm.getByLabel("Steps today").fill("9000");
+      await stepsForm.getByRole("button", { name: "Save" }).click();
+      await expect(stepsForm.getByText("Saved.")).toBeVisible();
+      await sleepForm.getByLabel("Hours").fill("7");
+      await sleepForm.getByLabel("Minutes").fill("30");
+      await sleepForm.getByRole("button", { name: "Save" }).click();
+      await expect(sleepForm.getByText("Saved.")).toBeVisible();
+
+      // One day each is still not enough.
+      await open(page, "/progress");
+      await expect(stepsCard.getByText("Not enough data yet.")).toBeVisible();
+      await expect(dayLine(stepsCard, 0)).toContainText("9,000");
+      await expect(dayLine(sleepCard, 0)).toContainText("7 h 30 min");
+
+      // Two earlier days: steps reach 3 days, sleep has 2. A day outside the window is ignored.
+      await put(1, 6000, 420);
+      await put(2, 3000, null);
+      await put(8, 99999, 600);
+      await open(page, "/progress");
+      await expect(stepsCard.locator("p.metric")).toHaveText("6,000");
+      await expect(dayLine(stepsCard, 1)).toContainText("6,000");
+      await expect(dayLine(stepsCard, 2)).toContainText("3,000");
+      await expect(dayLine(stepsCard, 3)).toContainText("—");
+      await expect(stepsCard.locator("li")).toHaveCount(7);
+      await expect(sleepCard.getByText("Not enough data yet.")).toBeVisible();
+      await expect(dayLine(sleepCard, 1)).toContainText("7 h 0 min");
+
+      // A third sleep day gives the sleep average: (450 + 420 + 480) / 3 = 450 minutes.
+      await put(3, null, 480);
+      await open(page, "/progress");
+      await expect(sleepCard.locator("p.metric")).toHaveText("7 h 30 min");
+      await expect(stepsCard.locator("p.metric")).toHaveText("6,000");
+      await expectNoAxeViolations(page);
+    } finally {
+      await clean();
+    }
+  });
+
   test("a weigh-in saves and log out ends the session", async ({ page }) => {
     await open(page, "/progress");
     await page.getByLabel(/^Weight \(kg\)/).fill("74.5");

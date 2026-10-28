@@ -1,4 +1,5 @@
 // Progress page data, read on the server when the page renders.
+import { activityProgress, activityWindowStart, type ActivityProgress } from "@/lib/activity/progress";
 import { calculationConfig } from "@/lib/calc/config";
 import type { CheckIn } from "@/lib/check-in";
 import { loadCheckInData } from "@/lib/check-in-data";
@@ -41,6 +42,8 @@ export type ProgressResult =
       // Eaten calories for the last 7 days, and the target to compare with (null without one).
       kcalDays: KcalDay[];
       targetKcal: number | null;
+      // Steps and Sleep averages and the last 7 dates (for information only).
+      activity: ActivityProgress;
     }
   | { ok: false; error: string };
 
@@ -51,7 +54,7 @@ export async function loadProgress(supabase: Awaited<ReturnType<typeof createCli
   const now = new Date(nowMs);
   const since = new Date(now.getTime() - trend_window_days * 24 * 60 * 60 * 1000);
   const oldestWeek = recentWeekStarts(today, workout_weeks)[workout_weeks - 1];
-  const [units, history, recent, workouts, preferences, target, checkInData, chart, meals] = await Promise.all([
+  const [units, history, recent, workouts, preferences, target, checkInData, chart, meals, daily] = await Promise.all([
     loadUnits(supabase),
     loadLatestWeighIns(supabase, history_weigh_ins),
     loadWeighInsSince(supabase, since),
@@ -62,9 +65,10 @@ export async function loadProgress(supabase: Awaited<ReturnType<typeof createCli
     loadCheckInData(supabase, now.getTime()),
     loadChartWeighIns(supabase, rangeStart(DEFAULT_CHART_RANGE, nowMs), calculationConfig.progress.chart_max_weigh_ins),
     loadMeals(supabase, reviewStart(today), today),
+    supabase.from("daily_activity").select("on_date, steps, sleep_minutes").gte("on_date", activityWindowStart(today)).lte("on_date", today),
   ]);
-  if (checkInData === "error" || !units || !history || !recent || !workouts || preferences.error || target === "error" || !meals) {
-    logError("progress.load", preferences.error);
+  if (checkInData === "error" || !units || !history || !recent || !workouts || preferences.error || target === "error" || !meals || daily.error) {
+    logError("progress.load", preferences.error, daily.error);
     return { ok: false, error: "Your progress could not be loaded. Please try again." };
   }
 
@@ -82,5 +86,6 @@ export async function loadProgress(supabase: Awaited<ReturnType<typeof createCli
     chart,
     kcalDays: sevenDayKcal(meals.map((meal) => ({ meal_date: meal.meal_date, eaten: meal.eaten, kcal: meal.totals.kcal })), today),
     targetKcal: target?.kcal ?? null,
+    activity: activityProgress(daily.data ?? [], today),
   };
 }

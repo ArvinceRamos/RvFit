@@ -92,8 +92,8 @@ export const calculationConfig = {
     kcal_per_kg: 7700,
     change_kcal: { min: 100, max: 200, step: 50 },
   },
-  // chart_max_weigh_ins (placeholder) caps one weight chart load, newest first.
-  progress: { trend_window_days: 7, trend_min_weigh_ins: 3, history_weigh_ins: 20, chart_max_weigh_ins: 1000, workout_weeks: 8 },
+  // chart_max_weigh_ins (placeholder) caps one weight chart load, newest first. activity_window_days and activity_min_days (placeholders) are the Steps and Sleep averages: the last 7 local dates, at least 3 with a value.
+  progress: { trend_window_days: 7, trend_min_weigh_ins: 3, history_weigh_ins: 20, chart_max_weigh_ins: 1000, workout_weeks: 8, activity_window_days: 7, activity_min_days: 3 },
   // Placeholder workout limits and schemes. Keep limits in step with the workout_log_sets_*_placeholder_check constraints.
   workouts: {
     max_sets_per_exercise: 10,

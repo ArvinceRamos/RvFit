@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { deleteWeighInAction, loadWeightChartAction, type WeightChartResult } from "@/app/progress/actions";
+import { formatSleepMinutes, type ActivityBlock } from "@/lib/activity/progress";
 import { CheckInCard } from "@/components/check-in-card";
 import { WeighInForm } from "@/components/weigh-in-form";
 import { calculationConfig } from "@/lib/calc/config";
@@ -273,6 +274,33 @@ function KcalStrip({ days, targetKcal }: { days: KcalDay[]; targetKcal: number |
   );
 }
 
+// Steps or Sleep: the 7-day average, then the last 7 dates (newest first) with that day's number or a dash.
+// Plain numbers only: no goals, no good or bad colours. The average needs at least 3 days with a number.
+function ActivityListCard({ title, block, format }: { title: string; block: ActivityBlock; format: (value: number) => string }) {
+  const { average, days } = block;
+  return (
+    <section className="card h-full">
+      <h2 className="section-title">{title}</h2>
+      <p className="mt-3 text-sm text-muted">7-day average</p>
+      {average.status === "ok" ? (
+        <p className="metric">{format(average.value)}</p>
+      ) : (
+        <p className="mt-1 text-muted">Not enough data yet.</p>
+      )}
+      <ol className="mt-3 divide-y divide-line">
+        {days.map((day) => (
+          <li className="flex items-center justify-between gap-4 py-2 text-sm" key={day.date}>
+            <time dateTime={day.date}>{formatCalendarDate(day.date)}</time>
+            <span className={day.value === null ? "text-muted" : "font-semibold"}>
+              {day.value === null ? "—" : format(day.value)}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 function WorkoutBars({ weeks }: { weeks: WeekCount[] }) {
   const ordered = [...weeks].reverse();
   const most = Math.max(1, ...ordered.map((week) => week.count));
@@ -337,7 +365,7 @@ export function ProgressView({ result, now, timeZone }: { result: ProgressResult
 
   if (!result.ok) return <p className="alert-danger mt-6" role="alert">{result.error}</p>;
 
-  const { units, trend, history, weeks, plannedDays, goal, pace, checkIn, chart, kcalDays, targetKcal } = result;
+  const { units, trend, history, weeks, plannedDays, goal, pace, checkIn, chart, kcalDays, targetKcal, activity } = result;
   const { dateFormat } = momentFormats(timeZone);
   const goalLabel = goalPaceLabel(goal, pace);
   return (
@@ -396,6 +424,11 @@ export function ProgressView({ result, now, timeZone }: { result: ProgressResult
       {checkIn && (keepCheckIn || checkInReady(checkIn)) && (
         <CheckInCard checkIn={checkIn} className="" onSaved={() => setKeepCheckIn(true)} units={units} />
       )}
+
+      <div className="grid gap-[30px] md:grid-cols-2">
+        <ActivityListCard block={activity.steps} format={(value) => value.toLocaleString("en-US")} title="Steps" />
+        <ActivityListCard block={activity.sleep} format={formatSleepMinutes} title="Sleep" />
+      </div>
 
       <div className="grid gap-[30px] md:grid-cols-3">
         <div className="md:col-span-2">

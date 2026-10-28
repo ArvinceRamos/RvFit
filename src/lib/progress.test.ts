@@ -7,7 +7,7 @@ const daysAgo = (days: number) => new Date(now.getTime() - days * 24 * 60 * 60 *
 
 describe("progress placeholders", () => {
   it("holds the planned values", () => {
-    expect(calculationConfig.progress).toEqual({ trend_window_days: 7, trend_min_weigh_ins: 3, history_weigh_ins: 20, chart_max_weigh_ins: 1000, workout_weeks: 8 });
+    expect(calculationConfig.progress).toEqual({ trend_window_days: 7, trend_min_weigh_ins: 3, history_weigh_ins: 20, chart_max_weigh_ins: 1000, workout_weeks: 8, activity_window_days: 7, activity_min_days: 3 });
   });
 });
 

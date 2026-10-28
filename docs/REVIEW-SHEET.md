@@ -93,6 +93,8 @@ Added 2026-10-28 (AC-2, `docs/ACTIVITY.md`). Burned calories are shown for infor
 | 6.13 | Sleep limit | 0–1,440 minutes (0–24 hours) a night | `config.ts:166` | Technical limit; matches the database check. | |
 | 6.14 | Other activity limit | 1–600 minutes an entry | `config.ts:167` | Technical limit; matches the database check. | |
 | 6.15 | Workout duration limit | 1–600 minutes, optional | `config.ts:168` | Technical limit; matches the database check. | |
+| 6.16 | Steps and Sleep average window | The last 7 days (local dates), ending today | `config.ts:96` | Same window as the weight trend (row 3.1); shown on Progress for information only. | |
+| 6.17 | Steps and Sleep average needs | At least 3 days with a number, otherwise "Not enough data yet." | `config.ts:96` | Same rule as the weight trend (row 3.1). | |
 
 ## Not for this review
 
