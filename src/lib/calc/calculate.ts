@@ -183,6 +183,18 @@ function floorExplanation(branch: FormulaBranch, floor: number, maintenanceEstim
   return `${base} That is above your estimated maintenance of about ${maintenance.toLocaleString("en-US")} kcal, so you may gain weight slowly.`;
 }
 
+// Mifflin–St Jeor resting burn (BMR) in kcal a day, unrounded, with no activity multiplier.
+// The calorie target and the activity estimates (src/lib/activity/burn.ts) both use it.
+export function basalMetabolicRate(inputs: ValidatedInputs, branch: FormulaBranch): number {
+  const formula = calculationConfig.mifflin_st_jeor;
+  return (
+    formula.weight_coefficient * inputs.weight_kg +
+    formula.height_coefficient * inputs.height_cm -
+    formula.age_coefficient * inputs.age_years +
+    formula.branch_offset[branch]
+  );
+}
+
 export function calculateTarget(input: CalculateTargetInput): Result<CalculatedTarget> {
   const validated = convertAndValidateInputs(input);
   if (!validated.ok) return validated;
@@ -195,12 +207,7 @@ export function calculateTarget(input: CalculateTargetInput): Result<CalculatedT
   }
 
   const branch = input.sex;
-  const formula = calculationConfig.mifflin_st_jeor;
-  const basalEstimate =
-    formula.weight_coefficient * validated.data.weight_kg +
-    formula.height_coefficient * validated.data.height_cm -
-    formula.age_coefficient * validated.data.age_years +
-    formula.branch_offset[branch];
+  const basalEstimate = basalMetabolicRate(validated.data, branch);
   const maintenanceEstimate =
     basalEstimate * calculationConfig.activity_multipliers[input.activity_level];
 

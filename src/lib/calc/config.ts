@@ -142,9 +142,36 @@ export const calculationConfig = {
     minimum_grams: 0,
     percentage_scale: 100,
   },
+  // Placeholder activity estimates pending qualified review (docs/ACTIVITY.md "The math", src/lib/activity/burn.ts).
+  // Burned calories are for information only: they never change a target. Each estimate is (MET − 1) × kg × hours,
+  // the "− 1" leaving out the resting part that Resting already counts. kcal_per_step_per_kg is already net of resting.
+  activity: {
+    strength_met: 3.5,
+    // Hours for a workout with no duration: logged sets × minutes_per_set.
+    minutes_per_set: 3,
+    kcal_per_step_per_kg: 0.0004,
+    // No walking option on purpose: steps already count walking.
+    other_activities: [
+      { key: "cycling", label: "Cycling", met: 6.8 },
+      { key: "running", label: "Running", met: 8.0 },
+      { key: "swimming", label: "Swimming", met: 6.0 },
+      { key: "sports", label: "Team sports", met: 7.0 },
+      { key: "dancing", label: "Dancing", met: 5.0 },
+      { key: "other_cardio", label: "Other cardio", met: 5.0 },
+    ],
+    // Placeholder input limits. Keep in step with the daily_activity, activity_logs and
+    // workout_logs.duration_min checks in the database.
+    limits: {
+      steps: { min: 0, max: 100000 },
+      sleep_minutes: { min: 0, max: 1440 },
+      activity_minutes: { min: 1, max: 600 },
+      workout_duration_min: { min: 1, max: 600 },
+    },
+  },
 } as const;
 
 export type CalculationConfig = typeof calculationConfig;
 export type ActivityLevel = keyof typeof calculationConfig.activity_multipliers;
 export type FormulaBranch = keyof typeof calculationConfig.formula_branch_floors_kcal;
 export type PortionClass = keyof typeof calculationConfig.meal_planner.portions;
+export type OtherActivityKey = (typeof calculationConfig.activity.other_activities)[number]["key"];

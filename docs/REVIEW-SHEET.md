@@ -72,6 +72,28 @@ The check-in only suggests a change; the user decides. It never changes a target
 | 5.4 | Privacy and Terms pages | Marked as drafts for a private family test | `src/app/privacy`, `src/app/terms` | |
 | 5.5 | Contact email | The owner's personal address, which must change before a public launch | `src/lib/legal.ts:2` | |
 
+## 6. Activity estimates (calories burned)
+
+Added 2026-10-28 (AC-2, `docs/ACTIVITY.md`). Burned calories are shown for information only and never change a target. Each activity estimate is (MET − 1) × kg × hours; the "− 1" leaves out the resting part, which the resting row already counts. These values were not in the 2026-10-24 audit, so the notes below only say where each value comes from.
+
+| # | Item | Current value | Where | Evidence notes (not a review) | Decision |
+|---|---|---|---|---|---|
+| 6.1 | Resting burn | Mifflin–St Jeor BMR (row 1.1), no activity multiplier, spread over the day by local time | `src/lib/activity/burn.ts:59` | Same formula as row 1.1. | |
+| 6.2 | Strength workout MET | 3.5 | `config.ts:149` | Placeholder from `docs/ACTIVITY.md`. Strength estimates can be 30–50% off. | |
+| 6.3 | Minutes per set (no duration given) | 3 minutes per logged set | `config.ts:151` | Placeholder from `docs/ACTIVITY.md`. | |
+| 6.4 | Energy per step | 0.0004 kcal per step per kg, already net of resting | `config.ts:152` | Placeholder from `docs/ACTIVITY.md`. Example: 10,000 steps at 80 kg is about 320 kcal. | |
+| 6.5 | Cycling MET | 6.8 | `config.ts:155` | Placeholder from `docs/ACTIVITY.md`. | |
+| 6.6 | Running MET | 8.0 | `config.ts:156` | Placeholder from `docs/ACTIVITY.md`. | |
+| 6.7 | Swimming MET | 6.0 | `config.ts:157` | Placeholder from `docs/ACTIVITY.md`. | |
+| 6.8 | Team sports MET | 7.0 | `config.ts:158` | Placeholder from `docs/ACTIVITY.md`. | |
+| 6.9 | Dancing MET | 5.0 | `config.ts:159` | Placeholder from `docs/ACTIVITY.md`. | |
+| 6.10 | Other cardio MET | 5.0 | `config.ts:160` | Placeholder from `docs/ACTIVITY.md`. | |
+| 6.11 | No walking option | Walking is not in the list, because steps already count it | `config.ts:153` | Avoids counting walking twice. | |
+| 6.12 | Steps limit | 0–100,000 a day | `config.ts:165` | Technical limit; matches the database check. | |
+| 6.13 | Sleep limit | 0–1,440 minutes (0–24 hours) a night | `config.ts:166` | Technical limit; matches the database check. | |
+| 6.14 | Other activity limit | 1–600 minutes an entry | `config.ts:167` | Technical limit; matches the database check. | |
+| 6.15 | Workout duration limit | 1–600 minutes, optional | `config.ts:168` | Technical limit; matches the database check. | |
+
 ## Not for this review
 
 Technical limits that are not health advice: meal and workout row limits (`docs/RUNBOOK.md`, error 54000), item grams up to 2,000, reps up to 100, holds up to 600 s, weights up to 500 kg, meal planner portion ranges (`docs/MEAL-PLANNER.md`). A reviewer may still comment on them.
@@ -85,3 +107,4 @@ Technical limits that are not health advice: meal and workout row limits (`docs/
 | 3. Progress and check-in | | | | |
 | 4. Training | | | | |
 | 5. Safety and legal copy | | | | |
+| 6. Activity estimates | | | | |
