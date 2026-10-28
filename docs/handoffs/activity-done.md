@@ -8,6 +8,7 @@ Written 2026-10-28 at the end of the autopilot run. Replaces `AU-78.md` and `aut
 - Migrations: rvfit-staging was behind and got `20261024010000` to `20261028010000` first, all clean. Then rvfit-prod got `20261028010000_ac1_activity.sql`, after a backup.
 - Production backup taken before the migration: `C:/Users/arvince/RvFit-backups/2026-10-28-before-activity/` (schema and data dumps; they contain user data, so keep them private).
 - The CLI is signed in to the account that owns the RvFit org and linked to rvfit-prod.
+- KA-1 (keep-alive) is live since 2026-10-29: migration `20261029010000_ka1_keepalive` on staging and prod (backup first: `C:/Users/arvince/RvFit-backups/2026-10-29-before-keepalive/`), pushed as `694783e`. Live `/api/health` answers GET and HEAD with 200 and now runs a database query. The user created the UptimeRobot monitor on it (every 5 minutes).
 - Commits: plan `59ec634`, AC-1 `6728708`, AC-2 `c5f6465`, AC-3 `7571bf2`, AC-4 `c232103`, AC-5 `b3b03e5`, AC-6 (see `git log`).
 - Final checks: lint, typecheck, 866 unit tests, 194 database tests, 70 e2e runs (build included), `npm audit --omit=dev` 0 vulnerabilities.
 
@@ -27,7 +28,8 @@ Written 2026-10-28 at the end of the autopilot run. Replaces `AU-78.md` and `aut
 
 ## Still open
 
-- Whether CI passed for the push of `c9b5497` (and the older run #10 for `adc0217`). `gh` is not installed, so check GitHub Actions in the browser.
+- CI for `c9b5497` passed (check, e2e, database). CI for `694783e` was still running at the last look; check GitHub Actions.
+- Over 2026-10-29 to 2026-10-30: the UptimeRobot monitor should be green and the Supabase Postgres chart should show small regular bars.
 - Qualified review of `docs/REVIEW-SHEET.md`, now including section 6. Never fill in its Decision column.
 - Domain and email provider (`docs/RUNBOOK.md`, "Email provider").
 - Seen during checks, existing behaviour: a browser still holding the session of a user deleted **outside** the app (admin delete) keeps rendering signed-in pages until the token expires, and Log out fails for it. Pages check the token with `getClaims` on purpose (`src/lib/supabase/auth.ts`). The app's own account deletion signs out first, so real users are not affected.
