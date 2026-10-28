@@ -34,6 +34,7 @@ Rules:
 - After a job, stop and report what changed, which checks ran and passed, what I should check by hand, and the next job with its suggested model and effort. Do not start the next job until I say yes.
 - If a decision is needed, ask one question instead of guessing.
 - If you see a risk or a plan rule that looks wrong, say so plainly.
+- Autopilot: when I start the autopilot skill (`.claude/skills/autopilot/SKILL.md`), its rules replace the three ask-and-wait rules above until that run ends.
 - Keep replies short and do not repeat the plan.
 
 
