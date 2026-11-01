@@ -20,6 +20,12 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Mobile app (Android and iOS)
+
+The phone app is in [`mobile/`](mobile/README.md): an Expo (React Native) app that uses the same Supabase project and reuses the logic in `src/lib`. It has its own `package.json` and needs Node 22. Setup and commands: [`mobile/README.md`](mobile/README.md). Architecture, decisions, the web-to-app parity table and what is still unverified (iOS, hosted Supabase): [`docs/MOBILE.md`](docs/MOBILE.md).
+
+The app deletes accounts through this website's `DELETE /api/account` endpoint, so that endpoint must be deployed before the app can delete accounts on a hosted project.
+
 ## Google sign-in (optional, local)
 
 The log in and sign-up pages can show **Continue with Google**. It stays hidden until you turn it on.
