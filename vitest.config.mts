@@ -7,5 +7,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // The Expo app runs its own tests (mobile/vitest.config.mts).
+    exclude: ["**/node_modules/**", "mobile/**"],
   },
 });

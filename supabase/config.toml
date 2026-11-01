@@ -19,8 +19,9 @@ api_url = "http://127.0.0.1"
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
-# Port 3100 is the e2e test server (playwright.config.ts).
-additional_redirect_urls = ["http://localhost:3000/auth/callback", "http://localhost:3100/auth/callback"]
+# Port 3100 is the e2e test server (playwright.config.ts). rvfit://** is the mobile app
+# (mobile/README.md), and http://localhost:8081 its web preview.
+additional_redirect_urls = ["http://localhost:3000/auth/callback", "http://localhost:3100/auth/callback", "rvfit://**", "http://localhost:8081/**"]
 minimum_password_length = 8
 
 [auth.email]
