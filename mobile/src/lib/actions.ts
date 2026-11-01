@@ -9,8 +9,9 @@ type Result = { ok: true } | { ok: false; error: string };
  * Runs one save (a service call) with the state a button needs: pending, the error message, and a
  * reload of every screen's data when it worked, like the web's refresh() after a server action.
  * A thrown error (usually no connection) becomes the given fallback message, so nothing fails silently.
+ * onSuccess runs before the reload, for state that must be set before the screen re-renders with new data.
  */
-export function useAction<T extends Result, A extends unknown[]>(action: (...args: A) => Promise<T>, fallback: string) {
+export function useAction<T extends Result, A extends unknown[]>(action: (...args: A) => Promise<T>, fallback: string, onSuccess?: (result: T) => void) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -27,13 +28,14 @@ export function useAction<T extends Result, A extends unknown[]>(action: (...arg
       setPending(false);
       if (result.ok) {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        onSuccess?.(result as T);
         await refreshAll();
       } else {
         setError(result.error);
       }
       return result;
     },
-    [action, fallback],
+    [action, fallback, onSuccess],
   );
 
   return { run, pending, error, setError };

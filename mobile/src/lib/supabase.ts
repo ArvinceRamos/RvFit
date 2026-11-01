@@ -15,6 +15,9 @@ export const supabase: SupabaseClient = createClient(env.supabaseUrl || "http://
     detectSessionInUrl: false,
     flowType: "pkce",
   },
+  // React Query retries whole screen loads and knows when the phone is offline (src/lib/query.ts).
+  // PostgREST's own read retries on top of that kept an offline screen on its spinner for about a minute.
+  db: { retry: false },
 });
 
 // Refresh the session only while the app is in the foreground, as the Supabase guide for React Native asks.

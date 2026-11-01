@@ -14,16 +14,18 @@ const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium" });
 // a new target is saved only when the user presses "Use … kcal", keeping the goal, pace and macro split.
 export function CheckInCard({ checkIn, units, onSaved }: { checkIn: CheckIn; units: PreferredUnits; onSaved?: () => void }) {
   const [savedKcal, setSavedKcal] = useState<number>();
-  const accept = useAction(acceptCheckIn, "Your target could not be saved. Please try again.");
+  // The card is kept on screen before the reload, which would otherwise hide it (the new target has no check-in yet).
+  const accept = useAction(acceptCheckIn, "Your target could not be saved. Please try again.", (result) => {
+    if ("kcal" in result) {
+      setSavedKcal(result.kcal);
+      onSaved?.();
+    }
+  });
   if (checkIn.status === "no_goal" && savedKcal === undefined) return null;
   const { window_days, settle_days, min_weigh_in_days, min_span_days } = calculationConfig.check_in;
 
   async function use(kcal: number) {
-    const result = await accept.run(kcal);
-    if (result.ok && "kcal" in result) {
-      setSavedKcal(result.kcal);
-      onSaved?.();
-    }
+    await accept.run(kcal);
   }
 
   const weighInLink = <TextLink onPress={() => router.push("/progress")}>Log a weigh-in</TextLink>;

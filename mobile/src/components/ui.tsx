@@ -119,10 +119,13 @@ export function Button({
   };
   const { bg, fg, border } = look[variant];
   const inactive = disabled || loading;
+  // Android keeps the "busy" description after loading ends unless the button has its own label
+  // (React Native only rewrites a non-empty description), so text buttons label themselves.
+  const label = accessibilityLabel ?? (typeof children === "string" ? children : undefined);
   return (
     <Pressable
       accessibilityHint={accessibilityHint}
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={label}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!inactive, busy: !!loading }}
       disabled={inactive}
@@ -201,6 +204,8 @@ export function Tile({ children, style }: { children: ReactNode; style?: StylePr
 
 export function Field({
   label,
+  labelHidden,
+  accessibilityLabel,
   value,
   onChangeText,
   keyboardType,
@@ -222,6 +227,9 @@ export function Field({
   right,
 }: {
   label?: string;
+  /** Keep the label for screen readers but do not show it (for repeated rows that share a visible label). */
+  labelHidden?: boolean;
+  accessibilityLabel?: string;
   value: string;
   onChangeText: (value: string) => void;
   keyboardType?: KeyboardTypeOptions;
@@ -246,7 +254,7 @@ export function Field({
   const [focused, setFocused] = useState(false);
   return (
     <View style={[{ gap: 6 }, style]}>
-      {label ? <Txt variant="label">{label}</Txt> : null}
+      {label && !labelHidden ? <Txt variant="label">{label}</Txt> : null}
       <View
         style={{
           flexDirection: "row",
@@ -262,7 +270,7 @@ export function Field({
       >
         <TextInput
           accessibilityHint={hint}
-          accessibilityLabel={label}
+          accessibilityLabel={accessibilityLabel ?? label}
           autoCapitalize={autoCapitalize}
           autoComplete={autoComplete}
           autoCorrect={false}

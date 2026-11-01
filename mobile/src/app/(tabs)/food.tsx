@@ -136,6 +136,9 @@ function DayCard({ day, today }: { day: MealDay; today: string }) {
   const { colors } = useTheme();
   const isToday = day.date === today;
   const [open, setOpen] = useState(isToday);
+  // Keep "0 / 1,723 kcal" together when the summary wraps on a narrow phone.
+  const nbsp = String.fromCharCode(0xa0);
+  const summary = describeMealDay(day, today).replace(/ \/ (\S+) /g, `${nbsp}/${nbsp}$1${nbsp}`);
   return (
     <Card compact>
       <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={() => setOpen((value) => !value)} style={{ flexDirection: "row", alignItems: "center", gap: 8, minHeight: 36 }}>
@@ -145,7 +148,7 @@ function DayCard({ day, today }: { day: MealDay; today: string }) {
             <Txt tone="onAccent" variant="xs" weight="bold">Today</Txt>
           </View>
         ) : null}
-        <Txt numberOfLines={2} style={{ flex: 1, textAlign: "right" }} tone="muted" variant="small">{describeMealDay(day, today)}</Txt>
+        <Txt numberOfLines={2} style={{ flex: 1, textAlign: "right" }} tone="muted" variant="small">{summary}</Txt>
         <View style={{ transform: [{ rotate: open ? "90deg" : "0deg" }] }}>
           <Icon color={colors.muted} name="chevron-right" />
         </View>

@@ -9,8 +9,12 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
-      retry: 2,
+      // Retry a failed load twice, but not while the phone is offline: then it fails at once.
+      retry: (failureCount) => failureCount < 2 && onlineManager.isOnline(),
       refetchOnReconnect: true,
+      // Try even when the phone says it is offline. The default pauses the load, which leaves a
+      // screen with nothing cached on its spinner; this way it fails and shows "You are offline" with Try again.
+      networkMode: "always",
     },
     mutations: { retry: 0 },
   },
