@@ -3,8 +3,8 @@ import { useState } from "react";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { confirmMismatch, passwordMismatchMessage, validateNewPassword } from "@/lib/auth-validation";
 import { AuthCard } from "~/components/auth-card";
-import { GoogleButton } from "~/components/google-button";
-import { Screen } from "~/components/screen";
+import { GoogleButton, OrDivider } from "~/components/google-button";
+import { RibbonScreen } from "~/components/ribbon-screen";
 import { Button, Field, FormError, PasswordField, Stack, TextLink, Txt } from "~/components/ui";
 import { authCallbackUrl } from "~/lib/auth-links";
 import { env } from "~/lib/env";
@@ -44,7 +44,7 @@ export default function SignUp() {
   }
 
   return (
-    <Screen>
+    <RibbonScreen>
       <AuthCard label="Free account" title="Create an account">
         {submitted ? (
           <Stack gap={10}>
@@ -74,13 +74,18 @@ export default function SignUp() {
             />
             <FormError message={error} />
             <Button full loading={pending} loadingText="Creating account…" onPress={signUp}>Create account</Button>
-            {env.googleAuthEnabled ? <GoogleButton /> : null}
+            {env.googleAuthEnabled ? (
+              <>
+                <OrDivider />
+                <GoogleButton />
+              </>
+            ) : null}
           </>
         )}
         <Txt tone="muted" variant="small">
           Already have an account? <TextLink onPress={() => router.replace("/login")}>Log in</TextLink>
         </Txt>
       </AuthCard>
-    </Screen>
+    </RibbonScreen>
   );
 }

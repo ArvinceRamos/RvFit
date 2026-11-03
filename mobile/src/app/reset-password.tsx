@@ -3,7 +3,7 @@ import { useState } from "react";
 import { authErrorMessage, expiredLinkMessage } from "@/lib/auth-errors";
 import { confirmMismatch, passwordMismatchMessage, validateNewPassword } from "@/lib/auth-validation";
 import { AuthCard } from "~/components/auth-card";
-import { Screen } from "~/components/screen";
+import { RibbonScreen } from "~/components/ribbon-screen";
 import { Alert, Button, FormError, PasswordField } from "~/components/ui";
 import { useAuth } from "~/lib/auth";
 import { supabase } from "~/lib/supabase";
@@ -41,7 +41,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <Screen>
+    <RibbonScreen>
       <AuthCard label="Password help" title="Choose a new password">
         {!session ? (
           <>
@@ -65,6 +65,6 @@ export default function ResetPassword() {
           </>
         )}
       </AuthCard>
-    </Screen>
+    </RibbonScreen>
   );
 }

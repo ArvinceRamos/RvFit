@@ -91,6 +91,7 @@ export function Button({
   loading,
   loadingText,
   icon,
+  leading,
   full,
   style,
   accessibilityLabel,
@@ -104,6 +105,8 @@ export function Button({
   loading?: boolean;
   loadingText?: string;
   icon?: IconName;
+  // A picture before the label (for example the Google mark), used when there is no `icon`.
+  leading?: ReactNode;
   full?: boolean;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
@@ -151,7 +154,7 @@ export function Button({
         style,
       ]}
     >
-      {loading ? <ActivityIndicator color={fg} size="small" /> : icon ? <Icon color={fg} name={icon} size={size === "sm" ? 16 : 18} /> : null}
+      {loading ? <ActivityIndicator color={fg} size="small" /> : icon ? <Icon color={fg} name={icon} size={size === "sm" ? 16 : 18} /> : (leading ?? null)}
       <Text style={{ color: fg, fontFamily: variant === "ghost" ? fonts.semibold : fonts.bold, fontSize: 14, textAlign: "center" }}>
         {loading && loadingText ? loadingText : children}
       </Text>
@@ -175,10 +178,11 @@ export function TextLink({ children, onPress, tone = "ink", accessibilityHint }:
   );
 }
 
-export function Card({ children, style, danger, compact }: { children: ReactNode; style?: StyleProp<ViewStyle>; danger?: boolean; compact?: boolean }) {
+export function Card({ children, style, danger, compact, onLayout }: { children: ReactNode; style?: StyleProp<ViewStyle>; danger?: boolean; compact?: boolean; onLayout?: ViewProps["onLayout"] }) {
   const { colors } = useTheme();
   return (
     <View
+      onLayout={onLayout}
       style={[
         {
           borderRadius: radius.card,

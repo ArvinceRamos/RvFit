@@ -20,6 +20,7 @@ Written 2026-11-02 at the end of the first autopilot run; updated the same day a
   - account deletion (the user was gone from `auth.users` afterwards)
 - Second run (see docs/TASKS.md MO-2 to MO-7 and docs/MOBILE.md): S256 PKCE fix for the dev warning toast, every remaining screen tested, offline and check-in fixes, workout-log labels, a release APK that runs without Metro, the `mobile` CI job, docs/MOBILE.md and the README section.
 - Checks that passed at the end of the second run: mobile typecheck, lint and 34 tests; web typecheck, lint, 877 unit tests, `npm run build` and 72 e2e runs.
+- Third run (2026-11-03, docs/TASKS.md MO-11): Google mark and divider, the 3D ribbon (expo-gl; `mobile/src/features/ribbon-scene.ts`, `components/ribbon-background.tsx`, `components/ribbon-screen.tsx`), and Welcome as the web landing page (`features/landing-*.tsx`). A staging APK (`mobile/dist/rvfit-staging.apk`, arm64-v8a and x86_64) was built with the staging public values and Google turned on.
 
 ## Architecture (decided; see also `mobile/README.md`)
 
@@ -34,7 +35,7 @@ Written 2026-11-02 at the end of the first autopilot run; updated the same day a
   - pickers use chips
   - deletes ask with the phone's own dialog
   - the planner is two steps (pick, then preview)
-  - the welcome screen leaves out the 3D and screenshot previews
+  - the welcome screen and auth screens are always dark with the 3D ribbon, like the web; Welcome copies the web landing page
   - Privacy has a "Stored on your device" section written for the app (draft text: needs the same review as the web one)
 - Local `supabase/config.toml` now allows `rvfit://**` and `http://localhost:8081/**`. Hosted projects need `rvfit://**` added by the user in the dashboard.
 

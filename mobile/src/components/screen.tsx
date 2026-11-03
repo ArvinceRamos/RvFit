@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, View, type StyleProp, type ViewStyle } from "react-native";
+import { Animated, KeyboardAvoidingView, Platform, RefreshControl, ScrollView, View, type ScrollViewProps, type StyleProp, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "~/theme/theme";
 import { Button, Spinner, Stack, Txt } from "./ui";
@@ -17,6 +17,8 @@ export function Screen({
   footer,
   scroll = true,
   scrollRef,
+  background,
+  scrollProps,
 }: {
   children: ReactNode;
   refreshing?: boolean;
@@ -28,6 +30,11 @@ export function Screen({
   footer?: ReactNode;
   scroll?: boolean;
   scrollRef?: React.Ref<ScrollView>;
+  // Drawn behind the content and not scrolled (the ribbon).
+  background?: ReactNode;
+  // Scroll and size events, for parts that follow the scroll position (onScroll may be a native Animated.event),
+  // and a header that sticks to the top.
+  scrollProps?: Pick<ScrollViewProps, "onScroll" | "onLayout" | "onContentSizeChange" | "scrollEventThrottle" | "stickyHeaderIndices">;
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -43,8 +50,10 @@ export function Screen({
   return (
     // Screens without a header start below the status bar, so scrolled text never runs under it.
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.page, paddingTop: topInset ? insets.top : 0 }}>
+      {background}
       {scroll ? (
-        <ScrollView
+        <Animated.ScrollView
+          {...scrollProps}
           contentContainerStyle={[padding, contentStyle]}
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
@@ -53,7 +62,7 @@ export function Screen({
           style={{ flex: 1 }}
         >
           {children}
-        </ScrollView>
+        </Animated.ScrollView>
       ) : (
         <View style={[padding, { flex: 1 }, contentStyle]}>{children}</View>
       )}

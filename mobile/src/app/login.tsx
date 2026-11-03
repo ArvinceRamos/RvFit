@@ -2,8 +2,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { authErrorMessage, oauthErrorMessage } from "@/lib/auth-errors";
 import { AuthCard } from "~/components/auth-card";
-import { GoogleButton } from "~/components/google-button";
-import { Screen } from "~/components/screen";
+import { GoogleButton, OrDivider } from "~/components/google-button";
+import { RibbonScreen } from "~/components/ribbon-screen";
 import { Alert, Button, Field, FormError, PasswordField, Stack, TextLink, Txt } from "~/components/ui";
 import { env } from "~/lib/env";
 import { supabase } from "~/lib/supabase";
@@ -38,7 +38,7 @@ export default function Login() {
   }
 
   return (
-    <Screen>
+    <RibbonScreen>
       <AuthCard label="Welcome back" title="Log in">
         {errorParam === "link" && !error ? <Alert tone="warn">{linkErrorMessage}</Alert> : null}
         {errorParam === "oauth" && !error ? <Alert tone="warn">{oauthErrorMessage}</Alert> : null}
@@ -46,7 +46,12 @@ export default function Login() {
         <PasswordField label="Password" onChangeText={setPassword} onSubmitEditing={logIn} returnKeyType="go" value={password} />
         <FormError message={error} />
         <Button full loading={pending} loadingText="Logging in…" onPress={logIn}>Log in</Button>
-        {env.googleAuthEnabled ? <GoogleButton /> : null}
+        {env.googleAuthEnabled ? (
+          <>
+            <OrDivider />
+            <GoogleButton />
+          </>
+        ) : null}
         <Stack gap={0}>
           <TextLink onPress={() => router.push("/forgot-password")}>Forgot password?</TextLink>
           <Txt tone="muted" variant="small">
@@ -54,6 +59,6 @@ export default function Login() {
           </Txt>
         </Stack>
       </AuthCard>
-    </Screen>
+    </RibbonScreen>
   );
 }

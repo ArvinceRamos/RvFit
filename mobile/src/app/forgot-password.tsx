@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { authErrorMessage, expiredLinkMessage } from "@/lib/auth-errors";
 import { AuthCard } from "~/components/auth-card";
-import { Screen } from "~/components/screen";
+import { RibbonScreen } from "~/components/ribbon-screen";
 import { Alert, Button, Field, FormError, Stack, TextLink, Txt } from "~/components/ui";
 import { authCallbackUrl } from "~/lib/auth-links";
 import { supabase } from "~/lib/supabase";
@@ -34,7 +34,7 @@ export default function ForgotPassword() {
   }
 
   return (
-    <Screen>
+    <RibbonScreen>
       <AuthCard label="Password help" title="Reset your password">
         {submitted ? (
           // The same message whether or not an account exists, so the screen does not reveal who has one.
@@ -54,6 +54,6 @@ export default function ForgotPassword() {
           Remembered it? <TextLink onPress={() => router.replace("/login")}>Log in</TextLink>
         </Txt>
       </AuthCard>
-    </Screen>
+    </RibbonScreen>
   );
 }

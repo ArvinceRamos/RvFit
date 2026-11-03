@@ -46,7 +46,8 @@ local Supabase. Nothing is pushed, deployed or published to a store. iOS has nev
 | Dates use a one-day stepper; pickers use chips | Simpler than native date and select pickers, and the same on Android and iOS. |
 | Deletes ask with the phone's own Yes/No dialog | Familiar on each platform; the web shows inline Yes/No buttons. |
 | The meal planner is two steps (pick, then preview) | The web's side-by-side layout does not fit a phone. |
-| The welcome screen leaves out the 3D ribbon and the screenshot previews | Heavy on a phone and not needed to start. |
+| The welcome and log-in screens have the web's 3D light ribbon (expo-gl), and are always dark like the web's landing and auth pages | The user asked for the web look on the phone (2026-11-03). It is the web's phone ("lite") scene: the same path, strands, shaders, keyframes and glide, drawn with plain GL (three is used only for the curve and camera maths). Welcome moves one stop per stage card as you scroll; the auth screens hold the hero pose. It draws every frame while the camera glides and about 30 fps once settled, pauses when its screen is hidden or the app is in the background, and keeps a static ribbon with reduce motion on or if GL fails. Cards are 90% opaque instead of the web's blur, so grey text stays readable over the lines. |
+| The welcome screen is the web landing page, section for section | The user asked for the same page as the web (2026-11-03). Sticky bar, hero with the Today preview, the five-stage roadmap (line that fills as you scroll, glowing current dot, stage icons) with every App preview and its small interaction, Before you start with the honest-estimates quote, the final call to action and the footer. Words and demo numbers come from the web's own files (`landing-content`, `landing-faq`, `demo-data`). The roadmap line and dots follow a native-driven scroll value, so they move with the finger; charts and bars draw in as they scroll into view and appear without moving under reduce motion. Stage links other than stage 1 go to Log in, as the web's links do for a signed-out visitor. |
 | Privacy has a "Stored on your device" section | The app keeps a few things on the phone. The text is a draft and needs the same review as the web privacy page. |
 | Offline: loads are tried even when the phone says it is offline, and are not retried until it is back online; PostgREST's own read retries are off | Otherwise a screen with nothing cached stayed on its spinner for about a minute instead of showing "You are offline" with Try again. Screens with cached data keep showing it under an offline banner, and reload by themselves on reconnect. |
 | React Native warnings and `logError` go to the console only | No crash or analytics service, as on the website. |
@@ -55,10 +56,10 @@ local Supabase. Nothing is pushed, deployed or published to a store. iOS has nev
 
 | Web route | App screen | Notes |
 |---|---|---|
-| `/` (landing) | `welcome` | No 3D or screenshot previews. |
+| `/` (landing) | `welcome` | Same sections, previews and roadmap; 3D ribbon that follows the scroll. |
 | `/start`, `/calculate`, `/manual`, `/results` | `start`, `calculate`, `manual`, `results` | Same age gate, calculator and guest draft. |
-| `/login`, `/signup` | `login`, `signup` | Google sign-in sits behind `EXPO_PUBLIC_GOOGLE_AUTH_ENABLED`, like the web flag; not tested (Google is off locally). |
-| `/forgot-password`, `/reset-password` | `forgot-password`, `reset-password` | Links open the app. |
+| `/login`, `/signup` | `login`, `signup` | Ribbon in its hero pose. Google sign-in (the "G" mark and the "or" divider, as on the web) sits behind `EXPO_PUBLIC_GOOGLE_AUTH_ENABLED`, like the web flag. |
+| `/forgot-password`, `/reset-password` | `forgot-password`, `reset-password` | Links open the app. Ribbon in its hero pose. |
 | `/auth/callback` | `auth/callback` | Deep link `rvfit://auth/callback?code=…`; an expired link goes to Log in. |
 | `/dashboard` (Today) | Today tab | Setup steps, eaten today, meals, workout, activity cards, check-in. |
 | `/week` | `week` | |

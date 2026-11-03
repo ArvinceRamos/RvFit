@@ -40,6 +40,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
+// A part of the app that always uses one palette, whatever the saved theme (the welcome and log-in screens
+// are always dark, like the web's landing and auth pages).
+export function ThemeOverride({ name, colors, children }: { name: ThemeName; colors: Palette; children: ReactNode }) {
+  const parent = useTheme();
+  const value = useMemo(() => ({ ...parent, name, colors }), [parent, name, colors]);
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
 export function useTheme(): ThemeContextValue {
   const value = useContext(ThemeContext);
   if (!value) throw new Error("useTheme must be used inside ThemeProvider");
