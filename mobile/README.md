@@ -117,3 +117,17 @@ Expo Go version on the store supports SDK 57.
 
 Set the `EXPO_PUBLIC_` values for each build (an `.env.local`, or EAS environment variables). A test
 build must never point at production.
+
+A phone APK for staging, without touching your local `.env.local` (Git Bash, in `mobile/android`):
+
+```bash
+rm -f app/build/generated/assets/react/release/index.android.bundle   # Gradle does not see env changes
+EXPO_NO_DOTENV=1 \
+EXPO_PUBLIC_SUPABASE_URL=https://<staging-ref>.supabase.co \
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<staging anon or sb_publishable key> \
+./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
+```
+
+`EXPO_PUBLIC_WEB_URL` is left out until the website with `/api/account` is deployed, so Delete account
+says it is not set up instead of failing. Check the bundle has the right address before sharing it:
+`grep -ac <staging-ref> app/build/generated/assets/react/release/index.android.bundle`.
