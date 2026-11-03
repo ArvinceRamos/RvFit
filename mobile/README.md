@@ -125,6 +125,7 @@ rm -f app/build/generated/assets/react/release/index.android.bundle   # Gradle d
 EXPO_NO_DOTENV=1 \
 EXPO_PUBLIC_SUPABASE_URL=https://<staging-ref>.supabase.co \
 EXPO_PUBLIC_SUPABASE_ANON_KEY=<staging anon or sb_publishable key> \
+EXPO_PUBLIC_GOOGLE_AUTH_ENABLED=true \
 ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
 ```
 
