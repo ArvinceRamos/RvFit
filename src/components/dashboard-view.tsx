@@ -46,7 +46,7 @@ export function DashboardView({ result, serverMinutes }: { result: DashboardResu
     );
   }
 
-  const { target, totals, planned_kcal, meals, workouts, trend, units, setup, nextUp, checkIn, review, activity } = result;
+  const { target, todayTarget, totals, planned_kcal, meals, workouts, trend, units, setup, nextUp, checkIn, review, activity } = result;
   return (
     <div className="mt-8 grid gap-[30px] md:grid-cols-2 lg:grid-cols-3">
       <SetupCard flags={setup} />
@@ -59,7 +59,7 @@ export function DashboardView({ result, serverMinutes }: { result: DashboardResu
             </p>
           )}
         </div>
-        <DayTotals plannedKcal={planned_kcal} target={target} totals={totals} />
+        <DayTotals plannedKcal={planned_kcal} target={todayTarget} totals={totals} />
       </section>
 
       <WeeklyReviewCard checkIn={checkIn} className="md:col-span-2 lg:col-span-3" review={review} targetKcal={target?.kcal ?? null} units={units} />

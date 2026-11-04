@@ -505,3 +505,23 @@ describe("deterministic", () => {
     expect(plan(overrides)).toEqual(plan(overrides));
   });
 });
+
+describe("training and rest days", () => {
+  it("plans less on rest days and keeps the week's total and protein the same", () => {
+    // 2026-10-05 is a Monday. 5 days: Wednesday and Sunday are rest days.
+    const days = plan({ days: 7, trainingDays: 5 });
+    expect(days.map((day) => day.target.day_type)).toEqual(["training", "training", "rest", "training", "training", "training", "rest"]);
+    const base = input().targets;
+    expect(days.reduce((sum, day) => sum + day.target.kcal, 0)).toBe(7 * Math.round(base.kcal));
+    const [monday, , wednesday] = days;
+    expect(wednesday.target.kcal).toBeLessThan(monday.target.kcal);
+    expect(wednesday.budget.carbs_g).toBeLessThan(monday.budget.carbs_g);
+    expect(wednesday.budget.protein_g).toBe(monday.budget.protein_g);
+    expect(wednesday.budget.fat_g).toBe(monday.budget.fat_g);
+  });
+
+  it("keeps every day at the saved target without training days", () => {
+    const days = plan({ days: 7 });
+    expect(days.every((day) => day.target.kcal === input().targets.kcal && day.target.day_type === null)).toBe(true);
+  });
+});

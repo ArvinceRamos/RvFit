@@ -11,7 +11,7 @@ export default async function WeekPage() {
   return (
     <AuthFrame showNav>
       <h1 className="page-title">Week</h1>
-      <p className="mt-3 text-sm text-muted">Monday to Sunday. This page only shows what you have saved. It does not schedule anything.</p>
+      <p className="mt-3 text-sm text-muted">Monday to Sunday. Workout days follow a suggested week; you can train on any day that suits you.</p>
       <WeekView result={result} />
     </AuthFrame>
   );

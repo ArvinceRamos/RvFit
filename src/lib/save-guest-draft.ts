@@ -1,6 +1,7 @@
 import {
   calculateDefaultMacros,
   calculateTarget,
+  lossBlocked,
   convertAndValidateInputs,
   convertWeightToKg,
   createManualTarget,
@@ -134,7 +135,9 @@ export function buildInitialGuestDraftSave(rawDraft: unknown): { ok: true; data:
     const weight = parseNumber(calculate.weight, "Weight");
     const height = calculate.units === "metric" ? parseNumber(calculate.height, "Height") : undefined;
     const feet = calculate.units === "imperial" ? parseNumber(calculate.feet, "Height") : undefined;
-    const inches = calculate.units === "imperial" ? parseNumber(calculate.inches, "Height") : undefined;
+    // A blank inches field means 0, as on the calculator and in Profile ("6 ft" with no inches).
+    const blankInches = typeof calculate.inches !== "string" || calculate.inches.trim() === "";
+    const inches = calculate.units === "imperial" ? (blankInches ? 0 : parseNumber(calculate.inches, "Height")) : undefined;
     if ([age, weight, height, feet, inches].some(isFailure) || (calculate.units !== "metric" && calculate.units !== "imperial")) {
       return { ok: false, error: "Calculator measurements are missing or invalid." };
     }
@@ -143,14 +146,17 @@ export function buildInitialGuestDraftSave(rawDraft: unknown): { ok: true; data:
     }
     const heightInput = calculate.units === "metric" ? { unit: "cm" as const, value: height as number } : { unit: "ft-in" as const, feet: feet as number, inches: inches as number };
     const weightInput = calculate.units === "metric" ? { unit: "kg" as const, value: weight as number } : { unit: "lb" as const, value: weight as number };
+    // Same rule as the calculator: under the BMI guard a saved "lose" choice falls back to Maintain, which is what the results showed.
+    const goal = calculate.goal === "lose" && lossBlocked(heightInput, weightInput) ? "maintain" : calculate.goal;
+    const pace = goal === "maintain" ? undefined : calculate.pace === "gradual" || calculate.pace === "steady" ? calculate.pace : undefined;
     const calculation = calculateTarget({
       age_years: age as number,
       height: heightInput,
       weight: weightInput,
       sex: calculate.sex,
       activity_level: calculate.activity,
-      goal: calculate.goal,
-      pace: calculate.goal === "maintain" ? undefined : calculate.pace === "gradual" || calculate.pace === "steady" ? calculate.pace : undefined,
+      goal,
+      pace,
     });
     if (!calculation.ok) return calculation;
     const validatedInputs = convertAndValidateInputs({ age_years: age as number, height: heightInput, weight: weightInput });
@@ -162,7 +168,7 @@ export function buildInitialGuestDraftSave(rawDraft: unknown): { ok: true; data:
     return { ok: true, data: {
       guestDraftId,
       profile: { age_years: validatedInputs.data.age_years, sex_formula_branch: calculation.data.formula_branch, height_cm: validatedInputs.data.height_cm, activity_level: calculate.activity, preferred_units: calculate.units, adult_confirmed_at: adultConfirmedAt },
-      target: { source: "calculated", target_kcal: calculation.data.target_kcal, goal: calculate.goal, pace: calculate.goal === "maintain" ? null : calculate.pace, protein_g: macros.protein_g, carbs_g: macros.carbs_g, fat_g: macros.fat_g, fiber_g: macros.fiber_g, formula_branch: calculation.data.formula_branch, floor_applied: calculation.data.floor_applied, config_version: calculation.data.config_version, calculation_inputs: { age_years: validatedInputs.data.age_years, height_cm: validatedInputs.data.height_cm, weight_kg: validatedInputs.data.weight_kg, activity_level: calculate.activity } },
+      target: { source: "calculated", target_kcal: calculation.data.target_kcal, goal, pace: pace ?? null, protein_g: macros.protein_g, carbs_g: macros.carbs_g, fat_g: macros.fat_g, fiber_g: macros.fiber_g, formula_branch: calculation.data.formula_branch, floor_applied: calculation.data.floor_applied, config_version: calculation.data.config_version, calculation_inputs: { age_years: validatedInputs.data.age_years, height_cm: validatedInputs.data.height_cm, weight_kg: validatedInputs.data.weight_kg, activity_level: calculate.activity } },
       initialBodyLog: { weight_kg: validatedInputs.data.weight_kg },
     }};
   }

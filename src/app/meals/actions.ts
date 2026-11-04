@@ -18,7 +18,9 @@ import { loadMeals } from "@/lib/overview-data";
 import { addDays } from "@/lib/week";
 import { logError } from "@/lib/log";
 
-export type SaveMealResult = { ok: true; mealId: string } | { ok: false; error: string };
+// warning: the meal saved but a follow-up step failed (for example the "eaten" tick).
+export type SaveMealResult = { ok: true; mealId: string; warning?: string } | { ok: false; error: string };
+const eatenWarning = "Meal saved, but it could not be ticked as eaten. Tick it on the Food page.";
 
 export async function saveMealAction(rawMeal: unknown): Promise<SaveMealResult> {
   const auth = await getActionUser();
@@ -39,6 +41,7 @@ export async function saveMealAction(rawMeal: unknown): Promise<SaveMealResult> 
     return { ok: false, error: `${meal.label} is already used on that date. Choose another label.` };
   }
   if (error || typeof mealId !== "string") {
+    if (error) logError("meals.save", error);
     return { ok: false, error: "Your meal could not be saved. Please try again." };
   }
 
@@ -47,7 +50,8 @@ export async function saveMealAction(rawMeal: unknown): Promise<SaveMealResult> 
     const { error: eatenError } = await supabase.from("meals").update({ eaten: meal.eaten }).eq("id", mealId);
     if (eatenError) {
       logError("meals.saveEaten", eatenError);
-      return { ok: false, error: "Meal saved, but it could not be ticked as eaten. Tick it on the Food page." };
+      // The meal is saved, so report success; a retry would only hit "label already used".
+      return { ok: true, mealId, warning: eatenWarning };
     }
   }
 
@@ -180,6 +184,7 @@ export async function saveMealPlanAction(rawPlan: unknown): Promise<SaveMealPlan
   // A meal saved elsewhere since the check above still hits the unique label index.
   if (error?.code === "23505") return { ok: false, error: labelClashMessage };
   if (error || !Array.isArray(mealIds) || mealIds.length !== meals.length) {
+    if (error) logError("meals.savePlan", error);
     return { ok: false, error: "Your plan could not be saved. Please try again." };
   }
 

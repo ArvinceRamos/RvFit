@@ -27,7 +27,7 @@ export function WeekView({ result }: { result: WeekResult }) {
         {days.map((day) => {
           const { weekday, short } = dayParts(day.date);
           const isToday = day.date === today;
-          const over = target !== null && day.totals.kcal > target.kcal;
+          const over = day.target_kcal !== null && day.totals.kcal > day.target_kcal;
           return (
             <li
               aria-current={isToday ? "date" : undefined}
@@ -53,7 +53,7 @@ export function WeekView({ result }: { result: WeekResult }) {
                   <>
                     <p>
                       <span className="text-base font-bold">{kcal(day.totals.kcal)} kcal</span>
-                      <span className="text-muted"> eaten{target ? ` of ${kcal(target.kcal)} kcal` : ""}</span>
+                      <span className="text-muted"> eaten{day.target_kcal !== null ? ` of ${kcal(day.target_kcal)} kcal` : ""}</span>
                       <span className="text-muted">
                         {" · "}
                         {day.eaten_count === day.meal_count
@@ -61,10 +61,16 @@ export function WeekView({ result }: { result: WeekResult }) {
                           : `${day.eaten_count} of ${day.meal_count} eaten`}
                       </span>
                     </p>
-                    {target && <Bar over={over} percent={progressPercent(day.totals.kcal, target.kcal)} />}
+                    {day.target_kcal !== null && <Bar over={over} percent={progressPercent(day.totals.kcal, day.target_kcal)} />}
                   </>
                 )}
               </div>
+
+              {day.suggested && (
+                <p className="mt-1 text-sm text-muted">
+                  {day.suggested.kind === "training" ? <>Suggested: <span className="font-semibold text-ink">{day.suggested.name}</span></> : "Rest day"}
+                </p>
+              )}
 
               <div className="mt-3 text-sm">
                 {day.workouts.length === 0 ? (

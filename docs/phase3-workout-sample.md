@@ -2,6 +2,8 @@
 
 **PLACEHOLDER CONTENT. Not reviewed by a qualified person. Do not present it as reviewed.**
 
+> **2026-11-04:** the plans below are out of date (no incline press, old 5-day order). The current sample is `docs/workout-sample-2026-11-04.md`.
+
 This is the review gate for P3-2 (updated after your feedback on bodyweight equipment and defaults). It was generated from the real content files in `src/lib/workouts/`, so it shows exactly what the app will resolve.
 
 How to read it:

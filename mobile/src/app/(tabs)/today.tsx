@@ -70,7 +70,7 @@ export default function Today() {
     );
   }
 
-  const { target, totals, planned_kcal, meals, workouts, trend, units, setup, nextUp, checkIn, review, activity } = screen.data;
+  const { target, todayTarget, totals, planned_kcal, meals, workouts, trend, units, setup, nextUp, checkIn, review, activity } = screen.data;
   const goalLabel = target ? goalPaceLabel(target.goal, target.pace) : null;
 
   return (
@@ -86,7 +86,7 @@ export default function Today() {
             <CardTitle icon="calories">Eaten today</CardTitle>
             {goalLabel ? <Txt tone="muted" variant="small">Goal: <Txt variant="small" weight="semibold">{goalLabel}</Txt></Txt> : null}
           </Row>
-          <DayTotals plannedKcal={planned_kcal} target={target} totals={totals} />
+          <DayTotals plannedKcal={planned_kcal} target={todayTarget} totals={totals} />
         </Stack>
       </Card>
 

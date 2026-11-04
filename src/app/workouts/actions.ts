@@ -11,6 +11,7 @@ import { pickLastSessions, type EarlierLog, type LastSession } from "@/lib/worko
 import { orderSwaps, validateResetRequest, validateSwapRequest } from "@/lib/workouts/swaps";
 import { templateKey } from "@/lib/workouts/templates";
 import { logError } from "@/lib/log";
+import { requestClock } from "@/lib/request-clock";
 
 export type SwapActionResult = { ok: true } | { ok: false; error: string };
 export type DeleteWorkoutResult = { ok: true } | { ok: false; error: string };
@@ -147,7 +148,8 @@ export async function saveWorkoutLogAction(rawLog: unknown): Promise<SaveWorkout
   const units = resolveUnits((rawLog as { units?: unknown }).units, rules.units);
   if (!units.ok) return units;
 
-  const validated = validateWorkoutLog(rawLog, { ...rules, units: units.data, savedExercises });
+  const { today } = await requestClock();
+  const validated = validateWorkoutLog(rawLog, { ...rules, units: units.data, savedExercises, today });
   if (!validated.ok) return validated;
   const log = validated.data;
 
@@ -161,7 +163,10 @@ export async function saveWorkoutLogAction(rawLog: unknown): Promise<SaveWorkout
     // Null when the field was blank; on an edit it replaces the saved duration, so blank clears it.
     p_duration_min: log.duration_min,
   });
-  if (error || typeof savedId !== "string") return { ok: false, error: saveError };
+  if (error || typeof savedId !== "string") {
+    if (error) logError("workouts.save", error);
+    return { ok: false, error: saveError };
+  }
   return { ok: true, logId: savedId };
 }
 

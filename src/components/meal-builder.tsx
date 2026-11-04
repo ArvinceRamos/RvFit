@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { loadDayTotalsAction, saveMealAction } from "@/app/meals/actions";
 import type { DayTotalsResult } from "@/lib/meal-days-data";
+import { targetForDate } from "@/lib/calc/day-targets";
 import { FoodAutocomplete } from "@/components/food-autocomplete";
 import { SuggestionsPanel, type SuggestionsView } from "@/components/suggestions-panel";
 import { stateLabels, type FoodRole } from "@/lib/food-catalog";
@@ -151,8 +152,12 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
   });
 
   // Saved meals on the chosen date (not counting this one), fetched again when the date changes.
-  const target = suggestionContext.status === "ready" ? suggestionContext.target : null;
   const validDate = isCalendarDate(date);
+  // Suggestions use the chosen date's share of the target: less on a rest day, more on a training day.
+  const savedTarget = suggestionContext.status === "ready" ? suggestionContext.target : null;
+  const target = savedTarget && suggestionContext.status === "ready"
+    ? targetForDate(savedTarget, validDate ? date : localToday(), suggestionContext.trainingDays)
+    : null;
   const futureDate = validDate && date > localToday();
   const eaten = mealFormEaten(eatenChoice, date, localToday());
   const [day, setDay] = useState<{ date: string; result: DayTotalsResult }>();
@@ -260,7 +265,7 @@ export function MealBuilder({ foods, initial, recentFoodIds = [], suggestionCont
     }
     // The action refreshes an edited meal's page; a new meal's form starts again.
     if (initial.mealId === null) resetForm();
-    setMessage(savedMessage);
+    setMessage(result.warning ?? savedMessage);
   }
 
   return (

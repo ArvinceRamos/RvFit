@@ -8,6 +8,7 @@ import { weekStart } from "@/lib/week";
 import { choiceLabel, formatCalendarDate, planSummary, restText, schemeText } from "@/lib/workouts/format";
 import { orderSwaps } from "@/lib/workouts/swaps";
 import { nextWorkout } from "@/lib/workouts/next-up";
+import { scheduleSummary, weekdayByDayKey } from "@/lib/workouts/schedule";
 import { applySwaps, resolveTemplate, resolveTemplateByKey, swapOptions } from "@/lib/workouts/templates";
 
 const recentWorkoutLimit = 10;
@@ -53,6 +54,8 @@ export default async function WorkoutsPage({ searchParams }: PageProps<"/workout
         weekLogs.filter((log) => log.template_key === defaultTemplate.key).map((log) => log.day_key),
       )
     : null;
+  const suggestedWeek = template ? scheduleSummary(template.days) : null;
+  const weekdayByDay = weekdayByDayKey(template?.days ?? []);
   const defaultExerciseBySlot = new Map(
     defaultTemplate?.days.flatMap((day) => day.slots.map((slot) => [slot.key, slot.exercise.key] as const)),
   );
@@ -81,11 +84,13 @@ export default async function WorkoutsPage({ searchParams }: PageProps<"/workout
             {nextUp && <>{nextUp.done} of {nextUp.planned} done this week ·{" "}</>}
             <Link className="font-semibold text-ink underline" href="/preferences">Change plan</Link>
           </p>
+          {suggestedWeek && <p className="mt-1 text-sm text-muted">{suggestedWeek}</p>}
           <div className="mt-8 grid gap-[30px] md:grid-cols-2 lg:grid-cols-3">
             {template.days.map((day) => (
               <section className="card" key={day.key}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h2 className="section-title flex items-center gap-2">
+                    {weekdayByDay.has(day.key) && <span className="text-sm font-normal text-muted">{weekdayByDay.get(day.key)}</span>}
                     {day.name}
                     {nextUp?.status === "next" && nextUp.dayKey === day.key && (
                       <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-on-accent">Next up</span>

@@ -70,9 +70,18 @@ export const exercises: readonly Exercise[] = [
   make("horizontal_push", db, "dumbbell-squeeze-press", "Dumbbell squeeze press", { cue: "Lie on the floor and press the dumbbells together as you push up." }),
   make("horizontal_push", db, "dumbbell-grip-push-up", "Dumbbell-grip push-up", { loaded: false, cue: "Hands on dumbbells for a deeper range. Keep them from rolling." }),
   make("horizontal_push", bw, "push-up", "Push-up", { cue: "Keep your body in a straight line." }),
-  make("horizontal_push", bw, "incline-push-up", "Incline push-up", { cue: "Hands on a sturdy table or chair." }),
-  make("horizontal_push", bw, "decline-push-up", "Decline push-up", { cue: "Feet on a sturdy chair." }),
+  make("horizontal_push", bw, "incline-push-up", "Incline push-up (hands up, easier)", { cue: "Hands on a sturdy table or chair." }),
   make("horizontal_push", bw, "knee-push-up", "Knee push-up", { cue: "Keep a straight line from knees to head." }),
+
+  // incline_push (upper chest). The dumbbell tier has no bench, so it uses the bodyweight options.
+  make("incline_push", gym, "incline-dumbbell-press", "Incline dumbbell press", { cue: "Set the bench to a low incline, about 30 degrees." }),
+  make("incline_push", gym, "incline-machine-press", "Incline machine press", { cue: "Press up and forward without shrugging." }),
+  make("incline_push", gym, "incline-barbell-press", "Incline barbell press", { cue: "Low incline bench. Lower the bar to your upper chest." }),
+  make("incline_push", gym, "incline-smith-machine-press", "Incline Smith machine press", { cue: "Low incline bench. Lower the bar to your upper chest." }),
+  make("incline_push", gym, "low-to-high-cable-fly", "Low-to-high cable fly", { cue: "Sweep your hands up and together to chin height." }),
+  make("incline_push", bw, "low-decline-push-up", "Low decline push-up (feet on a step)", { cue: "Feet on a low step or stair. Keep your body straight." }),
+  // Moved from horizontal_push on 2026-11-04; the key is unchanged.
+  make("incline_push", bw, "decline-push-up", "Decline push-up (feet up)", { cue: "Feet on a sturdy chair. Keep your body straight." }),
 
   // vertical_push
   make("vertical_push", gym, "machine-shoulder-press", "Machine shoulder press", { cue: "Press up without arching your back." }),
@@ -152,6 +161,11 @@ const equipmentRank: Record<Equipment, number> = { bodyweight: 0, dumbbell_only:
 
 export function equipmentAllows(tier: Equipment, required: Equipment): boolean {
   return equipmentRank[required] <= equipmentRank[tier];
+}
+
+/** A loaded dumbbell exercise, so its weight is per dumbbell and steps follow common dumbbell sizes. */
+export function isDumbbellExercise(exercise: Pick<Exercise, "key" | "loaded">): boolean {
+  return exercise.loaded && (exercise.key.includes("dumbbell") || exercise.key === "goblet-squat");
 }
 
 const byKey = new Map(exercises.map((exercise) => [exercise.key, exercise]));

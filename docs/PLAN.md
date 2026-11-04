@@ -128,6 +128,11 @@ Allow macro editing. Reject negative macro grams and protein above the 35% cap. 
 > - Audience: personal/family use first (a private test). A public launch is decided later. The privacy and terms pages say this and are marked as drafts until reviewed. The contact email stays the owner's for now and must change before any public launch.
 > - Calorie targets are append-only history: signed-in users can read and add targets, not change or delete them (migration 20261024010000_append_only_targets).
 
+> **Note, 2026-11-04 (user decision, RV jobs, docs/SPLITS-AND-CALORIES.md).**
+> - Rest-day calories: the meal planner, Today and Meals spread the saved target over a suggested Mon–Sun schedule. Rest days get a little less and training days a little more; protein and fat stay the same, and the weekly total equals 7 × the saved target. The saved target row never changes, so "the app never changes targets automatically" still holds.
+> - Training days: beginners may pick 5–6 days (as the code and database already allow; review-sheet row 4.5). They keep the existing Preferences warning "Risk: a beginner on 5–6 days a week has little recovery time."
+> - Splits gain an incline press (new movement pattern `incline_push`).
+
 
 
 ## Stage 0 — Prepare content and decisions

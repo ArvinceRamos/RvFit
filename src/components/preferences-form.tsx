@@ -136,6 +136,9 @@ export function PreferencesForm({ initial, isSaved, offeredTags, foods }: {
           {values.equipment === "bodyweight" && (
             <span className="text-sm font-normal text-muted">Needs a pull-up bar and a sturdy chair or table.</span>
           )}
+          {values.equipment === "dumbbell_only" && (
+            <span className="text-sm font-normal text-muted">Needs dumbbells, a pull-up bar, and a sturdy chair or table.</span>
+          )}
         </label>
         <label className="grid gap-1 text-sm font-semibold">
           Training days per week

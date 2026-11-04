@@ -5,6 +5,7 @@ export const movementPatterns = [
   "hinge",
   "single_leg",
   "horizontal_push",
+  "incline_push",
   "vertical_push",
   "horizontal_pull",
   "vertical_pull",

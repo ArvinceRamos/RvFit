@@ -12,7 +12,8 @@ import { currentUserId, type ActionResult } from "./session";
 
 // Mobile versions of src/app/meals/actions.ts. Same checks, same database functions, same messages.
 
-export type SaveMealResult = { ok: true; mealId: string } | { ok: false; error: string };
+// warning: the meal saved but the "eaten" tick failed (web: saveMealAction).
+export type SaveMealResult = { ok: true; mealId: string; warning?: string } | { ok: false; error: string };
 
 export async function saveMeal(rawMeal: unknown): Promise<SaveMealResult> {
   if (!(await currentUserId())) return { ok: false, error: "You must be signed in to save a meal." };
@@ -31,7 +32,8 @@ export async function saveMeal(rawMeal: unknown): Promise<SaveMealResult> {
     const { error: eatenError } = await supabase.from("meals").update({ eaten: meal.eaten }).eq("id", mealId);
     if (eatenError) {
       logError("meals.saveEaten", eatenError);
-      return { ok: false, error: "Meal saved, but it could not be ticked as eaten. Tick it on the Food page." };
+      // The meal is saved, so report success; a retry would only hit "label already used".
+      return { ok: true, mealId, warning: "Meal saved, but it could not be ticked as eaten. Tick it on the Food page." };
     }
   }
   return { ok: true, mealId };

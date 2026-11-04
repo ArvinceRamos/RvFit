@@ -50,7 +50,7 @@ export function WeeklyReviewCard({
         />
         <Tile
           label="Average intake"
-          note={targetKcal !== null ? `On logged days · target ${formatKcal(targetKcal)}` : "On logged days"}
+          note={targetKcal !== null ? `On logged days before today · target ${formatKcal(targetKcal)}` : "On logged days before today"}
           value={review.averageKcal !== null ? formatKcal(review.averageKcal) : "—"}
         />
         <Tile

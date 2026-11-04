@@ -42,6 +42,8 @@ export function weeklyReview(input: WeeklyReviewInput): WeeklyReview {
     kcalByDay.set(meal.meal_date, (kcalByDay.get(meal.meal_date) ?? 0) + meal.kcal);
   }
   const dayTotals = [...kcalByDay.values()];
+  // Today is usually only partly logged, so the average uses finished days only.
+  const finishedDays = [...kcalByDay.entries()].filter(([date]) => date !== input.today).map(([, kcal]) => kcal);
 
   const thisWeek = weightTrend(input.weighIns, input.now);
   const weekBefore = weightTrend(input.weighIns, new Date(input.now.getTime() - calculationConfig.progress.trend_window_days * 24 * 60 * 60 * 1000));
@@ -50,7 +52,7 @@ export function weeklyReview(input: WeeklyReviewInput): WeeklyReview {
     daysLogged: dayTotals.length,
     workouts: input.workoutDates.filter(inWindow).length,
     plannedWorkouts: input.plannedWorkouts,
-    averageKcal: dayTotals.length > 0 ? dayTotals.reduce((sum, kcal) => sum + kcal, 0) / dayTotals.length : null,
+    averageKcal: finishedDays.length > 0 ? finishedDays.reduce((sum, kcal) => sum + kcal, 0) / finishedDays.length : null,
     weightChangeKg: thisWeek.status === "ok" && weekBefore.status === "ok" ? thisWeek.average_kg - weekBefore.average_kg : null,
   };
 }

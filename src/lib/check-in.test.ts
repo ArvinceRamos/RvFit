@@ -118,3 +118,26 @@ describe("targetCheckIn", () => {
     expect(targetCheckIn(input({ weighIns: old }))).toMatchObject({ status: "on_track" });
   });
 });
+
+describe("underweight guard (Lose goal)", () => {
+  // 180 cm: BMI 18.5 is 59.94 kg. Losing slower than planned would normally suggest eating less.
+  const slowLoss = daily(60, -0.1);
+
+  it("never suggests eating less when the latest weigh-in gives a BMI under 18.5", () => {
+    const result = targetCheckIn(input({ heightCm: 180, weighIns: slowLoss }));
+    expect(result.status).toBe("underweight");
+  });
+
+  it("checks the guard even when the trend is on track", () => {
+    expect(targetCheckIn(input({ heightCm: 180, weighIns: daily(60, -0.5) })).status).toBe("underweight");
+  });
+
+  it("still suggests a change above the guard or without a height", () => {
+    expect(targetCheckIn(input({ heightCm: 170, weighIns: daily(90, -0.1) })).status).toBe("adjust");
+    expect(targetCheckIn(input({ heightCm: null, weighIns: slowLoss })).status).toBe("adjust");
+  });
+
+  it("does not apply to Maintain or Gain", () => {
+    expect(targetCheckIn(input({ goal: "gain", pace: "gradual", heightCm: 180, weighIns: daily(55, 0) })).status).not.toBe("underweight");
+  });
+});

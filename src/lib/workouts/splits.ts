@@ -48,7 +48,7 @@ export const splits: readonly Split[] = [
       ]),
       day("b", "Full body B", [
         ["hinge", 0, beginnerMain, heavy],
-        ["horizontal_push", 1, beginnerLight, moderate],
+        ["incline_push", 0, beginnerLight, moderate],
         ["vertical_pull", 0, beginnerMain, moderate],
         ["single_leg", 0, beginnerLight, moderate],
         ["core", 1, beginnerLight, light],
@@ -81,7 +81,7 @@ export const splits: readonly Split[] = [
       day("c", "Full body C", [
         ["single_leg", 1, beginnerMain, moderate],
         ["hinge", 1, beginnerLight, moderate],
-        ["horizontal_push", 1, beginnerMain, moderate],
+        ["incline_push", 0, beginnerMain, moderate],
         ["horizontal_pull", 1, beginnerMain, moderate],
         ["core", 2, beginnerLight, light],
         ["side_delt", 1, null, light],
@@ -110,7 +110,7 @@ export const splits: readonly Split[] = [
         ["core", 1, null, light],
       ]),
       day("upper-b", "Upper B", [
-        ["horizontal_push", 1, beginnerMain, moderate],
+        ["incline_push", 0, beginnerMain, moderate],
         ["horizontal_pull", 1, beginnerMain, moderate],
         ["vertical_push", 1, beginnerLight, moderate],
         ["vertical_pull", 1, beginnerLight, moderate],
@@ -131,28 +131,8 @@ export const splits: readonly Split[] = [
   {
     key: "ppl-upper-lower",
     trainingDays: 5,
+    // Order follows the suggested week: Upper, Lower, rest, Push, Pull, Legs, rest (docs/SPLITS-AND-CALORIES.md).
     days: [
-      day("push", "Push", [
-        ["horizontal_push", 0, beginnerMain, heavy],
-        ["vertical_push", 0, beginnerMain, heavy],
-        ["horizontal_push", 1, beginnerLight, moderate],
-        ["side_delt", 0, null, light],
-        ["triceps", 0, beginnerLight, light],
-      ]),
-      day("pull", "Pull", [
-        ["vertical_pull", 0, beginnerMain, heavy],
-        ["horizontal_pull", 0, beginnerMain, heavy],
-        ["horizontal_pull", 1, beginnerLight, moderate],
-        ["biceps", 0, beginnerLight, light],
-        ["core", 0, beginnerLight, light],
-      ]),
-      day("legs", "Legs", [
-        ["squat", 0, beginnerMain, heavy],
-        ["hinge", 0, beginnerMain, heavy],
-        ["single_leg", 0, beginnerLight, moderate],
-        ["calves", 0, null, light],
-        ["core", 1, beginnerLight, light],
-      ]),
       day("upper", "Upper", [
         ["horizontal_push", 2, beginnerMain, moderate],
         ["horizontal_pull", 2, beginnerMain, moderate],
@@ -170,6 +150,27 @@ export const splits: readonly Split[] = [
         ["core", 2, beginnerLight, light],
         ["core", 3, null, light],
       ]),
+      day("push", "Push", [
+        ["horizontal_push", 0, beginnerMain, heavy],
+        ["vertical_push", 0, beginnerMain, heavy],
+        ["incline_push", 0, beginnerLight, moderate],
+        ["side_delt", 0, null, light],
+        ["triceps", 0, beginnerLight, light],
+      ]),
+      day("pull", "Pull", [
+        ["vertical_pull", 0, beginnerMain, heavy],
+        ["horizontal_pull", 0, beginnerMain, heavy],
+        ["horizontal_pull", 1, beginnerLight, moderate],
+        ["biceps", 0, beginnerLight, light],
+        ["core", 0, beginnerLight, light],
+      ]),
+      day("legs", "Legs", [
+        ["squat", 0, beginnerMain, heavy],
+        ["hinge", 0, beginnerMain, heavy],
+        ["single_leg", 0, beginnerLight, moderate],
+        ["calves", 0, null, light],
+        ["core", 1, beginnerLight, light],
+      ]),
     ],
   },
   {
@@ -179,7 +180,7 @@ export const splits: readonly Split[] = [
       day("push-a", "Push A", [
         ["horizontal_push", 0, beginnerMain, heavy],
         ["vertical_push", 0, beginnerMain, heavy],
-        ["horizontal_push", 1, beginnerLight, moderate],
+        ["incline_push", 0, beginnerLight, moderate],
         ["side_delt", 0, null, light],
         ["triceps", 0, beginnerLight, light],
       ]),
@@ -198,8 +199,8 @@ export const splits: readonly Split[] = [
         ["core", 1, beginnerLight, light],
       ]),
       day("push-b", "Push B", [
+        ["incline_push", 1, beginnerMain, moderate],
         ["vertical_push", 1, beginnerMain, moderate],
-        ["horizontal_push", 2, beginnerMain, moderate],
         ["horizontal_push", 3, beginnerLight, light],
         ["side_delt", 1, null, light],
         ["triceps", 1, beginnerLight, light],

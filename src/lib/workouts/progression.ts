@@ -73,11 +73,14 @@ function roundTo(value: number, step: number): number {
 // The next weight, in the user's units. The base is the lowest weight across the planned sets,
 // so an extra heavy (or light) set never drives the suggestion. Light loads use a smaller step,
 // and the result is rounded to a weight people can actually load (0.5 kg or 2.5 lb).
-function nextWeight(baseKg: number, lowerBody: boolean, units: PreferredUnits): number {
-  const size = baseKg < limits.small_load_kg ? "small" : lowerBody ? "lower" : "upper";
+// Dumbbells use their own step and rounding, because most gyms only have dumbbells in 2 kg or 5 lb sizes.
+function nextWeight(baseKg: number, lowerBody: boolean, units: PreferredUnits, dumbbell = false): number {
+  const size = dumbbell ? "dumbbell" : baseKg < limits.small_load_kg ? "small" : lowerBody ? "lower" : "upper";
   const base = units === "metric" ? baseKg : baseKg / calculationConfig.unit_conversions.pounds_to_kilograms;
   const step = units === "metric" ? limits.weight_step_kg[size] : limits.weight_step_lb[size];
-  const rounding = units === "metric" ? limits.weight_rounding.kg : limits.weight_rounding.lb;
+  const rounding = dumbbell
+    ? units === "metric" ? limits.weight_rounding.dumbbell_kg : limits.weight_rounding.dumbbell_lb
+    : units === "metric" ? limits.weight_rounding.kg : limits.weight_rounding.lb;
   let target = roundTo(base + step, rounding);
   if (target <= base) target += rounding;
   return Math.round(target * 10) / 10;
@@ -92,7 +95,7 @@ const harderOption = "Optional: try a harder exercise with Swap on the Workouts 
  */
 export function progressionPrompt(
   last: LastSession,
-  choice: Pick<LogChoice, "measure" | "loaded" | "pattern" | "topOfRange">,
+  choice: Pick<LogChoice, "measure" | "loaded" | "pattern" | "topOfRange"> & { perDumbbell?: boolean },
   plannedSets: number,
   units: PreferredUnits,
 ): string | null {
@@ -105,8 +108,9 @@ export function progressionPrompt(
     // Every planned set needs a weight, or there is nothing safe to build on.
     if (planned.some((set) => set.weightKg === null || set.weightKg <= 0)) return null;
     const base = Math.min(...planned.map((set) => set.weightKg as number));
-    const target = nextWeight(base, lowerBodyPatterns.includes(choice.pattern), units);
-    return `${earned} Optional: try ${target} ${weightUnit(units)} and start again at the bottom of the rep range.`;
+    const target = nextWeight(base, lowerBodyPatterns.includes(choice.pattern), units, choice.perDumbbell);
+    const each = choice.perDumbbell ? " per dumbbell" : "";
+    return `${earned} Optional: try ${target} ${weightUnit(units)}${each} and start again at the bottom of the rep range.`;
   }
   const lowest = Math.min(...planned.map(amountOf));
   if (choice.measure === "seconds") {

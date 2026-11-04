@@ -20,6 +20,7 @@ import { weekStart } from "@/lib/week";
 import { reviewStart, weeklyReview, type WeeklyReview } from "@/lib/weekly-review";
 import { nextWorkout, type NextUp } from "@/lib/workouts/next-up";
 import { resolveTemplate } from "@/lib/workouts/templates";
+import { targetForDate, type DayTarget } from "@/lib/calc/day-targets";
 import type { CheckIn } from "@/lib/check-in";
 import { loadCheckInData } from "@/lib/check-in-data";
 import type { createClient } from "@/lib/supabase/server";
@@ -32,6 +33,8 @@ export type DashboardResult =
   | {
       ok: true;
       target: SavedTarget | null;
+      // Today's share of the saved target: less on a rest day, more on a training day (src/lib/calc/day-targets.ts).
+      todayTarget: DayTarget | null;
       totals: MealTotals;
       // Planner meals saved for today but not ticked as eaten yet.
       planned_kcal: number;
@@ -103,6 +106,7 @@ export async function loadDashboard(supabase: Awaited<ReturnType<typeof createCl
   return {
     ok: true,
     target,
+    todayTarget: target ? targetForDate(target, today, template ? preferences!.training_days : null) : null,
     // Only meals ticked as eaten count. Every meal of the day is still listed.
     totals,
     planned_kcal: planned.kcal,

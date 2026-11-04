@@ -133,7 +133,7 @@ export function WeeklyReviewCard({ review, targetKcal, units, checkIn }: { revie
       value: review.plannedWorkouts !== null ? `${review.workouts} of ${review.plannedWorkouts}` : String(review.workouts),
       note: review.plannedWorkouts !== null ? "Against your training days a week" : <TextLink onPress={() => router.push("/preferences")}>Set training days</TextLink>,
     },
-    { label: "Average intake", value: review.averageKcal !== null ? formatKcal(review.averageKcal) : "—", note: targetKcal !== null ? `On logged days · target ${formatKcal(targetKcal)}` : "On logged days" },
+    { label: "Average intake", value: review.averageKcal !== null ? formatKcal(review.averageKcal) : "—", note: targetKcal !== null ? `On logged days before today · target ${formatKcal(targetKcal)}` : "On logged days before today" },
     {
       label: "Weekly average weight",
       value: rate === null ? "—" : /^[+−]/.test(rate) ? rate : "No change",

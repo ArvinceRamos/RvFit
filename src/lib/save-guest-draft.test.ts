@@ -52,6 +52,26 @@ describe("saveInitialGuestDraft", () => {
     }));
   });
 
+  it("treats blank inches as 0 for an imperial draft", async () => {
+    const { client, rpc } = clientWith("saved");
+    const draft = calculatedDraft();
+    Object.assign(draft.setup_inputs.calculate, { units: "imperial", feet: "6", inches: "", height: "", weight: "176" });
+    await expect(saveInitialGuestDraft(client, userId, draft)).resolves.toEqual({ ok: true, status: "saved" });
+    expect(rpc).toHaveBeenCalledWith("save_initial_guest_draft", expect.objectContaining({
+      p_profile: expect.objectContaining({ height_cm: 182.88, preferred_units: "imperial" }),
+    }));
+  });
+
+  it("saves Maintain when a Lose choice is under the BMI guard, as the results showed", async () => {
+    const { client, rpc } = clientWith("saved");
+    const draft = calculatedDraft();
+    Object.assign(draft.setup_inputs.calculate, { goal: "lose", pace: "steady", height: "180", weight: "55" });
+    await expect(saveInitialGuestDraft(client, userId, draft)).resolves.toEqual({ ok: true, status: "saved" });
+    expect(rpc).toHaveBeenCalledWith("save_initial_guest_draft", expect.objectContaining({
+      p_target: expect.objectContaining({ goal: "maintain", pace: null }),
+    }));
+  });
+
   it("uses the BMI-30 protein weight for default macros, like the calculator", async () => {
     const { client, rpc } = clientWith("saved");
     const draft = calculatedDraft();

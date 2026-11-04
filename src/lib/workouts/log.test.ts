@@ -137,13 +137,13 @@ describe("validateWorkoutLog", () => {
     expect(
       validateWorkoutLog(log([entry(squat.key, "leg-press", [["10", ""]]), entry(squat.key, "leg-press", [["10", ""]])]), metric),
     ).toMatchObject({ ok: false });
-    // Two push slots on day C of a 5-day plan cannot both log the same exercise.
+    // Two core slots on the Lower day of a 5-day plan cannot both log the same exercise.
     const five = planForLog("ppl-upper-lower.intermediate.gym", [])!;
-    const [first, second] = five.days[0].slots.filter((slot) => slot.pattern === "horizontal_push");
+    const [first, second] = five.days[1].slots.filter((slot) => slot.pattern === "core");
     const shared = swapOptions(five, first.key).find((item) => swapOptions(five, second.key).some((other) => other.key === item.key))!;
     expect(
       validateWorkoutLog(
-        { logId: null, templateKey: five.key, dayKey: "push", date: "2026-10-06", entries: [entry(first.key, shared.key, [["8", ""]]), entry(second.key, shared.key, [["8", ""]])] },
+        { logId: null, templateKey: five.key, dayKey: "lower", date: "2026-10-06", entries: [entry(first.key, shared.key, [["8", ""]]), entry(second.key, shared.key, [["8", ""]])] },
         metric,
       ),
     ).toMatchObject({ ok: false, error: `${shared.name} is logged twice. Choose a different exercise.` });
@@ -222,5 +222,17 @@ describe("validateWorkoutLog duration", () => {
     expect(validateWorkoutLog(log(sets, { duration: "0" }), metric)).toEqual({ ok: false, error: "Duration must be between 1 and 600 minutes." });
     expect(validateWorkoutLog(log(sets, { duration: "601" }), metric)).toEqual({ ok: false, error: "Duration must be between 1 and 600 minutes." });
     expect(validateWorkoutLog(log(sets, { duration: 45 }), metric)).toEqual({ ok: false, error: "Workout details are invalid." });
+  });
+});
+
+describe("future workout dates (RV-6)", () => {
+  it("refuses dates after tomorrow when today is known", () => {
+    const plan = planForLog("full-body-ab.beginner.gym", [])!;
+    const day = plan.days[0];
+    const base = { logId: null, templateKey: plan.key, dayKey: day.key, entries: [] };
+    const rules = { units: "metric" as const, swaps: [], savedExercises: new Map<string, string>(), today: "2026-11-04" };
+    expect(validateWorkoutLog({ ...base, date: "2026-11-06" }, rules)).toEqual({ ok: false, error: "Workout date cannot be in the future." });
+    expect(validateWorkoutLog({ ...base, date: "2026-11-05" }, rules)).not.toEqual({ ok: false, error: "Workout date cannot be in the future." });
+    expect(validateWorkoutLog({ ...base, date: "2026-11-04" }, rules)).not.toEqual({ ok: false, error: "Workout date cannot be in the future." });
   });
 });

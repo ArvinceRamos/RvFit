@@ -6,6 +6,10 @@ import type { MealTotals } from "@/lib/meal";
 import type { DayTotalsResult } from "@/lib/meal-days-data";
 import { describeRemaining, formatGrams, progressPercent } from "@/lib/remaining-format";
 import { remainingTargets, type DailyTargets } from "@/lib/suggestions";
+import { dayTypeLabel, type DayType } from "@/lib/calc/day-targets";
+
+// A target may carry the day's type (training or rest) from src/lib/calc/day-targets.ts.
+type ShownTarget = DailyTargets & { day_type?: DayType | null };
 
 export function localToday(): string {
   const now = new Date();
@@ -31,7 +35,7 @@ export function Bar({ percent, over }: { percent: number; over: boolean }) {
 
 // Eaten, target, and left for one day. With no saved target it links to set one.
 // plannedKcal: meals saved for the day but not ticked as eaten yet. They are not in the totals.
-export function DayTotals({ target, totals, plannedKcal = 0 }: { target: DailyTargets | null; totals: MealTotals; plannedKcal?: number }) {
+export function DayTotals({ target, totals, plannedKcal = 0 }: { target: ShownTarget | null; totals: MealTotals; plannedKcal?: number }) {
   if (!target) {
     return (
       <p className="mt-3 text-sm text-muted">
@@ -44,7 +48,7 @@ export function DayTotals({ target, totals, plannedKcal = 0 }: { target: DailyTa
 
 // The numbers count to their new value when a meal is ticked (useAnimatedNumber). The bars slide by CSS.
 // "Over" is decided from the real totals, so a colour never flickers while a number is counting.
-function DayTotalsBody({ target, totals, plannedKcal }: { target: DailyTargets; totals: MealTotals; plannedKcal: number }) {
+function DayTotalsBody({ target, totals, plannedKcal }: { target: ShownTarget; totals: MealTotals; plannedKcal: number }) {
   const left = remainingTargets(target, totals);
   const kcalShown = useAnimatedNumber(totals.kcal);
   const kcalLeftShown = target.kcal - kcalShown;
@@ -65,7 +69,7 @@ function DayTotalsBody({ target, totals, plannedKcal }: { target: DailyTargets; 
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <p>
             <span className="metric">{number(kcalShown)}</span>
-            <span className="ml-2 text-base text-muted">of {number(target.kcal)} kcal</span>
+            <span className="ml-2 text-base text-muted">of {number(target.kcal)} kcal{target.day_type ? ` · ${dayTypeLabel[target.day_type]}` : ""}</span>
           </p>
           <p className={`text-base font-semibold ${caloriesOver ? "text-warn" : "text-ink"}`}>
             {describeRemaining(kcalLeftShown, "kcal")}
@@ -109,7 +113,7 @@ function MacroTile({ name, eaten, goal, left, primary = false }: { name: string;
 const emptyTotals: MealTotals = { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, fiber_incomplete: false };
 
 // Today's eaten, target, and left, read on the server for the user's today (see requestClock).
-export function TodaySummary({ target, totals }: { target: DailyTargets | null; totals: DayTotalsResult }) {
+export function TodaySummary({ target, totals }: { target: ShownTarget | null; totals: DayTotalsResult }) {
   return (
     <section className="card mt-6">
       <h2 className="section-title">Today</h2>

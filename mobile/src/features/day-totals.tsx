@@ -3,6 +3,7 @@ import { View } from "react-native";
 import type { MealTotals } from "@/lib/meal";
 import { remainingTargets } from "@/lib/suggestions";
 import type { DailyTargets } from "@/lib/suggestions";
+import { dayTypeLabel, type DayType } from "@/lib/calc/day-targets";
 import { describeRemaining, formatGrams, progressPercent } from "@/lib/remaining-format";
 import { ProgressBar, Row, Stack, TextLink, Tile, Txt } from "~/components/ui";
 import { useTheme } from "~/theme/theme";
@@ -11,7 +12,7 @@ const number = (value: number) => (Math.round(value) || 0).toLocaleString("en-US
 
 // Eaten, target, and left for one day (web: DayTotals in src/components/today-summary.tsx).
 // plannedKcal: meals saved for the day but not ticked as eaten yet. They are not in the totals.
-export function DayTotals({ target, totals, plannedKcal = 0 }: { target: DailyTargets | null; totals: MealTotals; plannedKcal?: number }) {
+export function DayTotals({ target, totals, plannedKcal = 0 }: { target: (DailyTargets & { day_type?: DayType | null }) | null; totals: MealTotals; plannedKcal?: number }) {
   const { colors } = useTheme();
   if (!target) {
     return (
@@ -37,7 +38,7 @@ export function DayTotals({ target, totals, plannedKcal = 0 }: { target: DailyTa
         <Row style={{ justifyContent: "space-between", alignItems: "baseline" }} wrap>
           <Txt accessibilityRole="summary">
             <Txt variant="metric">{number(totals.kcal)}</Txt>
-            <Txt tone="muted">  of {number(target.kcal)} kcal</Txt>
+            <Txt tone="muted">  of {number(target.kcal)} kcal{target.day_type ? ` · ${dayTypeLabel[target.day_type]}` : ""}</Txt>
           </Txt>
           <Txt tone={caloriesOver ? "warn" : "ink"} weight="semibold">{describeRemaining(target.kcal - totals.kcal, "kcal")}</Txt>
         </Row>

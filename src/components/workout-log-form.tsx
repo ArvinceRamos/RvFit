@@ -297,7 +297,7 @@ function LogForm({ initial, slots, units: savedUnits, showHistory, inBrowser }: 
                     </label>
                     {choice.loaded && (
                       <label className="grid w-28 grid-cols-1 gap-1 text-sm">
-                        Weight ({weightUnit(units)})
+                        {choice.perDumbbell ? `Weight per dumbbell (${weightUnit(units)})` : `Weight (${weightUnit(units)})`}
                         <input className={fieldClass} inputMode="decimal" onChange={(event) => updateSet(slot.slotKey, index, { weight: event.target.value })} type="text" value={set.weight} />
                       </label>
                     )}

@@ -9,6 +9,7 @@ Agreed with the user on 2026-10-28 in chat. This adds a feature that is not in t
 - Every number below is a **placeholder** that goes in `calculationConfig.activity` and gets a row on `docs/REVIEW-SHEET.md`. Never mark one as reviewed.
 - **New wording is allowed for these lines only.** The labels "Burned today (estimate)", "Resting", "Workouts", "Steps", "Other activity", "About X kcal by end of day", and this one line: "Burned calories are rough estimates. They do not change your calorie target." Everything else in the "no new health or safety wording" rule still applies. No sleep advice, no step goals, no "aim for" lines.
 - **Burned calories are for information only.** They never change the calorie target, the "left" numbers, the check-in, or the meal planner. Reason: the target already counts activity through the activity multiplier, so adding burned calories would count it twice. It also avoids "I earned food" thinking (see the eating-disorder line in the disclaimer).
+- **Not the same as rest-day calories (2026-11-04).** The meal planner's training and rest days (docs/SPLITS-AND-CALORIES.md) come from the suggested weekly schedule, not from logged activity, and keep the weekly total equal to the saved target. Logged activity still changes nothing.
 
 ## What the user sees
 

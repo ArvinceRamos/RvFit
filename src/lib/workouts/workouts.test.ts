@@ -31,7 +31,7 @@ describe("exercise content", () => {
 
   it("has a reasonable number of exercises and every pattern is used", () => {
     expect(exercises.length).toBeGreaterThanOrEqual(70);
-    expect(exercises.length).toBeLessThanOrEqual(100);
+    expect(exercises.length).toBeLessThanOrEqual(110);
     for (const pattern of movementPatterns) {
       expect(exercises.some((exercise) => exercise.pattern === pattern)).toBe(true);
     }
@@ -75,7 +75,7 @@ describe("splits", () => {
       ["full-body-ab", 2, ["a", "b"]],
       ["full-body-abc", 3, ["a", "b", "c"]],
       ["upper-lower", 4, ["upper-a", "lower-a", "upper-b", "lower-b"]],
-      ["ppl-upper-lower", 5, ["push", "pull", "legs", "upper", "lower"]],
+      ["ppl-upper-lower", 5, ["upper", "lower", "push", "pull", "legs"]],
       ["ppl-twice", 6, ["push-a", "pull-a", "legs-a", "push-b", "pull-b", "legs-b"]],
     ]);
   });
@@ -172,6 +172,12 @@ describe("template keys and resolver", () => {
       }
     });
 
+    it("presses flat and incline at least once a week", () => {
+      const patterns = template.days.flatMap((day) => day.slots.map((slot) => slot.pattern));
+      expect(patterns).toContain("horizontal_push");
+      expect(patterns).toContain("incline_push");
+    });
+
     it("never repeats an exercise within a day", () => {
       for (const day of template.days) {
         const keys = day.slots.map((slot) => slot.exercise.key);
@@ -253,6 +259,22 @@ describe("swaps", () => {
     expect(swapped.days[0].slots[3].scheme.reps).toEqual({ min: hold.min, max: hold.max });
     const back = applySwaps(swapped, [{ slotKey: core.key, exerciseKey: "dead-bug" }]);
     expect(back.days[0].slots[3].scheme.reps).toEqual(core.baseScheme.reps);
+  });
+
+  it("ignores a saved swap for a slot that the split no longer has", () => {
+    const two = resolved("beginner", 2, "gym");
+    // b-horizontal-push-1 became b-incline-push-1 on 2026-11-04.
+    expect(applySwaps(two, [{ slotKey: "b-horizontal-push-1", exerciseKey: "barbell-bench-press" }])).toEqual(two);
+  });
+
+  it("keeps incline swaps within the incline pattern", () => {
+    const four = resolved("beginner", 4, "gym");
+    const incline = four.days[2].slots.find((slot) => slot.pattern === "incline_push")!;
+    expect(incline.exercise.key).toBe("incline-dumbbell-press");
+    const options = swapOptions(four, incline.key).map((exercise) => exercise.key);
+    expect(options).toContain("incline-barbell-press");
+    expect(options).toContain("incline-machine-press");
+    expect(options).not.toContain("barbell-bench-press");
   });
 
   it("returns no options for an unknown slot", () => {

@@ -1,5 +1,6 @@
 import { AuthFrame } from "@/components/auth-frame";
 import { MealDaysView } from "@/components/meal-days-view";
+import { targetForDate } from "@/lib/calc/day-targets";
 import { readMealDayView } from "@/lib/meal-days";
 import { loadDayTotals, loadMealDays } from "@/lib/meal-days-data";
 import { requestClock } from "@/lib/request-clock";
@@ -13,7 +14,7 @@ export default async function MealsPage({ searchParams }: PageProps<"/meals">) {
   // Set by the meal planner after it saves.
   const planSaved = params.saved === "plan";
 
-  const [{ data: targetRows }, result, todayTotals] = await Promise.all([
+  const [{ data: targetRows }, result, todayTotals, { data: preferences }] = await Promise.all([
     supabase
       .from("calorie_targets")
       .select("target_kcal, protein_g, carbs_g, fat_g, fiber_g")
@@ -21,10 +22,16 @@ export default async function MealsPage({ searchParams }: PageProps<"/meals">) {
       .limit(1),
     loadMealDays(supabase, view, today),
     loadDayTotals(supabase, today, null),
+    // Training days decide today's rest-day or training-day target. Without them, today uses the saved target.
+    supabase.from("user_preferences").select("training_days").maybeSingle(),
   ]);
   const row = targetRows?.[0];
   const target = row
-    ? { kcal: Number(row.target_kcal), protein_g: Number(row.protein_g), carbs_g: Number(row.carbs_g), fat_g: Number(row.fat_g), fiber_g: Number(row.fiber_g) }
+    ? targetForDate(
+        { kcal: Number(row.target_kcal), protein_g: Number(row.protein_g), carbs_g: Number(row.carbs_g), fat_g: Number(row.fat_g), fiber_g: Number(row.fiber_g) },
+        today,
+        preferences?.training_days ?? null,
+      )
     : null;
 
   return (

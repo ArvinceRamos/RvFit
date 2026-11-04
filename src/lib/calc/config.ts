@@ -101,11 +101,11 @@ export const calculationConfig = {
     max_seconds: 600,
     max_weight_kg: 500,
     // Progression steps. Loads below small_load_kg (light dumbbells, isolation moves) use the small step.
-    weight_step_kg: { upper: 2.5, lower: 5, small: 1 },
-    weight_step_lb: { upper: 5, lower: 10, small: 2.5 },
+    weight_step_kg: { upper: 2.5, lower: 5, small: 1, dumbbell: 2 },
+    weight_step_lb: { upper: 5, lower: 10, small: 2.5, dumbbell: 5 },
     small_load_kg: 20,
     // Suggested weights are rounded to these steps.
-    weight_rounding: { kg: 0.5, lb: 2.5 },
+    weight_rounding: { kg: 0.5, lb: 2.5, dumbbell_kg: 1, dumbbell_lb: 5 },
     extra_reps_unloaded: 2,
     extra_seconds_hold: 5,
     // Above these, more reps or seconds add little; suggest a harder variation instead.
@@ -168,6 +168,15 @@ export const calculationConfig = {
       workout_duration_min: { min: 1, max: 600 },
     },
   },
+  // Placeholder suggested week (docs/SPLITS-AND-CALORIES.md). Weekdays are ISO numbers: 1 = Monday ... 7 = Sunday.
+  // The split's days fill these weekdays in order; every other day is a rest day. A suggestion only.
+  schedule: {
+    training_weekdays: { 2: [1, 4], 3: [1, 3, 5], 4: [1, 2, 4, 5], 5: [1, 2, 4, 5, 6], 6: [1, 2, 3, 4, 5, 6] },
+  },
+  // Placeholder rest-day calories (docs/SPLITS-AND-CALORIES.md, src/lib/calc/day-targets.ts). The saved target never
+  // changes: rest days get rest_day_cut_fraction less, training days share the difference (raised by at most
+  // max_training_day_raise_fraction), and the week adds up to 7 × the target. Only carbohydrate grams change.
+  rest_day_calories: { rest_day_cut_fraction: 0.1, max_training_day_raise_fraction: 0.15 },
 } as const;
 
 export type CalculationConfig = typeof calculationConfig;

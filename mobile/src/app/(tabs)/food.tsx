@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
+import { targetForDate } from "@/lib/calc/day-targets";
 import { loadDayTotals, loadMealDays } from "@/lib/meal-days-data";
 import { dayPrepList, describeMealDay, mealDaysWindow, type MealDay, type MealDayMeal, type MealDayView } from "@/lib/meal-days";
 import { formatGrams, formatKcal } from "@/lib/remaining-format";
@@ -33,14 +34,18 @@ const emptyText: Record<MealDayView, string> = {
 };
 
 async function loadFood(view: MealDayView, today: string) {
-  const [{ data: targetRows, error: targetError }, result, todayTotals] = await Promise.all([
+  const [{ data: targetRows, error: targetError }, result, todayTotals, { data: preferences }] = await Promise.all([
     supabase.from("calorie_targets").select("target_kcal, protein_g, carbs_g, fat_g, fiber_g").order("created_at", { ascending: false }).limit(1),
     loadMealDays(sharedClient, view, today),
     loadDayTotals(sharedClient, today, null),
+    // Training days decide today's rest-day or training-day target (web: /meals).
+    supabase.from("user_preferences").select("training_days").maybeSingle(),
   ]);
   if (targetError || !result.ok) return { ok: false as const, error: "Your meals could not be loaded. Please try again." };
   const row = targetRows?.[0];
-  const target = row ? { kcal: Number(row.target_kcal), protein_g: Number(row.protein_g), carbs_g: Number(row.carbs_g), fat_g: Number(row.fat_g), fiber_g: Number(row.fiber_g) } : null;
+  const target = row
+    ? targetForDate({ kcal: Number(row.target_kcal), protein_g: Number(row.protein_g), carbs_g: Number(row.carbs_g), fat_g: Number(row.fat_g), fiber_g: Number(row.fiber_g) }, today, preferences?.training_days ?? null)
+    : null;
   return { ok: true as const, target, days: result.days, yesterdayToCopy: result.yesterdayToCopy, todayTotals };
 }
 

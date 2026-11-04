@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { acceptCheckInAction } from "@/app/profile/actions";
+import { UNDERWEIGHT_LOSS_MESSAGE } from "@/lib/calc/calculate";
 import { calculationConfig } from "@/lib/calc/config";
 import type { CheckIn } from "@/lib/check-in";
 import { formatKcal, formatWeeklyRate } from "@/lib/remaining-format";
@@ -95,6 +96,16 @@ export function CheckInCard({ checkIn, units, className = "mt-8", onSaved }: { c
           <p className="alert-warn mt-3">
             Holding: not enough data to tell yet. Your weigh-ins move around more than the gap from your plan, so RvFit is not
             suggesting a change. Keep your target and keep weighing in; more weigh-ins make the trend clearer.
+          </p>
+        </>
+      );
+    } else if (checkIn.status === "underweight") {
+      body = (
+        <>
+          {trend}
+          <p className="alert-warn mt-3">
+            {UNDERWEIGHT_LOSS_MESSAGE}{" "}
+            <Link className="font-semibold underline" href="/profile#update-target">Change your goal in Profile</Link>
           </p>
         </>
       );

@@ -49,7 +49,7 @@ describe("validateSwapRequest", () => {
   it("rejects the default exercise and an exercise used elsewhere that day", () => {
     expect(validateSwapRequest({ templateKey: key, slotKey: squatSlot.key, exerciseKey: squatSlot.exercise.key }, [])).toMatchObject({ ok: false });
     const upper = resolveTemplate("intermediate", 5, "gym")!;
-    const [first, second] = upper.days[0].slots.filter((slot) => slot.pattern === "horizontal_push");
+    const [first, second] = upper.days[1].slots.filter((slot) => slot.pattern === "core");
     expect(
       validateSwapRequest({ templateKey: upper.key, slotKey: first.key, exerciseKey: second.exercise.key }, []),
     ).toMatchObject({ ok: false });
@@ -62,9 +62,9 @@ describe("validateSwapRequest", () => {
       validateSwapRequest({ templateKey: key, slotKey: squatSlot.key, exerciseKey: another.key }, swapped),
     ).toMatchObject({ ok: true });
 
-    // Two push slots on one day: once the first is swapped to X, the second may not take X.
+    // Two core slots on one day: once the first is swapped to X, the second may not take X.
     const day = resolveTemplate("intermediate", 5, "gym")!;
-    const [a, b] = day.days[0].slots.filter((slot) => slot.pattern === "horizontal_push");
+    const [a, b] = day.days[1].slots.filter((slot) => slot.pattern === "core");
     const x = swapOptions(day, a.key)[0];
     expect(
       validateSwapRequest({ templateKey: day.key, slotKey: b.key, exerciseKey: x.key }, [{ slotKey: a.key, exerciseKey: x.key }]),

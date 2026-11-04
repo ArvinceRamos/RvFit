@@ -54,7 +54,7 @@ describe("meal services", () => {
   it("keeps the meal when only the tick fails", async () => {
     fake.current!.onRpc("save_meal", { data: mealId, error: null });
     fake.current!.onTable("meals", { data: null, error: { message: "boom" } });
-    expect(await saveMeal(validMeal)).toEqual({ ok: false, error: "Meal saved, but it could not be ticked as eaten. Tick it on the Food page." });
+    expect(await saveMeal(validMeal)).toEqual({ ok: true, mealId, warning: "Meal saved, but it could not be ticked as eaten. Tick it on the Food page." });
   });
 
   it("rejects a bad meal ID before deleting", async () => {

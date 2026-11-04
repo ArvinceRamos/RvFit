@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { loadPlanDaysAction, saveMealPlanAction } from "@/app/meals/actions";
 import { FoodAutocomplete } from "@/components/food-autocomplete";
 import { calculationConfig, type PortionClass } from "@/lib/calc/config";
+import { dayTypeLabel, restDayNote } from "@/lib/calc/day-targets";
 import { isCalendarDate, type MealTotals } from "@/lib/meal";
 import type { BuilderFood } from "@/lib/meal-foods";
 import {
@@ -90,6 +91,11 @@ function DayCard({ day, logged }: { day: PlannedDay<BuilderFood>; logged: Logged
     <article className="card grid content-start gap-4">
       <header>
         <h3 className="text-lg font-bold">{formatPlanDate(day.date)}</h3>
+        {day.target.day_type && (
+          <p className="text-sm text-muted">
+            <span className="font-semibold text-ink">{dayTypeLabel[day.target.day_type]}</span> · {Math.round(day.target.kcal).toLocaleString("en-US")} kcal
+          </p>
+        )}
         {logged && day.status === "planned" && (
           <p className="text-sm text-muted">Planned for what is left after {logged.labels.length} logged {logged.labels.length === 1 ? "meal" : "meals"}.</p>
         )}
@@ -137,9 +143,11 @@ function DayCard({ day, logged }: { day: PlannedDay<BuilderFood>; logged: Logged
   );
 }
 
-export function MealPlannerForm({ foods, target, exclusions }: {
+export function MealPlannerForm({ foods, target, trainingDays, exclusions }: {
   foods: BuilderFood[];
   target: DailyTargets;
+  // Saved training days a week; null keeps every day at the saved target.
+  trainingDays: number | null;
   exclusions: Exclusions;
 }) {
   const router = useRouter();
@@ -194,7 +202,7 @@ export function MealPlannerForm({ foods, target, exclusions }: {
       setMessage("Your logged meals could not be loaded. Please try again.");
       return;
     }
-    const result = buildMealPlan({ startDate, days, mealsPerDay, targets: target, foods: picks, rotations, exclusions, logged: loaded.logged });
+    const result = buildMealPlan({ startDate, days, mealsPerDay, targets: target, trainingDays, foods: picks, rotations, exclusions, logged: loaded.logged });
     if (!result.ok) {
       setMessage(result.error);
       return;
@@ -332,6 +340,7 @@ export function MealPlannerForm({ foods, target, exclusions }: {
       {preview && (
         <section className="grid gap-4">
           <h2 className="section-title">Preview</h2>
+          {preview.days.some((day) => day.target.day_type === "rest") && <p className="text-sm text-muted">{restDayNote}</p>}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {preview.days.map((day) => <DayCard day={day} key={day.date} logged={preview.logged[day.date]} />)}
           </div>

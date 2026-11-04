@@ -6,6 +6,7 @@ import { pickLastSessions, type EarlierLog, type LastSession } from "@/lib/worko
 import { orderSwaps, validateResetRequest, validateSwapRequest } from "@/lib/workouts/swaps";
 import { templateKey } from "@/lib/workouts/templates";
 import { logError } from "@/lib/log";
+import { clockNow } from "~/lib/clock";
 import { sharedClient, supabase } from "~/lib/supabase";
 import { currentUserId, type ActionResult } from "./session";
 
@@ -106,7 +107,7 @@ export async function saveWorkoutLog(rawLog: unknown): Promise<SaveWorkoutResult
   if (!rules) return { ok: false, error: saveError };
   const units = resolveUnits(input.units, rules.units);
   if (!units.ok) return units;
-  const validated = validateWorkoutLog(rawLog, { ...rules, units: units.data, savedExercises });
+  const validated = validateWorkoutLog(rawLog, { ...rules, units: units.data, savedExercises, today: clockNow().today });
   if (!validated.ok) return validated;
   const log = validated.data;
 

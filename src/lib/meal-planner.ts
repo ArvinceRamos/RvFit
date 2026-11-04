@@ -22,6 +22,7 @@ import {
   type SuggestionRole,
 } from "@/lib/suggestions";
 import { addDays } from "@/lib/week";
+import { targetForDate, type DayTarget } from "@/lib/calc/day-targets";
 
 // Rule-based and deterministic: the same inputs always give the same plan.
 // Spec: docs/MEAL-PLANNER.md "Plan rules" and "Realistic portions".
@@ -50,6 +51,8 @@ export type MealPlanInput<T extends PlannerFood> = {
   // The day's total, logged meals included.
   mealsPerDay: number;
   targets: DailyTargets;
+  // Saved training days a week. With a value, rest days get less and training days more (src/lib/calc/day-targets.ts).
+  trainingDays?: number | null;
   foods: Record<PlannerGroup, readonly T[]>;
   rotations: Record<PlannerGroup, Rotation>;
   exclusions: Exclusions;
@@ -79,6 +82,8 @@ export type PlannedMeal<T extends PlannerFood> = {
 export type PlannedDay<T extends PlannerFood> = {
   date: string;
   status: "planned" | "met" | "meals_logged";
+  // The day's target: the saved target, spread over training and rest days.
+  target: DayTarget;
   remaining: Remaining;
   budget: MacroBudget;
   meals: PlannedMeal<T>[];
@@ -435,14 +440,15 @@ function planNotes<T extends PlannerFood>(
 function buildDay<T extends PlannerFood>(input: MealPlanInput<T>, solve: Solver, dayIndex: number): PlannedDay<T> {
   const date = addDays(input.startDate, dayIndex);
   const logged = input.logged[date];
-  const remaining = remainingTargets(input.targets, logged?.totals ?? emptyTotals());
+  const target = targetForDate(input.targets, date, input.trainingDays ?? null);
+  const remaining = remainingTargets(target, logged?.totals ?? emptyTotals());
   // A macro already over target gets no more grams. It is never planned below zero.
   const budget: MacroBudget = {
     protein_g: Math.max(0, remaining.protein_g),
     carbs_g: Math.max(0, remaining.carbs_g),
     fat_g: Math.max(0, remaining.fat_g),
   };
-  const day = { date, remaining, budget, meals: [], totals: emptyTotals(), notes: [] };
+  const day = { date, target, remaining, budget, meals: [], totals: emptyTotals(), notes: [] };
 
   if (remaining.kcal <= 0) return { ...day, status: "met" };
   const usedLabels = logged?.labels ?? [];

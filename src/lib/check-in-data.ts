@@ -24,7 +24,7 @@ export type CheckInData = {
 export async function loadCheckInData(supabase: Client, now: number): Promise<CheckInData | null | "error"> {
   const since = new Date(now - checkInHistoryDays * 24 * 60 * 60 * 1000).toISOString();
   const [profile, targets, weighIns] = await Promise.all([
-    supabase.from("profiles").select("sex_formula_branch, preferred_units").maybeSingle(),
+    supabase.from("profiles").select("sex_formula_branch, preferred_units, height_cm").maybeSingle(),
     supabase
       .from("calorie_targets")
       .select("target_kcal, goal, pace, protein_g, carbs_g, fat_g, fiber_g, floor_applied, created_at")
@@ -49,6 +49,7 @@ export async function loadCheckInData(supabase: Client, now: number): Promise<Ch
       pace,
       floorApplied: Boolean(row.floor_applied),
       branch,
+      heightCm: profile.data?.height_cm == null ? null : Number(profile.data.height_cm),
       weighIns: (weighIns.data ?? []).map((item) => ({ time: new Date(item.logged_at as string).getTime(), kg: Number(item.weight_kg) })),
       now,
     }),

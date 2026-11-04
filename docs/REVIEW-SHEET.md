@@ -96,6 +96,17 @@ Added 2026-10-28 (AC-2, `docs/ACTIVITY.md`). Burned calories are shown for infor
 | 6.16 | Steps and Sleep average window | The last 7 days (local dates), ending today | `config.ts:96` | Same window as the weight trend (row 3.1); shown on Progress for information only. | |
 | 6.17 | Steps and Sleep average needs | At least 3 days with a number, otherwise "Not enough data yet." | `config.ts:96` | Same rule as the weight trend (row 3.1). | |
 
+## 7. Suggested week and rest-day calories (added 2026-11-04, docs/SPLITS-AND-CALORIES.md)
+
+| # | Item | Placeholder | Where | Notes | Decision |
+|---|---|---|---|---|---|
+| 7.1 | Suggested training weekdays | 2: Mon, Thu · 3: Mon, Wed, Fri · 4: Mon, Tue, Thu, Fri · 5: Mon, Tue, Thu, Fri, Sat · 6: Mon–Sat | `config.ts:173` | At least 48 h between sessions for the same muscles; never more than 3 days in a row below 6 days. A suggestion only. | |
+| 7.2 | Rest-day cut | Rest days 10% under the saved target | `config.ts:179` | The weekly total always equals 7 × the saved target; only carbohydrate grams change. No trial shows cycling beats equal days; it is a preference. | |
+| 7.3 | Training-day raise cap | At most 15% over the saved target (2 days a week: +15% / −6%) | `config.ts:179` | When the cap binds, rest days take a smaller cut. | |
+| 7.4 | Rest-day floor | No day under 1,200 kcal (the lowest floor, row 1.6) | `src/lib/calc/day-targets.ts` | At or under the floor every day equals the target. | |
+| 7.5 | Incline press | Every split presses flat and incline at least once a week; bodyweight users get feet-up (decline) push-ups | `src/lib/workouts/splits.ts` | About 1:1 incline to flat; 15–30° bench. | |
+| 7.6 | Beginner 5–6 days | Allowed, with the existing warning "Risk: a beginner on 5–6 days a week has little recovery time." | `src/components/preferences-form.tsx` | Resolves row 4.5: beginners may pick 5–6 days. | |
+
 ## Not for this review
 
 Technical limits that are not health advice: meal and workout row limits (`docs/RUNBOOK.md`, error 54000), item grams up to 2,000, reps up to 100, holds up to 600 s, weights up to 500 kg, meal planner portion ranges (`docs/MEAL-PLANNER.md`). A reviewer may still comment on them.

@@ -27,7 +27,7 @@ export default async function MealPlanPage() {
     const plannerFoods = foods.filter(
       (food) => (plannerGroups as readonly string[]).includes(food.role) && !isExcluded(food, exclusions),
     );
-    body = <MealPlannerForm exclusions={exclusions} foods={plannerFoods} target={context.target} />;
+    body = <MealPlannerForm exclusions={exclusions} foods={plannerFoods} target={context.target} trainingDays={context.trainingDays} />;
   }
 
   return (

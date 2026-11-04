@@ -124,21 +124,19 @@ function AdultGate() {
         />
         I am 18 or older
       </label>
+      {/* Real disabled buttons until the box is ticked, so a keyboard cannot open either path early. */}
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <Link
-          aria-disabled={!confirmed}
-          className={`btn-primary ${confirmed ? "" : "pointer-events-none !bg-track !text-muted"}`}
-          href="/calculate"
-        >
-          Calculate my estimate
-        </Link>
-        <Link
-          aria-disabled={!confirmed}
-          className={`btn-secondary ${confirmed ? "" : "pointer-events-none opacity-60"}`}
-          href="/manual"
-        >
-          Enter my own target
-        </Link>
+        {confirmed ? (
+          <>
+            <Link className="btn-primary" href="/calculate">Calculate my estimate</Link>
+            <Link className="btn-secondary" href="/manual">Enter my own target</Link>
+          </>
+        ) : (
+          <>
+            <button className="btn-primary cursor-not-allowed !bg-track !text-muted" disabled type="button">Calculate my estimate</button>
+            <button className="btn-secondary cursor-not-allowed opacity-60" disabled type="button">Enter my own target</button>
+          </>
+        )}
       </div>
       {!confirmed && <p className="mt-3 text-sm text-muted">Confirm your age to continue.</p>}
     </Frame>

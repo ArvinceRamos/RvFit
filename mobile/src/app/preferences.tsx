@@ -97,7 +97,7 @@ function PreferencesForm({ initial, isSaved, offeredTags, foods }: { initial: Va
             <Txt variant="label">Equipment</Txt>
             {equipmentOptions.map((equipment) => (
               <Choice
-                detail={equipment === "bodyweight" ? "Needs a pull-up bar and a sturdy chair or table." : undefined}
+                detail={equipment === "bodyweight" ? "Needs a pull-up bar and a sturdy chair or table." : equipment === "dumbbell_only" ? "Needs dumbbells, a pull-up bar, and a sturdy chair or table." : undefined}
                 key={equipment}
                 onPress={() => setValues((current) => ({ ...current, equipment }))}
                 selected={values.equipment === equipment}

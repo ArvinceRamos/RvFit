@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { choiceLabel, formatCalendarDate, planSummary, restText, schemeText } from "@/lib/workouts/format";
 import { nextWorkout } from "@/lib/workouts/next-up";
+import { scheduleSummary, weekdayByDayKey } from "@/lib/workouts/schedule";
 import { orderSwaps } from "@/lib/workouts/swaps";
 import { applySwaps, resolveTemplate, resolveTemplateByKey, swapOptions } from "@/lib/workouts/templates";
 import { weekStart } from "@/lib/week";
@@ -78,9 +79,11 @@ export default function Train() {
             {planSummary(template.level, template.days.length, template.equipment)} · {nextUp ? `${nextUp.done} of ${nextUp.planned} done this week · ` : ""}
             <TextLink onPress={() => router.push("/preferences")}>Change plan</TextLink>
           </Txt>
+          {scheduleSummary(template.days) ? <Txt tone="muted" variant="small">{scheduleSummary(template.days)}</Txt> : null}
           {template.days.map((day) => (
             <DayPlan
               day={day}
+              weekday={weekdayByDayKey(template.days).get(day.key)}
               defaultExerciseBySlot={defaultExerciseBySlot}
               isNext={nextUp?.status === "next" && nextUp.dayKey === day.key}
               key={day.key}
@@ -106,14 +109,14 @@ export default function Train() {
 
 type PlanTemplate = NonNullable<Awaited<ReturnType<typeof loadTrain>>["template"]>;
 
-function DayPlan({ day, template, isNext, defaultExerciseBySlot }: { day: PlanTemplate["days"][number]; template: PlanTemplate; isNext: boolean; defaultExerciseBySlot: Map<string, string> }) {
+function DayPlan({ day, weekday, template, isNext, defaultExerciseBySlot }: { day: PlanTemplate["days"][number]; weekday?: string; template: PlanTemplate; isNext: boolean; defaultExerciseBySlot: Map<string, string> }) {
   const { colors } = useTheme();
   return (
     <Card>
       <Stack gap={14}>
         <Row style={{ justifyContent: "space-between" }} wrap>
           <Row gap={8}>
-            <Txt variant="section">{day.name}</Txt>
+            <Txt variant="section">{weekday ? <Txt tone="muted" variant="small">{weekday} </Txt> : null}{day.name}</Txt>
             {isNext ? (
               <View style={{ borderRadius: 999, backgroundColor: colors.accent, paddingHorizontal: 8, paddingVertical: 2 }}>
                 <Txt tone="onAccent" variant="xs" weight="bold">Next up</Txt>

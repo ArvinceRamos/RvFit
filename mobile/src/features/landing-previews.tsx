@@ -194,6 +194,7 @@ const PATTERN_TAGS: Record<MovementPattern, string> = {
   hinge: "Hinge",
   single_leg: "Single leg",
   horizontal_push: "Push",
+  incline_push: "Incline",
   vertical_push: "Press",
   horizontal_pull: "Pull",
   vertical_pull: "Pull-down",

@@ -20,7 +20,7 @@ function dayParts(date: string): { weekday: string; short: string } {
   return { weekday: weekdayFormat.format(value), short: shortFormat.format(value) };
 }
 
-// This week, Monday to Sunday (web: /week). Read-only: it shows what is saved and schedules nothing.
+// This week, Monday to Sunday (web: /week). Read-only: it shows what is saved and the suggested week.
 export default function Week() {
   const { colors } = useTheme();
   const { today } = clockNow();
@@ -31,11 +31,11 @@ export default function Week() {
 
   return (
     <Screen onRefresh={screen.refresh} refreshing={screen.refreshing}>
-      <Txt tone="muted" variant="small">Monday to Sunday. This page only shows what you have saved. It does not schedule anything.</Txt>
+      <Txt tone="muted" variant="small">Monday to Sunday. Workout days follow a suggested week; you can train on any day that suits you.</Txt>
       {days.map((day) => {
         const { weekday, short } = dayParts(day.date);
         const isToday = day.date === today;
-        const over = target !== null && day.totals.kcal > target.kcal;
+        const over = day.target_kcal !== null && day.totals.kcal > day.target_kcal;
         return (
           <Card key={day.date} style={isToday ? { borderColor: colors.accent, borderWidth: 2 } : undefined}>
             <Stack gap={10}>
@@ -47,6 +47,11 @@ export default function Week() {
                   </View>
                 ) : null}
               </Row>
+              {day.suggested ? (
+                <Txt tone="muted" variant="small">
+                  {day.suggested.kind === "training" ? <>Suggested: <Txt variant="small" weight="semibold">{day.suggested.name}</Txt></> : "Rest day"}
+                </Txt>
+              ) : null}
               {day.meal_count === 0 ? (
                 <Txt tone="muted" variant="small">No meals saved</Txt>
               ) : day.date > today ? (
@@ -56,9 +61,9 @@ export default function Week() {
                 <Stack gap={6}>
                   <Txt variant="small">
                     <Txt weight="bold">{kcal(day.totals.kcal)} kcal</Txt>
-                    <Txt tone="muted" variant="small"> eaten{target ? ` of ${kcal(target.kcal)} kcal` : ""} · {day.eaten_count === day.meal_count ? `${day.meal_count} ${day.meal_count === 1 ? "meal" : "meals"}` : `${day.eaten_count} of ${day.meal_count} eaten`}</Txt>
+                    <Txt tone="muted" variant="small"> eaten{day.target_kcal !== null ? ` of ${kcal(day.target_kcal)} kcal` : ""} · {day.eaten_count === day.meal_count ? `${day.meal_count} ${day.meal_count === 1 ? "meal" : "meals"}` : `${day.eaten_count} of ${day.meal_count} eaten`}</Txt>
                   </Txt>
-                  {target ? <ProgressBar color={over ? colors.warn : colors.accent} value={progressPercent(day.totals.kcal, target.kcal) / 100} /> : null}
+                  {day.target_kcal !== null ? <ProgressBar color={over ? colors.warn : colors.accent} value={progressPercent(day.totals.kcal, day.target_kcal) / 100} /> : null}
                 </Stack>
               )}
               {day.workouts.length === 0 ? (

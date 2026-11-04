@@ -15,6 +15,7 @@ import { FoodPicker } from "~/components/food-picker";
 import { Screen } from "~/components/screen";
 import { Alert, Button, Card, Checkbox, Chip, Field, Row, Stack, TextLink, Tile, Txt } from "~/components/ui";
 import { clockNow } from "~/lib/clock";
+import { targetForDate } from "@/lib/calc/day-targets";
 import { refreshAll } from "~/lib/query";
 import { fetchDayTotals, saveMeal } from "~/services/meals";
 import { useTheme } from "~/theme/theme";
@@ -125,8 +126,12 @@ export function MealBuilder({ foods, initial, recentFoodIds, suggestionContext }
     return food && !inMeal.has(id) ? [food] : [];
   });
 
-  const target = suggestionContext.status === "ready" ? suggestionContext.target : null;
   const validDate = isCalendarDate(date);
+  // Suggestions use the chosen date's share of the target: less on a rest day, more on a training day.
+  const savedTarget = suggestionContext.status === "ready" ? suggestionContext.target : null;
+  const target = savedTarget && suggestionContext.status === "ready"
+    ? targetForDate(savedTarget, validDate ? date : today, suggestionContext.trainingDays)
+    : null;
   const futureDate = validDate && date > today;
   const eaten = mealFormEaten(eatenChoice, date, today);
   // Saved meals on the chosen date (not counting this one), loaded again when the date changes.
@@ -188,7 +193,7 @@ export function MealBuilder({ foods, initial, recentFoodIds, suggestionContext }
     if (!result.ok) return setMessage(result.error);
     await refreshAll();
     if (initial.mealId === null) resetForm();
-    setMessage(savedMessage);
+    setMessage(result.warning ?? savedMessage);
   }
 
   let remainingView: React.ReactNode;

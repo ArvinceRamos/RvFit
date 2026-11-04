@@ -6,7 +6,8 @@ import { logError } from "@/lib/log";
 import { pickRecentFoodIds } from "@/lib/recent-foods";
 
 export type SuggestionContext =
-  | { status: "ready"; target: DailyTargets | null; allergyTags: string[]; avoidedFoodIds: string[] }
+  // trainingDays: saved training days a week, or null, for rest-day calories (src/lib/calc/day-targets.ts).
+  | { status: "ready"; target: DailyTargets | null; trainingDays: number | null; allergyTags: string[]; avoidedFoodIds: string[] }
   // If saved allergies or avoided foods cannot be read, show no suggestions rather than unfiltered ones.
   | { status: "error" };
 
@@ -21,7 +22,7 @@ export async function loadMealContext(
     await Promise.all([
       supabase.from("foods").select(builderFoodColumns).order("name"),
       supabase.from("calorie_targets").select("target_kcal, protein_g, carbs_g, fat_g, fiber_g").order("created_at", { ascending: false }).limit(1),
-      supabase.from("user_preferences").select("allergy_tags").maybeSingle(),
+      supabase.from("user_preferences").select("allergy_tags, training_days").maybeSingle(),
       supabase.from("user_avoided_foods").select("food_id"),
       options.recentFoods
         ? supabase
@@ -58,6 +59,7 @@ export async function loadMealContext(
             fiber_g: Number(target.fiber_g),
           }
         : null,
+      trainingDays: preferences?.training_days ?? null,
       allergyTags: preferences?.allergy_tags ?? [],
       avoidedFoodIds,
     },

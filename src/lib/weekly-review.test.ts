@@ -16,7 +16,7 @@ describe("reviewStart", () => {
 });
 
 describe("weeklyReview", () => {
-  it("counts days with an eaten meal and averages kcal over those days only", () => {
+  it("counts days with an eaten meal and averages kcal over finished days only (not today)", () => {
     const review = weeklyReview(input({
       meals: [
         { meal_date: "2026-10-25", eaten: true, kcal: 800 },
@@ -26,7 +26,11 @@ describe("weeklyReview", () => {
         { meal_date: "2026-10-18", eaten: true, kcal: 3000 }, // 7 days ago, outside the review
       ],
     }));
-    expect(review).toMatchObject({ daysLogged: 2, averageKcal: 1900 });
+    expect(review).toMatchObject({ daysLogged: 2, averageKcal: 1800 });
+  });
+
+  it("has no average when only today is logged", () => {
+    expect(weeklyReview(input({ meals: [{ meal_date: today, eaten: true, kcal: 900 }] }))).toMatchObject({ daysLogged: 1, averageKcal: null });
   });
 
   it("has no average without an eaten meal", () => {

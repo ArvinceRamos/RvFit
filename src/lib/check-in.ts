@@ -1,3 +1,4 @@
+import { bodyMassIndex } from "@/lib/calc/calculate";
 import { calculationConfig, type FormulaBranch } from "@/lib/calc/config";
 
 // Target check-in: compares the weight trend with the pace the user chose and, when they clearly
@@ -23,6 +24,8 @@ export type CheckInInput = {
   branch: FormulaBranch | null;
   weighIns: readonly { time: number; kg: number }[];
   now: number;
+  /** Saved height. With the latest weigh-in it checks the underweight guard for a Lose goal. Null skips the check. */
+  heightCm?: number | null;
 };
 
 export type CheckIn =
@@ -32,7 +35,9 @@ export type CheckIn =
   | { status: "holding"; observedKgPerWeek: number; expectedKgPerWeek: number }
   | { status: "on_track"; observedKgPerWeek: number; expectedKgPerWeek: number }
   | { status: "adjust"; observedKgPerWeek: number; expectedKgPerWeek: number; changeKcal: number; suggestedKcal: number }
-  | { status: "at_floor"; observedKgPerWeek: number; expectedKgPerWeek: number; floorKcal: number };
+  | { status: "at_floor"; observedKgPerWeek: number; expectedKgPerWeek: number; floorKcal: number }
+  // Goal is Lose but the latest weigh-in gives a BMI under the guard: never suggest eating less (PLAN.md AU-50).
+  | { status: "underweight"; observedKgPerWeek: number; expectedKgPerWeek: number };
 
 const rules = calculationConfig.check_in;
 const dayMs = 24 * 60 * 60 * 1000;
@@ -51,6 +56,17 @@ export function expectedKgPerWeek(goal: CheckInGoal, pace: CheckInPace | null): 
   if (goal === "maintain" || !pace) return 0;
   const dailyKcal = goal === "lose" ? -loss_paces_kcal[pace] : gain_paces_kcal[pace];
   return (dailyKcal * 7) / rules.kcal_per_kg;
+}
+
+// The latest weigh-in (up to now) with the saved height, rounded like the calculator's guard.
+function lossBlockedByLatestWeight(input: CheckInInput): boolean {
+  if (!input.heightCm || input.heightCm <= 0) return false;
+  const latest = input.weighIns
+    .filter((point) => Number.isFinite(point.time) && Number.isFinite(point.kg) && point.kg > 0 && point.time <= input.now)
+    .reduce<{ time: number; kg: number } | null>((best, point) => (!best || point.time > best.time ? point : best), null);
+  if (!latest) return false;
+  const bmi = Math.round(bodyMassIndex(input.heightCm, latest.kg) * 100) / 100;
+  return bmi < calculationConfig.underweight_guard.min_bmi_for_loss;
 }
 
 function floorFor(branch: FormulaBranch | null): number {
@@ -106,6 +122,9 @@ export function targetCheckIn(input: CheckInInput): CheckIn {
   const trend = trendSlope(points);
   const observed = trend.kgPerWeek;
   const expected = expectedKgPerWeek(input.goal, input.pace);
+  if (input.goal === "lose" && lossBlockedByLatestWeight(input)) {
+    return { status: "underweight", observedKgPerWeek: observed, expectedKgPerWeek: expected };
+  }
   const difference = observed - expected;
   if (Math.abs(difference) <= rules.on_track_tolerance_kg_per_week) {
     return { status: "on_track", observedKgPerWeek: observed, expectedKgPerWeek: expected };

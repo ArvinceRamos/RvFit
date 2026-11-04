@@ -12,6 +12,8 @@ import {
 import type { MealTotals } from "@/lib/meal";
 import type { createClient } from "@/lib/supabase/server";
 import { weekDates } from "@/lib/week";
+import { weekSchedule } from "@/lib/workouts/schedule";
+import { targetForDate } from "@/lib/calc/day-targets";
 
 // totals: meals ticked as eaten. planned_kcal: meals saved but not eaten yet.
 export type WeekDay = {
@@ -21,6 +23,10 @@ export type WeekDay = {
   eaten_count: number;
   planned_kcal: number;
   workouts: LoggedWorkout[];
+  // The suggested week from Preferences: a plan day name, "rest", or null when Preferences are not saved.
+  suggested: { kind: "training"; name: string } | { kind: "rest" } | null;
+  // The day's share of the saved target (rest days less, training days more); null without a saved target.
+  target_kcal: number | null;
 };
 
 export type WeekResult =
@@ -47,11 +53,13 @@ export async function loadWeek(supabase: Awaited<ReturnType<typeof createClient>
     return { ok: false, error: "Your week could not be loaded. Please try again." };
   }
 
+  const schedule = plan ? weekSchedule(plan.days) : null;
   return {
     ok: true,
     today,
     target,
-    days: dates.map((date) => {
+    days: dates.map((date, index) => {
+      const scheduled = schedule?.[index];
       const split = eatenAndPlanned(meals.filter((meal) => meal.meal_date === date));
       return {
         date,
@@ -60,6 +68,8 @@ export async function loadWeek(supabase: Awaited<ReturnType<typeof createClient>
         eaten_count: split.eaten_count,
         planned_kcal: split.planned.kcal,
         workouts: workouts.filter((workout) => workout.performed_on === date),
+        suggested: !scheduled ? null : scheduled.day ? { kind: "training", name: scheduled.day.name } : { kind: "rest" },
+        target_kcal: target ? targetForDate(target, date, plan ? plan.days.length : null).kcal : null,
       };
     }),
     plan: plan

@@ -21,6 +21,7 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({ auth: { getClaims }, from: (table: string) => query(table), rpc }),
 }));
 vi.mock("next/cache", () => ({ refresh: () => refresh() }));
+vi.mock("@/lib/request-clock", () => ({ requestClock: async () => ({ timeZone: "UTC", today: "2026-10-28", now: Date.UTC(2026, 9, 28) }) }));
 
 const { saveWorkoutLogAction } = await import("./actions");
 const { planForLog } = await import("@/lib/workouts/log");

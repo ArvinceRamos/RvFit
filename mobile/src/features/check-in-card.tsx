@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import { useState } from "react";
+import { UNDERWEIGHT_LOSS_MESSAGE } from "@/lib/calc/calculate";
 import { calculationConfig } from "@/lib/calc/config";
 import type { CheckIn } from "@/lib/check-in";
 import { formatKcal, formatWeeklyRate } from "@/lib/remaining-format";
@@ -62,6 +63,14 @@ export function CheckInCard({ checkIn, units, onSaved }: { checkIn: CheckIn; uni
         <>
           {trend}
           <Alert tone="warn">Holding: not enough data to tell yet. Your weigh-ins move around more than the gap from your plan, so RvFit is not suggesting a change. Keep your target and keep weighing in; more weigh-ins make the trend clearer.</Alert>
+        </>
+      );
+    } else if (checkIn.status === "underweight") {
+      body = (
+        <>
+          {trend}
+          <Alert tone="warn">{UNDERWEIGHT_LOSS_MESSAGE}</Alert>
+          <Txt tone="muted" variant="xs"><TextLink onPress={() => router.push("/me")}>Change your goal in Profile</TextLink></Txt>
         </>
       );
     } else if (checkIn.status === "at_floor") {

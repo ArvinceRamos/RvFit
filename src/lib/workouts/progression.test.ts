@@ -153,3 +153,17 @@ describe("progressionPrompt", () => {
     expect(progressionPrompt(session([[null, 60, null], [null, 75, null]]), hold, 2, "metric")).toContain("harder exercise with Swap");
   });
 });
+
+describe("dumbbell steps (RV-6)", () => {
+  const dumbbell = { measure: "reps", loaded: true, pattern: "horizontal_push", topOfRange: 12, perDumbbell: true } as const;
+  const lastAt = (kg: number) => ({ performedOn: "2026-10-05", sets: [1, 2, 3].map((setNumber) => ({ setNumber, reps: 12, seconds: null, weightKg: kg })) });
+
+  it("adds 2 kg per dumbbell and rounds to a whole kg", () => {
+    expect(progressionPrompt(lastAt(12), dumbbell, 3, "metric")).toContain("try 14 kg per dumbbell");
+    expect(progressionPrompt(lastAt(22.5), dumbbell, 3, "metric")).toContain("try 25 kg per dumbbell");
+  });
+
+  it("adds 5 lb per dumbbell in pounds", () => {
+    expect(progressionPrompt(lastAt(9.07), dumbbell, 3, "imperial")).toContain("try 25 lb per dumbbell");
+  });
+});

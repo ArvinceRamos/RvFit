@@ -227,7 +227,7 @@ export function WorkoutLogForm({ initial, slots, units: savedUnits, showHistory 
                   <Row align="flex-end" gap={10}>
                     <Txt style={{ width: 48, paddingBottom: 12 }} variant="label">Set {index + 1}</Txt>
                     <Field accessibilityLabel={`Set ${index + 1} ${amountLabel.toLowerCase()}`} keyboardType="number-pad" label={amountLabel} labelHidden={index > 0} onChangeText={(amount) => updateSet(slot.slotKey, index, { amount })} style={{ flex: 1 }} value={set.amount} />
-                    {choice.loaded ? <Field accessibilityLabel={`Set ${index + 1} weight (${weightUnit(units)})`} keyboardType="decimal-pad" label={`Weight (${weightUnit(units)})`} labelHidden={index > 0} onChangeText={(weight) => updateSet(slot.slotKey, index, { weight })} style={{ flex: 1 }} value={set.weight} /> : null}
+                    {choice.loaded ? <Field accessibilityLabel={`Set ${index + 1} weight${choice.perDumbbell ? " per dumbbell" : ""} (${weightUnit(units)})`} keyboardType="decimal-pad" label={`${choice.perDumbbell ? "Weight per dumbbell" : "Weight"} (${weightUnit(units)})`} labelHidden={index > 0} onChangeText={(weight) => updateSet(slot.slotKey, index, { weight })} style={{ flex: 1 }} value={set.weight} /> : null}
                   </Row>
                   {plates ? <Txt tone="muted" variant="small">{plates}</Txt> : null}
                 </Stack>

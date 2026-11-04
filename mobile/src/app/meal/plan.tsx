@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { calculationConfig, type PortionClass } from "@/lib/calc/config";
+import { dayTypeLabel, restDayNote } from "@/lib/calc/day-targets";
 import { isCalendarDate, type MealTotals } from "@/lib/meal";
 import { loadMealContext } from "@/lib/meal-context";
 import type { BuilderFood } from "@/lib/meal-foods";
@@ -79,10 +80,10 @@ export default function MealPlan() {
   const exclusions = { allergyTags: context.allergyTags, avoidedFoodIds: context.avoidedFoodIds };
   // Excluded foods are never offered, so they cannot be picked.
   const plannerFoods = foods.filter((food) => (plannerGroups as readonly string[]).includes(food.role) && !isExcluded(food, exclusions));
-  return <PlannerForm exclusions={exclusions} foods={plannerFoods} intro={intro} target={context.target} />;
+  return <PlannerForm exclusions={exclusions} foods={plannerFoods} intro={intro} target={context.target} trainingDays={context.trainingDays} />;
 }
 
-function PlannerForm({ foods, target, exclusions, intro }: { foods: BuilderFood[]; target: DailyTargets; exclusions: Exclusions; intro: React.ReactNode }) {
+function PlannerForm({ foods, target, trainingDays, exclusions, intro }: { foods: BuilderFood[]; target: DailyTargets; trainingDays: number | null; exclusions: Exclusions; intro: React.ReactNode }) {
   const { colors } = useTheme();
   const today = clockNow().today;
   const [length, setLength] = useState<"day" | "week">("day");
@@ -126,7 +127,7 @@ function PlannerForm({ foods, target, exclusions, intro }: { foods: BuilderFood[
     const loaded = await fetchPlanDays(startDate, days).catch(() => ({ ok: false }) as const);
     setBusy(false);
     if (!loaded.ok) return setMessage("Your logged meals could not be loaded. Please try again.");
-    const result = buildMealPlan({ startDate, days, mealsPerDay, targets: target, foods: picks, rotations, exclusions, logged: loaded.logged });
+    const result = buildMealPlan({ startDate, days, mealsPerDay, targets: target, trainingDays, foods: picks, rotations, exclusions, logged: loaded.logged });
     if (!result.ok) return setMessage(result.error);
     setPreview({ days: result.data, logged: loaded.logged });
   }
@@ -177,6 +178,7 @@ function PlannerForm({ foods, target, exclusions, intro }: { foods: BuilderFood[
           <Txt tone="muted" variant="small">
             {plannerGroups.flatMap((group) => picks[group].map((food) => food.name)).join(" · ")}
           </Txt>
+          {preview.days.some((day) => day.target.day_type === "rest") ? <Txt tone="muted" variant="small">{restDayNote}</Txt> : null}
           {preview.days.map((day) => <PlanDayCard day={day} key={day.date} logged={preview.logged[day.date]} />)}
         </Stack>
       ) : (
@@ -283,6 +285,7 @@ function PlanDayCard({ day, logged }: { day: PlannedDay<BuilderFood>; logged: Lo
       <Stack gap={12}>
         <Stack gap={2}>
           <Txt variant="h2">{formatDay(day.date)}</Txt>
+          {day.target.day_type ? <Txt tone="muted" variant="small"><Txt variant="small" weight="semibold">{dayTypeLabel[day.target.day_type]}</Txt> · {formatKcal(day.target.kcal)}</Txt> : null}
           {logged && day.status === "planned" ? <Txt tone="muted" variant="small">Planned for what is left after {logged.labels.length} logged {logged.labels.length === 1 ? "meal" : "meals"}.</Txt> : null}
         </Stack>
         {day.status === "met" ? <Txt variant="small" weight="semibold">Already met. No meals planned.</Txt> : null}

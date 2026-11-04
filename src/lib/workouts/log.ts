@@ -3,7 +3,8 @@ import type { Result } from "@/lib/calc/calculate";
 import { calculationConfig } from "@/lib/calc/config";
 import { isCalendarDate, isUuid } from "@/lib/meal";
 import type { PreferredUnits } from "@/lib/weigh-in";
-import { getExercise } from "./exercises";
+import { addDays } from "@/lib/week";
+import { getExercise, isDumbbellExercise } from "./exercises";
 import { choiceLabel, restText, schemeText } from "./format";
 import { applySwaps, resolveTemplateByKey, schemeFor, swapOptions, type Swap, type Template, type TemplateDay, type TemplateSlot } from "./templates";
 import type { Exercise, Measure, MovementPattern } from "./types";
@@ -16,6 +17,8 @@ export type LogChoice = {
   label: string;
   measure: Measure;
   loaded: boolean;
+  /** Weight is per dumbbell (RV-6). */
+  perDumbbell: boolean;
   pattern: MovementPattern;
   /** Top of the planned rep range, or top seconds for a hold. */
   topOfRange: number;
@@ -60,6 +63,8 @@ export type LogRules = {
   swaps: readonly Swap[];
   /** When editing: the exercise already saved for each slot. It stays allowed even if it is retired or no longer an option. */
   savedExercises: ReadonlyMap<string, string>;
+  /** The user's local date. With it, dates after tomorrow are refused (one day of time-zone slack, as in the database). */
+  today?: string;
 };
 
 function failure(error: string): Result<never> {
@@ -72,6 +77,7 @@ function toChoice(exercise: Exercise, slot: TemplateSlot, template: Template): L
     label: choiceLabel(exercise),
     measure: exercise.measure,
     loaded: exercise.loaded,
+    perDumbbell: isDumbbellExercise(exercise),
     pattern: exercise.pattern,
     topOfRange: schemeFor(slot.baseScheme, exercise, template.level).reps.max,
     cue: exercise.cue,
@@ -191,6 +197,7 @@ export function validateWorkoutLog(raw: unknown, rules: LogRules): Result<ValidW
   if (logId !== null && !isUuid(logId)) return failure(invalid);
   if (typeof input.templateKey !== "string" || typeof input.dayKey !== "string") return failure(invalid);
   if (typeof input.date !== "string" || !isCalendarDate(input.date)) return failure("Choose a valid date.");
+  if (rules.today && input.date > addDays(rules.today, 1)) return failure("Workout date cannot be in the future.");
 
   const template = planForLog(input.templateKey, rules.swaps);
   if (!template) return failure("This workout plan was not found.");
