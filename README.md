@@ -26,29 +26,27 @@ The phone app is in [`mobile/`](mobile/README.md): an Expo (React Native) app th
 
 The app deletes accounts through this website's `DELETE /api/account` endpoint, so that endpoint must be deployed before the app can delete accounts on a hosted project.
 
-## Google sign-in (optional, local)
+## Google sign-in (optional)
 
-The log in and sign-up pages can show **Continue with Google**. It stays hidden until you turn it on.
+The log in and sign-up pages use [Google Identity Services](https://developers.google.com/identity/gsi/web/guides/overview) in popup mode. Google owns the sign-in screen; RvFit then sends the returned ID token and its original nonce to Supabase, which creates the normal browser session. The Google script is loaded only by these two pages. If that script cannot load, the old Supabase redirect flow remains available as a clearly labelled fallback.
 
-1. In Google Cloud Console, create an OAuth client ID (type: Web application).
-2. Add this authorized redirect URI: `http://127.0.0.1:54321/auth/v1/callback`.
-3. Put the client ID and secret in `supabase/.env` (ignored by git, never commit it):
+### Manual setup
+
+1. **Google Cloud:** create or use an OAuth client ID of type **Web application**. Add the Vercel production URL and `http://localhost:<port>` (normally `http://localhost:3000`) as **Authorized JavaScript origins**. The origins must exactly match the app URLs, including scheme and port.
+2. **Vercel:** add `NEXT_PUBLIC_GOOGLE_CLIENT_ID` with that client ID, keep `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true`, and redeploy. Do not put the Google client secret in Vercel as a public variable.
+3. **Supabase:** enable the Google provider and confirm its Google client ID is the same value. Keep **Skip nonce checks** off. This repository's local `supabase/config.toml` currently has its equivalent set on; change that configuration manually before relying on local nonce validation.
+4. **Local Supabase (if used):** put the provider credentials in `supabase/.env` (ignored by git, never commit it):
 
    ```
    SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID=your-client-id
    SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=your-secret
    ```
 
-4. In `supabase/config.toml`, set `enabled = true` under `[auth.external.google]`, then run `npx supabase stop` and `npx supabase start`.
-5. Add `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` to `.env.local` and restart `npm run dev`.
+   Then enable the provider in the local Supabase configuration and restart the local stack. Add both `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` and `NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-client-id` to `.env.local`, then restart `npm run dev`.
 
-With the flag on but Google not set up, the button says Google sign-in is not set up yet.
+With the feature flag on but no client ID, the page says Google sign-in is not set up yet. If the Google script fails to load (for example, a network or extension block), the fallback button uses Supabase's redirect flow and can therefore show the Supabase project URL.
 
-**Hosted projects (Vercel + Supabase):**
-
-1. In the same Google OAuth client, add `https://<project-ref>.supabase.co/auth/v1/callback` for each Supabase project (staging and production).
-2. In each Supabase project, open Authentication → Sign In / Providers → Google, turn it on, and paste the client ID and secret.
-3. Only then add `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` in Vercel (Production, and Preview for staging) and redeploy.
+**Fallback only:** to retain the redirect fallback, keep `https://<project-ref>.supabase.co/auth/v1/callback` registered as an authorized redirect URI in the same Google OAuth client for each Supabase environment.
 
 ## Learn More
 

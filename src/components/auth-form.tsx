@@ -1,7 +1,9 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { authErrorMessage, googleNotSetUpMessage } from "@/lib/auth-errors";
+import { createGoogleNonce, hashGoogleNonce } from "@/lib/google-nonce";
 import { createClient } from "@/lib/supabase/client";
 
 // Shared pieces for the login, sign-up, and password pages.
@@ -97,9 +99,34 @@ export function SubmitButton({ children, pending, pendingText }: { children: Rea
   );
 }
 
-// Google sign-in shows only when NEXT_PUBLIC_GOOGLE_AUTH_ENABLED is "true", so the pages work before
-// Google credentials exist. See README for the local setup.
+// Google sign-in stays opt-in while credentials are being configured. See README for the setup.
 export const googleAuthEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
+const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+const googleIdentityScript = "https://accounts.google.com/gsi/client";
+
+type GoogleCredentialResponse = { credential?: string };
+
+type GoogleIdentity = {
+  initialize: (configuration: {
+    callback: (response: GoogleCredentialResponse) => void;
+    client_id: string;
+    nonce: string;
+    ux_mode: "popup";
+  }) => void;
+  renderButton: (parent: HTMLElement, options: {
+    shape: "rectangular";
+    size: "large";
+    text: "continue_with";
+    theme: "outline";
+    width: number;
+  }) => void;
+};
+
+declare global {
+  interface Window {
+    google?: { accounts?: { id?: GoogleIdentity } };
+  }
+}
 
 /** "or" between the email form and the Google button. */
 export function OrDivider() {
@@ -123,15 +150,142 @@ async function googleIsEnabled(): Promise<boolean> {
   return settings.external?.google === true;
 }
 
+/** Loads Google's browser-only script from the log-in or sign-up page. */
+function loadGoogleIdentity(): Promise<GoogleIdentity> {
+  const identity = window.google?.accounts?.id;
+  if (identity) return Promise.resolve(identity);
+
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>('script[data-rvfit-google-identity="true"]');
+    const script = existing ?? document.createElement("script");
+    const finishLoading = () => {
+      const loadedIdentity = window.google?.accounts?.id;
+      if (loadedIdentity) resolve(loadedIdentity);
+      else reject(new Error("Google Identity Services did not initialize."));
+    };
+
+    script.addEventListener("load", finishLoading, { once: true });
+    script.addEventListener("error", () => reject(new Error("Google Identity Services could not load.")), { once: true });
+
+    if (!existing) {
+      script.async = true;
+      script.dataset.rvfitGoogleIdentity = "true";
+      script.src = googleIdentityScript;
+      document.head.append(script);
+    }
+  });
+}
+
 /**
- * "Continue with Google". Google sends the user back to /auth/callback, which opens the dashboard,
- * where any targets calculated as a guest in this browser are saved, the same as after email sign-up.
+ * Uses Google Identity Services in popup mode. The Google page is Google's own UI; the returned ID
+ * token is exchanged with Supabase in this browser, so it writes the same session cookies as email login.
  */
 export function GoogleButton() {
+  const router = useRouter();
+  const button = useRef<HTMLDivElement>(null);
+  const [scriptFailed, setScriptFailed] = useState(false);
+  const [ready, setReady] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
 
-  async function continueWithGoogle() {
+  useEffect(() => {
+    let mounted = true;
+    const rawNonce = createGoogleNonce();
+
+    async function renderGoogleButton() {
+      if (!googleClientId) {
+        setError(googleNotSetUpMessage);
+        return;
+      }
+
+      let identity: GoogleIdentity;
+      try {
+        identity = await loadGoogleIdentity();
+      } catch {
+        if (mounted) setScriptFailed(true);
+        return;
+      }
+
+      try {
+        const nonce = await hashGoogleNonce(rawNonce);
+        if (!mounted || !button.current) return;
+
+        identity.initialize({
+          client_id: googleClientId,
+          nonce,
+          ux_mode: "popup",
+          callback: async ({ credential }) => {
+            if (!credential) {
+              if (mounted) setError("Google did not return a sign-in credential. Try again.");
+              return;
+            }
+            if (mounted) {
+              setPending(true);
+              setError(undefined);
+            }
+
+            try {
+              const { error: signInError } = await createClient().auth.signInWithIdToken({
+                provider: "google",
+                token: credential,
+                nonce: rawNonce,
+              });
+              if (signInError) {
+                if (mounted) {
+                  setError(authErrorMessage(signInError.message));
+                  setPending(false);
+                }
+                return;
+              }
+
+              // Match the existing email and OAuth completion destination.
+              router.replace("/dashboard");
+              router.refresh();
+            } catch {
+              if (mounted) {
+                setError(authErrorMessage("Failed to fetch"));
+                setPending(false);
+              }
+            }
+          },
+        });
+        button.current.replaceChildren();
+        identity.renderButton(button.current, {
+          theme: "outline",
+          size: "large",
+          text: "continue_with",
+          shape: "rectangular",
+          width: Math.floor(button.current.getBoundingClientRect().width) || 320,
+        });
+        setReady(true);
+      } catch {
+        if (mounted) setError("Google sign-in could not start. Refresh the page and try again, or use email and password.");
+      }
+    }
+
+    void renderGoogleButton();
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
+
+  if (scriptFailed) return <OAuthGoogleFallback />;
+
+  return (
+    <div className="space-y-3">
+      <div aria-busy={!ready || pending} aria-label="Continue with Google" className={pending ? "pointer-events-none opacity-60" : undefined} ref={button} />
+      {!ready && !error && <p className="text-sm text-muted" role="status">Loading Google sign-in…</p>}
+      <FormError message={error} />
+    </div>
+  );
+}
+
+/** Used only when Google Identity Services could not load; it preserves the existing redirect flow. */
+function OAuthGoogleFallback() {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string>();
+
+  async function continueWithOAuth() {
     if (pending) return;
     setPending(true);
     setError(undefined);
@@ -162,11 +316,11 @@ export function GoogleButton() {
         aria-busy={pending}
         className="btn-secondary w-full gap-3 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={pending}
-        onClick={continueWithGoogle}
+        onClick={continueWithOAuth}
         type="button"
       >
         <GoogleMark />
-        {pending ? "Opening Google…" : "Continue with Google"}
+        {pending ? "Opening Google…" : "Continue with Google (fallback)"}
       </button>
       <FormError message={error} />
     </div>
