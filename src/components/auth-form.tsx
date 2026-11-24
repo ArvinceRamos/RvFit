@@ -122,6 +122,16 @@ type GoogleIdentity = {
   }) => void;
 };
 
+type GoogleButtonDimensions = {
+  height: number;
+  scaleX: number;
+  scaleY: number;
+  width: number;
+};
+
+const googleButtonHeight = 40;
+const googleButtonMaxWidth = 400;
+
 declare global {
   interface Window {
     google?: { accounts?: { id?: GoogleIdentity } };
@@ -182,17 +192,70 @@ function loadGoogleIdentity(): Promise<GoogleIdentity> {
  */
 export function GoogleButton() {
   const router = useRouter();
-  const button = useRef<HTMLDivElement>(null);
-  const [scriptFailed, setScriptFailed] = useState(false);
+  const wrapper = useRef<HTMLDivElement>(null);
+  const gisButton = useRef<HTMLDivElement>(null);
+  const [identity, setIdentity] = useState<GoogleIdentity>();
+  const [dimensions, setDimensions] = useState<GoogleButtonDimensions>();
   const [ready, setReady] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
+
+  // Google renders a 40px-high iframe. Measure the custom visual button and scale the iframe's
+  // container so every pixel of the visible button, including its corners, opens the popup.
+  useEffect(() => {
+    const element = wrapper.current;
+    if (!element) return;
+
+    const measure = () => {
+      const { height, width } = element.getBoundingClientRect();
+      if (!width || !height) return;
+      const googleWidth = Math.min(googleButtonMaxWidth, Math.ceil(width));
+      const next = {
+        width: googleWidth,
+        height: googleButtonHeight,
+        scaleX: width / googleWidth,
+        scaleY: height / googleButtonHeight,
+      };
+      setDimensions((current) => (
+        current
+        && current.width === next.width
+        && current.height === next.height
+        && current.scaleX === next.scaleX
+        && current.scaleY === next.scaleY
+          ? current
+          : next
+      ));
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!identity || !dimensions || !gisButton.current) return;
+
+    gisButton.current.replaceChildren();
+    identity.renderButton(gisButton.current, {
+      theme: "outline",
+      size: "large",
+      text: "continue_with",
+      shape: "rectangular",
+      width: dimensions.width,
+    });
+    setReady(true);
+  }, [dimensions, identity]);
 
   useEffect(() => {
     let mounted = true;
     const rawNonce = createGoogleNonce();
 
-    async function renderGoogleButton() {
+    async function initializeGoogleButton() {
       if (!googleClientId) {
         setError(googleNotSetUpMessage);
         return;
@@ -202,13 +265,12 @@ export function GoogleButton() {
       try {
         identity = await loadGoogleIdentity();
       } catch {
-        if (mounted) setScriptFailed(true);
         return;
       }
 
       try {
         const nonce = await hashGoogleNonce(rawNonce);
-        if (!mounted || !button.current) return;
+        if (!mounted) return;
 
         identity.initialize({
           client_id: googleClientId,
@@ -249,49 +311,62 @@ export function GoogleButton() {
             }
           },
         });
-        button.current.replaceChildren();
-        identity.renderButton(button.current, {
-          theme: "outline",
-          size: "large",
-          text: "continue_with",
-          shape: "rectangular",
-          width: Math.floor(button.current.getBoundingClientRect().width) || 320,
-        });
-        setReady(true);
+        setIdentity(identity);
       } catch {
         if (mounted) setError("Google sign-in could not start. Refresh the page and try again, or use email and password.");
       }
     }
 
-    void renderGoogleButton();
+    void initializeGoogleButton();
     return () => {
       mounted = false;
     };
   }, [router]);
 
-  if (scriptFailed) return <OAuthGoogleFallback />;
-
   return (
     <div className="space-y-3">
-      <div aria-busy={!ready || pending} aria-label="Continue with Google" className={pending ? "pointer-events-none opacity-60" : undefined} ref={button} />
-      {!ready && !error && <p className="text-sm text-muted" role="status">Loading Google sign-in…</p>}
+      <div aria-busy={!ready || pending} className="google-gis-button relative w-full rounded-[14px]" ref={wrapper}>
+        <GoogleButtonVisual />
+        <div
+          aria-label="Continue with Google"
+          className={`absolute inset-0 z-10 overflow-visible opacity-[0.01] ${ready && !pending ? "cursor-pointer" : "pointer-events-none"}`}
+          style={{ height: dimensions?.height, width: dimensions?.width, transform: dimensions ? `scale(${dimensions.scaleX}, ${dimensions.scaleY})` : undefined, transformOrigin: "top left" }}
+        >
+          <div ref={gisButton} />
+        </div>
+        {!ready && <OAuthGoogleFallbackOverlay onError={setError} />}
+      </div>
       <FormError message={error} />
     </div>
   );
 }
 
-/** Used only when Google Identity Services could not load; it preserves the existing redirect flow. */
-function OAuthGoogleFallback() {
+/** The visible layer is inert; the overlay handles OAuth while GIS loads, then GIS itself. */
+function GoogleButtonVisual() {
+  return (
+    <button
+      aria-hidden="true"
+      className="google-gis-button-visual btn-secondary w-full gap-3 disabled:cursor-not-allowed disabled:opacity-60 pointer-events-none"
+      tabIndex={-1}
+      type="button"
+    >
+      <GoogleMark />
+      Continue with Google
+    </button>
+  );
+}
+
+/** Used until GIS is interactive or if its script cannot load; it preserves the existing redirect flow. */
+function OAuthGoogleFallbackOverlay({ onError }: { onError: (message?: string) => void }) {
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string>();
 
   async function continueWithOAuth() {
     if (pending) return;
     setPending(true);
-    setError(undefined);
+    onError(undefined);
     try {
       if (!(await googleIsEnabled())) {
-        setError(googleNotSetUpMessage);
+        onError(googleNotSetUpMessage);
         setPending(false);
         return;
       }
@@ -301,29 +376,27 @@ function OAuthGoogleFallback() {
       });
       // On success the browser leaves for Google, so the button stays pending.
       if (oauthError) {
-        setError(authErrorMessage(oauthError.message));
+        onError(authErrorMessage(oauthError.message));
         setPending(false);
       }
     } catch {
-      setError(authErrorMessage("Failed to fetch"));
+      onError(authErrorMessage("Failed to fetch"));
       setPending(false);
     }
   }
 
   return (
-    <div className="space-y-3">
-      <button
-        aria-busy={pending}
-        className="btn-secondary w-full gap-3 disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={pending}
-        onClick={continueWithOAuth}
-        type="button"
-      >
-        <GoogleMark />
-        {pending ? "Opening Google…" : "Continue with Google (fallback)"}
-      </button>
-      <FormError message={error} />
-    </div>
+    <button
+      aria-busy={pending}
+      aria-label="Continue with Google"
+      className="btn-secondary w-full gap-3 disabled:cursor-not-allowed disabled:opacity-60 absolute inset-0 z-20 h-full opacity-0"
+      disabled={pending}
+      onClick={continueWithOAuth}
+      type="button"
+    >
+      <GoogleMark />
+      {pending ? "Opening Google…" : "Continue with Google"}
+    </button>
   );
 }
 

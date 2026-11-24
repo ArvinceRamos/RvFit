@@ -494,6 +494,17 @@ body:has(.landing) {
     border-color: var(--btn2-edge-hover);
   }
 
+  /* The Google Identity iframe is transparent over this visual button, so the wrapper supplies
+     the visual button's usual pointer and keyboard states. */
+  .google-gis-button:hover .google-gis-button-visual {
+    border-color: var(--btn2-edge-hover);
+  }
+
+  .google-gis-button:focus-within .google-gis-button-visual {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
   .btn-ghost {
     font-weight: 600;
     color: var(--muted);
